@@ -160,7 +160,7 @@ defmodule MdnsLite.Server do
     }
 
   defp prepare_response(dns_record, state) do
-    Logger.info("DNS RECORD\n#{inspect(dns_record)}")
+    Logger.debug("DNS RECORD\n#{inspect(dns_record)}")
     # There can be multiple questions in a query. And it must be one of the
     # query types specified in the configuration
     dns_record.qdlist
@@ -247,7 +247,7 @@ defmodule MdnsLite.Server do
 
   # Ignore any other type of query
   defp handle_query(%DNS.Query{type: type} = _query, _dns_record, _state) do
-    Logger.info("IGNORING QUERY TYPE: #{inspect(type)}")
+    Logger.debug("IGNORING QUERY TYPE: #{inspect(type)}")
   end
 
   defp send_response([], _qdlist, _state), do: nil
@@ -255,7 +255,7 @@ defmodule MdnsLite.Server do
   defp send_response(dns_resource_records, dns_record, state) do
     # Construct a DNS record from the query plus answwers (resource records)
     packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
-    Logger.info("DNS Response packet\n#{inspect(packet)}")
+    Logger.debug("DNS Response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, @mdns_ip, @mdns_port, dns_record)
   end
