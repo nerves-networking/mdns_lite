@@ -82,7 +82,7 @@ defmodule MdnsLite.Server do
 
     # We need the IP address for this network interface
     with {:ok, ip_tuple} <- ifname_to_ip(ifname) do
-      discovery_name = resolve_mdns_name(mdns_config.service)
+      discovery_name = resolve_mdns_name(mdns_config.host)
       dot_local_name = discovery_name <> "." <> mdns_config.domain
       # Join the mDNS multicast group
       {:ok, udp} = :gen_udp.open(@mdns_port, udp_options(ip_tuple))
@@ -277,18 +277,10 @@ defmodule MdnsLite.Server do
 
   defp resolve_mdns_name(:hostname) do
     {:ok, hostname} = :inet.gethostname()
-    to_dot_local_name(hostname)
+    hostname |> to_string
   end
 
   defp resolve_mdns_name(mdns_name), do: mdns_name
-
-  defp to_dot_local_name(name) do
-    # Use the first part of the domain name and concatenate '.local'
-    name
-    |> to_string()
-    |> String.split(".")
-    |> hd()
-  end
 
   defp udp_options(ip),
     do: [

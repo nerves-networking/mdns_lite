@@ -8,7 +8,7 @@ config :mdns_lite,
   # Use these values to construct the DNS resource record responses
   # to a DNS query.
   mdns_config: %{
-    service: :hostname,
+    host: :hostname,
     domain: "local",
     ttl: 3600,
     types: [
