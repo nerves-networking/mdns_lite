@@ -24,20 +24,6 @@ defmodule MdnsLite.Server do
   @mdns_ip Application.get_env(:mdns_lite, :mdns_ip)
   @mdns_port Application.get_env(:mdns_lite, :mdns_port)
 
-  # A Standard DNS response packet
-  @response_packet %DNS.Record{
-    header: %DNS.Header{
-      aa: true,
-      qr: true,
-      opcode: :query,
-      rcode: 0
-    },
-    # A list of answer entries. Can be empty.
-    anlist: [],
-    # A list of resource entries. Can be empty.
-    arlist: []
-  }
-
   defmodule State do
     defstruct ifname: nil,
               query_types: [],
@@ -155,6 +141,24 @@ defmodule MdnsLite.Server do
   ##############################################################################
   #   Private functions
   ##############################################################################
+  # A standard mDNS response packet
+  defp response_packet(id, query_list, answer_list),
+    do: %DNS.Record{
+      header: %DNS.Header{
+        id: id,
+        aa: true,
+        qr: true,
+        opcode: :query,
+        rcode: 0
+      },
+      # The orginal queries
+      qdlist: query_list,
+      # A list of answer entries. Can be empty.
+      anlist: answer_list,
+      # A list of resource entries. Can be empty.
+      arlist: []
+    }
+
   defp prepare_response(dns_record, state) do
     Logger.info("DNS RECORD\n#{inspect(dns_record)}")
     # There can be multiple questions in a query. And it must be one of the
@@ -181,7 +185,7 @@ defmodule MdnsLite.Server do
           data: state.ip
         }
 
-        send_response([resource_record], dns_record.qdlist, state)
+        send_response([resource_record], dns_record, state)
 
       _ ->
         nil
@@ -196,8 +200,7 @@ defmodule MdnsLite.Server do
          state
        ) do
     # Convert our IP address so as to be able to match the arpa address
-    # in the query.
-    # Arpa address for IP 192.168.0.112 is 112.0.168.192,in-addr.arpa
+    # in the query. Arpa address for IP 192.168.0.112 is 112.0.168.192,in-addr.arpa
     arpa_address =
       state.ip
       |> Tuple.to_list()
@@ -213,7 +216,7 @@ defmodule MdnsLite.Server do
         data: state.dot_local_name
       }
 
-      send_response([resource_record], dns_record.qdlist, state)
+      send_response([resource_record], dns_record, state)
     end
   end
 
@@ -227,7 +230,7 @@ defmodule MdnsLite.Server do
        ) do
     state.services
     |> Enum.filter(fn {service, _port, _weight, _priority} -> to_string(domain) == service end)
-    |> Enum.each(fn {service, port, weight, priority} ->
+    |> Enum.each(fn {_service, _port, _weight, _priority} ->
       # construct the data value to be returned
       # data = <<priority::size(16), weight::size(16), port::size(16)>>
 
@@ -238,20 +241,20 @@ defmodule MdnsLite.Server do
         data: ''
       }
 
-      send_response([resource_record], dns_record.qdlist, state)
+      send_response([resource_record], dns_record, state)
     end)
   end
 
-  # Any other type of query, e.g., PTR, etc. should be handled individually.
+  # Ignore any other type of query
   defp handle_query(%DNS.Query{type: type} = _query, _dns_record, _state) do
     Logger.info("IGNORING QUERY TYPE: #{inspect(type)}")
   end
 
   defp send_response([], _qdlist, _state), do: nil
 
-  defp send_response(dns_resource_records, qdlist, state) do
-    # Construct a DNS record from the list of services
-    packet = %DNS.Record{@response_packet | :anlist => dns_resource_records, :qdlist => qdlist}
+  defp send_response(dns_resource_records, dns_record, state) do
+    # Construct a DNS record from the query plus answwers (resource records)
+    packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
     Logger.info("DNS Response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, @mdns_ip, @mdns_port, dns_record)
