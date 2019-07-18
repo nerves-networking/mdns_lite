@@ -7,7 +7,21 @@ defmodule MdnsLite.MixProject do
       version: "0.1.0",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
+      docs: [extras: ["README.md"]],
+      description: description(),
+      package: package(),
       deps: deps()
+    ]
+  end
+
+  def description do
+    "A simple, limited, no frills implementation of an mDNS server"
+  end
+
+  def package do
+    [
+      maintainers: ["Peter C Marks"],
+      links: "https://github.com/pcmarks/mdns_lite"
     ]
   end
 

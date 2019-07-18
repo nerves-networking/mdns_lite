@@ -13,16 +13,18 @@ defmodule MdnsLite.Server do
 
   'SRV' service queries.
 
-  There is one of these servers for every network interface (managed by
+  Any other query types are ignored.
+
+  There is one of these servers for every network interface managed by
   MdnsLite.
   """
 
   use GenServer
   require Logger
 
-  # Reserved ip address and port for mDNS
-  @mdns_ip Application.get_env(:mdns_lite, :mdns_ip)
-  @mdns_port Application.get_env(:mdns_lite, :mdns_port)
+  # Reserved IANA ip address and port for mDNS
+  @mdns_ip {224, 0, 0, 251}
+  @mdns_port 5353
 
   defmodule State do
     defstruct ifname: nil,
@@ -38,7 +40,7 @@ defmodule MdnsLite.Server do
   ##############################################################################
   #   Public interface
   ##############################################################################
-  def start({_ifname, _mdns_config} = opts) do
+  def start({_ifname, _mdns_config, _mdns_services} = opts) do
     GenServer.start(__MODULE__, opts)
   end
 
@@ -67,19 +69,8 @@ defmodule MdnsLite.Server do
   #   GenServer callbacks
   ##############################################################################
   @impl true
-  def init({ifname, mdns_config}) do
-    # A list of query types that we'll respond to.
-    query_types = mdns_config.types
-    # Construct a list of service names that we'll respond to
-    services =
-      Enum.map(
-        mdns_config.services,
-        fn service ->
-          {"_#{service.protocol}._#{service.transport}", service.port, service.weight,
-           service.priority}
-        end
-      )
-
+  def init({ifname, mdns_config, mdns_services}) do
+    Logger.debug("INIT START #{ifname} \n#{inspect(mdns_config)} \n#{inspect(mdns_services)}")
     # We need the IP address for this network interface
     with {:ok, ip_tuple} <- ifname_to_ip(ifname) do
       discovery_name = resolve_mdns_name(mdns_config.host)
@@ -89,8 +80,10 @@ defmodule MdnsLite.Server do
 
       {:ok,
        %State{
-         query_types: query_types,
-         services: services,
+         # A list of query types that we'll respond to.
+         query_types: mdns_config.query_types,
+         # A list of services with types that we'll match against
+         services: mdns_services,
          ifname: ifname,
          ip: ip_tuple,
          ttl: mdns_config.ttl,
@@ -229,16 +222,18 @@ defmodule MdnsLite.Server do
          state
        ) do
     state.services
-    |> Enum.filter(fn {service, _port, _weight, _priority} -> to_string(domain) == service end)
-    |> Enum.each(fn {_service, _port, _weight, _priority} ->
+    |> Enum.filter(fn service -> to_string(domain) == service.type end)
+    |> Enum.each(fn service ->
       # construct the data value to be returned
       # data = <<priority::size(16), weight::size(16), port::size(16)>>
+      # data = %{priority: priority, weight: weight, port: port, hostname: 'foo.com'}
+      data = {service.priority, service.weight, service.port, 'foo.com'}
 
       resource_record = %DNS.Resource{
         class: :in,
         type: :srv,
         ttl: state.ttl,
-        data: ''
+        data: data
       }
 
       send_response([resource_record], dns_record, state)
@@ -254,7 +249,7 @@ defmodule MdnsLite.Server do
 
   defp send_response(dns_resource_records, dns_record, state) do
     # Construct a DNS record from the query plus answwers (resource records)
-    packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
+    packet = response_packet(dns_record.header.id, [], dns_resource_records)
     Logger.debug("DNS Response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, @mdns_ip, @mdns_port, dns_record)

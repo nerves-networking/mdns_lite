@@ -31,17 +31,18 @@ defmodule MdnsLite do
       And some configuration values that will be used when constructing a DNS
       response packet.
     """
-    defstruct ifname_server_map: %{}, mdns_config: %{}
+    defstruct ifname_server_map: %{}, mdns_config: %{}, mdns_services: %{}
   end
 
   @doc """
   Pro forma starting.
   """
-  def start_link(mdns_config) do
-    GenServer.start_link(__MODULE__, mdns_config, name: __MODULE__)
+  def start_link([_mdns_config, _mdns_services] = opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def start_mdns_server(ifname) do
+  # default = typical ethernet
+  def start_mdns_server(ifname \\ "enp2s0") do
     GenServer.call(__MODULE__, {:start_mdns_server, ifname})
   end
 
@@ -62,17 +63,20 @@ defmodule MdnsLite do
   @doc """
   """
   @impl true
-  def init(mdns_config) do
-    {:ok, %State{ifname_server_map: %{}, mdns_config: mdns_config}}
+  def init([mdns_config, mdns_services]) do
+    {:ok, %State{ifname_server_map: %{}, mdns_config: mdns_config, mdns_services: mdns_services}}
   end
 
   @impl true
   def handle_call({:start_mdns_server, ifname}, _from, state) do
-    with {:ok, server_pid} <- MdnsLite.Server.start({ifname, state.mdns_config}) do
+    with {:ok, server_pid} <-
+           MdnsLite.Server.start({ifname, state.mdns_config, state.mdns_services}) do
+      Logger.debug("Start mdns server: server_pid #{inspect(server_pid)}")
       new_ifname_server_map = Map.put(state.ifname_server_map, ifname, server_pid)
       {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}
     else
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.debug("Start mdns server: #{inspect(reason)}")
         {:reply, :ok, state}
     end
   end

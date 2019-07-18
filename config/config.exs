@@ -3,36 +3,43 @@
 use Mix.Config
 
 config :mdns_lite,
-  mdns_ip: {224, 0, 0, 251},
-  mdns_port: 5353,
   # Use these values to construct the DNS resource record responses
   # to a DNS query.
   mdns_config: %{
     host: :hostname,
     domain: "local",
     ttl: 3600,
-    types: [
+    query_types: [
       # IP address lookup,
       :a,
       # Reverse IP lookup
       :ptr,
       # Services - see below
       :srv
-    ],
-    services: [
-      # TODO: service type: _http._tcp
-      %{name: "Web Server", protocol: "http", transport: "tcp", port: 80, weight: 0, priority: 0},
-      # TODO: service_type: _ssh._tcp
-      %{
-        name: "Secure Socket",
-        protocol: "ssh",
-        transport: "tcp",
-        port: 22,
-        weight: 0,
-        priority: 0
-      }
     ]
-  }
+  },
+  services: [
+    # service type: _http._tcp - used in match
+    %{
+      type: "_http._tcp",
+      name: "Web Server",
+      protocol: "http",
+      transport: "tcp",
+      port: 80,
+      weight: 0,
+      priority: 0
+    },
+    # TODO: service_type: _ssh._tcp
+    %{
+      type: "_ssh._tcp",
+      name: "Secure Socket",
+      protocol: "ssh",
+      transport: "tcp",
+      port: 22,
+      weight: 0,
+      priority: 0
+    }
+  ]
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this

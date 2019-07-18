@@ -6,13 +6,15 @@ defmodule MdnsLite.Application do
   use Application
 
   @mdns_config Application.get_env(:mdns_lite, :mdns_config)
+  @mdns_services Application.get_env(:mdns_lite, :services)
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
       # Start the GenServer that is responsible for maintaining a set of
       # mDNS service responders - one per network interface. Initialize
       # it with some values that are used to construct DNS responses
-      {MdnsLite, @mdns_config}
+      # and some optional services
+      {MdnsLite, [@mdns_config, @mdns_services]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
