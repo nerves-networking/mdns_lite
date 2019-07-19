@@ -98,6 +98,11 @@ defmodule MdnsLite.Server do
   end
 
   @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
   @doc """
   Leave the mDNS UDP group.
   """
@@ -142,7 +147,8 @@ defmodule MdnsLite.Server do
         aa: true,
         qr: true,
         opcode: :query,
-        rcode: 0
+        rcode: 0,
+        rd: false
       },
       # The orginal queries
       qdlist: query_list,
@@ -225,9 +231,9 @@ defmodule MdnsLite.Server do
     |> Enum.filter(fn service -> to_string(domain) == service.type end)
     |> Enum.each(fn service ->
       # construct the data value to be returned
-      # data = <<priority::size(16), weight::size(16), port::size(16)>>
-      # data = %{priority: priority, weight: weight, port: port, hostname: 'foo.com'}
-      data = {service.priority, service.weight, service.port, 'foo.com'}
+      # Note: The spec - RFC 2782 - specifies that the target/hostname end with a dot.
+      target = state.dot_local_name ++ '.'
+      data = {service.priority, service.weight, service.port, target}
 
       resource_record = %DNS.Resource{
         class: :in,
@@ -245,11 +251,11 @@ defmodule MdnsLite.Server do
     Logger.debug("IGNORING QUERY TYPE: #{inspect(type)}")
   end
 
-  defp send_response([], _qdlist, _state), do: nil
+  defp send_response([], _dns_record, _state), do: nil
 
   defp send_response(dns_resource_records, dns_record, state) do
     # Construct a DNS record from the query plus answwers (resource records)
-    packet = response_packet(dns_record.header.id, [], dns_resource_records)
+    packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
     Logger.debug("DNS Response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, @mdns_ip, @mdns_port, dns_record)
@@ -281,6 +287,7 @@ defmodule MdnsLite.Server do
     do: [
       :binary,
       active: true,
+      # add_membership: {@mdns_ip, {0, 0, 0, 0}},
       add_membership: {@mdns_ip, ip},
       multicast_if: ip,
       multicast_loop: true,
