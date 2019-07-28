@@ -1,21 +1,26 @@
 defmodule MdnsLite do
   @moduledoc """
-  A simple implementation of an mDNS (multicast DNS (Domain Name Server)) server.
-  Rather than accessing a DNS server directly via a well known ip address, mDNS
-  is based on multicast UDP. Services listen on a well-known ip address/port. If
-  a request arrives that the service can answer, it constructs a DNS response.
+  A simple implementation of an mDNS (multicast DNS (Domain Name Server)) server. 
+  Rather than accessing a DNS server directly, mDNS
+  is based on multicast UDP. Hosts/services listen on a well-known ip address/port. If
+  a request arrives that the service can answer, it constructs the approriate DNS response.
 
-  This module creates a GenServer responsible for mainting a set of mDNS servers,
-  one per network interface, e.g. "eth0", "lo", etc. These mDNS servers act on behalf of
-  the host device that is executing this code. Upon receiving an mDNS request, via
-  UDP multicast, these servers respond with host information for this device
-  and DNS records about network services that are available from this device.
+  This module runs as a GenServer responsible for maintaining a set of mDNS servers. The intent
+  is to have one server per network interface, e.g. "eth0", "lo", etc. Upon
+  receiving an mDNS request, these servers respond with mDNS (DNS) records with
+  host information for the host this module is running on. Also there will be
+  SRV (service) DNS records about network services that are available from this device.
   SSH and FTP are examples of such services.
 
-  It is initialized with service descriptions. The descriptions will be
-  used by the mDNS servers as a response to a matching service query.
+  Note: the mDNS servers can be run directly. This module serves as a convenience
+  for apps that are dealing with multiple network interfaces.
 
-  This application can be tested with the linux utility dig:
+  This module is initialized with host information and service descriptions.
+  The descriptions will be used by the mDNS servers as a response to a matching service query.
+
+  Please refer to the README for further information.
+
+  This package can be tested with the linux utility dig:
 
   ``` dig @224.0.0.251 -p 5353 -t A petes-pt.local```
 
@@ -24,6 +29,9 @@ defmodule MdnsLite do
   """
   require Logger
   use GenServer
+
+  @mdns_config Application.get_env(:mdns_lite, :mdns_config)
+  @mdns_services Application.get_env(:mdns_lite, :services)
 
   defmodule State do
     @moduledoc """
@@ -37,15 +45,25 @@ defmodule MdnsLite do
   @doc """
   Pro forma starting.
   """
-  def start_link([_mdns_config, _mdns_services] = opts) do
+  @spec start_link(any()) :: GenServer.on_start()
+  def start_link(_opts) do
+    opts = [@mdns_config, @mdns_services]
+
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  # default = typical ethernet
-  def start_mdns_server(ifname \\ "enp2s0") do
+  @doc """
+  Start an mDNS server for a network interface
+  """
+  @spec start_mdns_server(ifname: String.t()) :: term()
+  def start_mdns_server(ifname) do
     GenServer.call(__MODULE__, {:start_mdns_server, ifname})
   end
 
+  @doc """
+  Stop the mDNS server for a network interface
+  """
+  @spec stop_mdns_server(ifname: String.t()) :: term()
   def stop_mdns_server(ifname) do
     GenServer.call(__MODULE__, {:stop_mdns_server, ifname})
   end
@@ -56,12 +74,11 @@ defmodule MdnsLite do
   end
 
   # TODO REMOVE
-  def get_pid(ifname \\ "enp2s0") do
+  def get_pid(ifname) do
     GenServer.call(__MODULE__, {:get_pid, ifname})
   end
 
-  @doc """
-  """
+  @doc false
   @impl true
   def init([mdns_config, mdns_services]) do
     {:ok, %State{ifname_server_map: %{}, mdns_config: mdns_config, mdns_services: mdns_services}}

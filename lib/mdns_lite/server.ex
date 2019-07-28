@@ -27,6 +27,7 @@ defmodule MdnsLite.Server do
   @mdns_port 5353
 
   defmodule State do
+    @type t() :: struct()
     defstruct ifname: nil,
               query_types: [],
               services: [],
@@ -40,29 +41,24 @@ defmodule MdnsLite.Server do
   ##############################################################################
   #   Public interface
   ##############################################################################
-  def start({_ifname, _mdns_config, _mdns_services} = opts) do
+  @spec start(tuple()) :: GenServer.on_start()
+  def(start({_ifname, _mdns_config, _mdns_services} = opts)) do
     GenServer.start(__MODULE__, opts)
   end
 
   @doc """
   Leave the mDNS group - close the UDP port. Stop this GenServer.
   """
+  @spec stop_server(pid()) :: :ok
   def stop_server(pid) do
     GenServer.call(pid, :leave_mdns_group)
     GenServer.stop(pid)
   end
 
   # TODO REMOVE ME
+  @spec get_state(pid()) :: State.t()
   def get_state(pid) do
     GenServer.call(pid, :get_state)
-  end
-
-  @doc """
-  A convenience function for making mDNS queries.
-  :a = Address Mapping
-  """
-  def query(pid, type = :a, domain) do
-    GenServer.call(pid, {:query, type, domain})
   end
 
   ##############################################################################
@@ -70,7 +66,6 @@ defmodule MdnsLite.Server do
   ##############################################################################
   @impl true
   def init({ifname, mdns_config, mdns_services}) do
-    Logger.debug("INIT START #{ifname} \n#{inspect(mdns_config)} \n#{inspect(mdns_services)}")
     # We need the IP address for this network interface
     with {:ok, ip_tuple} <- ifname_to_ip(ifname) do
       discovery_name = resolve_mdns_name(mdns_config.host)
@@ -133,7 +128,7 @@ defmodule MdnsLite.Server do
 
   @impl true
   def handle_info(_msg, state) do
-    {:no_replay, state}
+    {:noreply, state}
   end
 
   ##############################################################################
@@ -146,9 +141,8 @@ defmodule MdnsLite.Server do
         id: id,
         aa: true,
         qr: true,
-        opcode: :query,
-        rcode: 0,
-        rd: false
+        opcode: 0,
+        rcode: 0
       },
       # The orginal queries
       qdlist: query_list,
@@ -159,7 +153,6 @@ defmodule MdnsLite.Server do
     }
 
   defp prepare_response(dns_record, state) do
-    Logger.debug("DNS RECORD\n#{inspect(dns_record)}")
     # There can be multiple questions in a query. And it must be one of the
     # query types specified in the configuration
     dns_record.qdlist
@@ -174,6 +167,8 @@ defmodule MdnsLite.Server do
   # An "A" type query. Address mapping record. Return the IP address if
   # this host name matches the query domain.
   defp handle_query(%DNS.Query{class: :in, type: :a, domain: domain} = _query, dns_record, state) do
+    Logger.debug("DNS A RECORD for ifname #{inspect(state.ifname)}\n#{inspect(dns_record)}")
+
     case state.dot_local_name == domain do
       true ->
         resource_record = %DNS.Resource{
@@ -198,6 +193,7 @@ defmodule MdnsLite.Server do
          dns_record,
          state
        ) do
+    Logger.debug("DNS PTR RECORD for ifname #{inspect(state.ifname)}\n#{inspect(dns_record)}")
     # Convert our IP address so as to be able to match the arpa address
     # in the query. Arpa address for IP 192.168.0.112 is 112.0.168.192,in-addr.arpa
     arpa_address =
@@ -220,15 +216,20 @@ defmodule MdnsLite.Server do
   end
 
   # A "SRV" type query. Find services, e.g., HTTP, SSH. The domain field in a
-  # SRV service query will look like "_http._tcp". Respond only on an exact
+  # SRV service query will look like "_http._tcp.local". Respond only on an exact
   # match
   defp handle_query(
          %DNS.Query{class: :in, type: :srv, domain: domain} = _query,
          dns_record,
          state
        ) do
+    Logger.debug("DNS SRV RECORD for ifname #{inspect(state.ifname)}\n#{inspect(dns_record)}")
+
     state.services
-    |> Enum.filter(fn service -> to_string(domain) == service.type end)
+    |> Enum.filter(fn service ->
+      local_service = service.type <> ".local"
+      to_string(domain) == local_service
+    end)
     |> Enum.each(fn service ->
       # construct the data value to be returned
       # Note: The spec - RFC 2782 - specifies that the target/hostname end with a dot.
@@ -247,16 +248,18 @@ defmodule MdnsLite.Server do
   end
 
   # Ignore any other type of query
-  defp handle_query(%DNS.Query{type: type} = _query, _dns_record, _state) do
-    Logger.debug("IGNORING QUERY TYPE: #{inspect(type)}")
+  defp handle_query(%DNS.Query{type: type} = _query, dns_record, state) do
+    Logger.debug(
+      "IGNORING #{inspect(type)} DNS RECORD for ifname #{inspect(state.ifname)}\n#{
+        inspect(dns_record)
+      }"
+    )
   end
-
-  defp send_response([], _dns_record, _state), do: nil
 
   defp send_response(dns_resource_records, dns_record, state) do
     # Construct a DNS record from the query plus answwers (resource records)
     packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
-    Logger.debug("DNS Response packet\n#{inspect(packet)}")
+    Logger.debug("Sending DNS response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, @mdns_ip, @mdns_port, dns_record)
   end
