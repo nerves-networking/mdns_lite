@@ -62,7 +62,7 @@ defmodule MdnsLite do
   @doc """
   Start an mDNS server for a network interface
   """
-  @spec start_mdns_server(ifname: String.t()) :: term()
+  @spec start_mdns_server(ifname :: String.t()) :: term()
   def start_mdns_server(ifname) do
     GenServer.call(__MODULE__, {:start_mdns_server, ifname})
   end
@@ -70,7 +70,7 @@ defmodule MdnsLite do
   @doc """
   Stop the mDNS server for a network interface
   """
-  @spec stop_mdns_server(ifname: String.t()) :: term()
+  @spec stop_mdns_server(ifname :: String.t()) :: term()
   def stop_mdns_server(ifname) do
     GenServer.call(__MODULE__, {:stop_mdns_server, ifname})
   end
