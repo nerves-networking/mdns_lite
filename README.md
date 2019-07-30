@@ -1,5 +1,7 @@
 # MdnsLite
 
+[![CircleCI](https://circleci.com/gh/pcmarks/mdns_lite.svg?style=svg)](https://circleci.com/gh/pcmarks/mdns_lite)
+
 MdnsLite is a simple, limited, no frills implementation of an
 [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (multicast Domain Name System)
 server. It operates like a DNS server, the difference being that it uses multicast
