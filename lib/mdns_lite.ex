@@ -3,7 +3,7 @@ defmodule MdnsLite do
   A simple implementation of an mDNS (multicast DNS (Domain Name Server)) server.
   Rather than accessing a DNS server directly, mDNS
   is based on multicast UDP. Hosts/services listen on a well-known ip address/port. If
-  a request arrives that the service can answer, it constructs the approriate DNS response.
+  a request arrives that the service can answer, it constructs the appropriate DNS response.
 
   This module runs as a GenServer responsible for maintaining a set of mDNS servers. The intent
   is to have one server per network interface, e.g. "eth0", "lo", etc. Upon
@@ -24,8 +24,8 @@ defmodule MdnsLite do
 
   ``` dig @224.0.0.251 -p 5353 -t A petes-pt.local```
 
-  The code borrows heavily from the https://hex.pm/packages/mdns package and
-  https://github.com/shortishly/mdns.
+  The code borrows heavily from [mdns](https://hex.pm/packages/mdns) and
+  [shortishly's mdns](https://github.com/shortishly/mdns) packages.
   """
   require Logger
   use GenServer
