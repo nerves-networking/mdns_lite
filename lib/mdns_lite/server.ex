@@ -21,9 +21,10 @@ defmodule MdnsLite.Server do
 
   use GenServer
   require Logger
+  alias MdnsLite.Utilities
 
   # Reserved IANA ip address and port for mDNS
-  @mdns_ip {224, 0, 0, 251}
+  @mdns_ipv4 {224, 0, 0, 251}
   @mdns_port 5353
 
   defmodule State do
@@ -42,7 +43,7 @@ defmodule MdnsLite.Server do
   #   Public interface
   ##############################################################################
   @spec start(tuple()) :: GenServer.on_start()
-  def(start({_ifname, _mdns_config, _mdns_services} = opts)) do
+  def start({_ifname, _mdns_config, _mdns_services} = opts) do
     GenServer.start(__MODULE__, opts)
   end
 
@@ -261,20 +262,23 @@ defmodule MdnsLite.Server do
     packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
     Logger.debug("Sending DNS response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
-    :gen_udp.send(state.udp, @mdns_ip, @mdns_port, dns_record)
+    :gen_udp.send(state.udp, @mdns_ipv4, @mdns_port, dns_record)
   end
 
   defp ifname_to_ip(ifname) do
-    ifname_cl = to_charlist(ifname)
-
     with {:ok, ifaddrs} <- :inet.getifaddrs(),
-         {_, params} <- Enum.find(ifaddrs, fn {k, _v} -> k == ifname_cl end),
-         addr when is_tuple(addr) <- Keyword.get(params, :addr) do
+         addr when addr != nil <- find_ipv4_addr(ifaddrs, ifname) do
       {:ok, addr}
     else
       _ ->
         {:error, :no_ip_address}
     end
+  end
+
+  defp find_ipv4_addr(ifaddrs, ifname) do
+    ifaddrs
+    |> Utilities.ifaddrs_to_ip_list(ifname)
+    |> Enum.find(&(Utilities.ip_family(&1) == :inet))
   end
 
   defp resolve_mdns_name(nil), do: nil
@@ -286,15 +290,16 @@ defmodule MdnsLite.Server do
 
   defp resolve_mdns_name(mdns_name), do: mdns_name
 
-  defp udp_options(ip),
-    do: [
+  defp udp_options(ip) do
+    [
       :binary,
       active: true,
-      # add_membership: {@mdns_ip, {0, 0, 0, 0}},
-      add_membership: {@mdns_ip, ip},
+      # add_membership: {@mdns_ipv4, {0, 0, 0, 0}},
+      add_membership: {@mdns_ipv4, ip},
       multicast_if: ip,
       multicast_loop: true,
       multicast_ttl: 255,
       reuseaddr: true
     ]
+  end
 end
