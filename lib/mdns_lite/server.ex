@@ -21,7 +21,7 @@ defmodule MdnsLite.Server do
 
   use GenServer
   require Logger
-  alias MdnsLite.Utilities
+  alias MdnsLite.{Query, Utilities}
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
@@ -159,106 +159,17 @@ defmodule MdnsLite.Server do
     dns_record.qdlist
     |> Enum.filter(fn q -> q.type in state.query_types end)
     |> Enum.each(fn %DNS.Query{} = query ->
-      handle_query(query, dns_record, state)
+      responses = Query.handle(query, state)
+      send_response(responses, dns_record, state)
     end)
 
     state
   end
 
-  # An "A" type query. Address mapping record. Return the IP address if
-  # this host name matches the query domain.
-  defp handle_query(%DNS.Query{class: :in, type: :a, domain: domain} = _query, dns_record, state) do
-    Logger.debug("DNS A RECORD for ifname #{inspect(state.ifname)}\n#{inspect(dns_record)}")
-
-    case state.dot_local_name == domain do
-      true ->
-        resource_record = %DNS.Resource{
-          class: :in,
-          type: :a,
-          ttl: state.ttl,
-          domain: state.dot_local_name,
-          data: state.ip
-        }
-
-        send_response([resource_record], dns_record, state)
-
-      _ ->
-        nil
-    end
-  end
-
-  # A "PTR" type query. Reverse address lookup. Return the hostname of an
-  # IP address
-  defp handle_query(
-         %DNS.Query{class: :in, type: :ptr, domain: domain} = _query,
-         dns_record,
-         state
-       ) do
-    Logger.debug("DNS PTR RECORD for ifname #{inspect(state.ifname)}\n#{inspect(dns_record)}")
-    # Convert our IP address so as to be able to match the arpa address
-    # in the query. Arpa address for IP 192.168.0.112 is 112.0.168.192,in-addr.arpa
-    arpa_address =
-      state.ip
-      |> Tuple.to_list()
-      |> Enum.reverse()
-      |> Enum.join(".")
-
-    # Only need to match the beginning characters
-    if String.starts_with?(to_string(domain), arpa_address) do
-      resource_record = %DNS.Resource{
-        class: :in,
-        type: :ptr,
-        ttl: state.ttl,
-        data: state.dot_local_name
-      }
-
-      send_response([resource_record], dns_record, state)
-    end
-  end
-
-  # A "SRV" type query. Find services, e.g., HTTP, SSH. The domain field in a
-  # SRV service query will look like "_http._tcp.local". Respond only on an exact
-  # match
-  defp handle_query(
-         %DNS.Query{class: :in, type: :srv, domain: domain} = _query,
-         dns_record,
-         state
-       ) do
-    Logger.debug("DNS SRV RECORD for ifname #{inspect(state.ifname)}\n#{inspect(dns_record)}")
-
-    state.services
-    |> Enum.filter(fn service ->
-      local_service = service.type <> ".local"
-      to_string(domain) == local_service
-    end)
-    |> Enum.each(fn service ->
-      # construct the data value to be returned
-      # Note: The spec - RFC 2782 - specifies that the target/hostname end with a dot.
-      target = state.dot_local_name ++ '.'
-      data = {service.priority, service.weight, service.port, target}
-
-      resource_record = %DNS.Resource{
-        class: :in,
-        type: :srv,
-        ttl: state.ttl,
-        data: data
-      }
-
-      send_response([resource_record], dns_record, state)
-    end)
-  end
-
-  # Ignore any other type of query
-  defp handle_query(%DNS.Query{type: type} = _query, dns_record, state) do
-    Logger.debug(
-      "IGNORING #{inspect(type)} DNS RECORD for ifname #{inspect(state.ifname)}\n#{
-        inspect(dns_record)
-      }"
-    )
-  end
+  defp send_response([], _dns_record, _state), do: :ok
 
   defp send_response(dns_resource_records, dns_record, state) do
-    # Construct a DNS record from the query plus answwers (resource records)
+    # Construct a DNS record from the query plus answers (resource records)
     packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
     Logger.debug("Sending DNS response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
