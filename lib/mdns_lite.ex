@@ -30,8 +30,12 @@ defmodule MdnsLite do
   require Logger
   use GenServer
 
-  @mdns_config Application.get_env(:mdns_lite, :mdns_config)
-  @mdns_services Application.get_env(:mdns_lite, :services)
+  @default_config %{
+    host: :hostname,
+    domain: "local",
+    ttl: 3600,
+    query_types: [:a, :ptr, :srv]
+  }
 
   defmodule State do
     @moduledoc """
@@ -47,7 +51,10 @@ defmodule MdnsLite do
   """
   @spec start_link(any()) :: GenServer.on_start()
   def start_link(_opts) do
-    opts = [@mdns_config, @mdns_services]
+    opts = [
+      Application.get_env(:mdns_lite, :mdns_config, @default_config),
+      Application.get_env(:mdns_lite, :services, [])
+    ]
 
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
