@@ -116,12 +116,12 @@ defmodule MdnsLite.Server do
   those queries those that are germane.
   """
   @impl true
-  def handle_info({:udp, _socket, _ip, _port, packet}, state) do
+  def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
     # Decode the UDP packet
     dns_record = DNS.Record.decode(packet)
     # qr is the query/response flag; false (0) = query, true (1) = response
     if !dns_record.header.qr && length(dns_record.qdlist) > 0 do
-      {:noreply, prepare_response(dns_record, state)}
+      {:noreply, prepare_response(dns_record, mdns_destination(src_ip, src_port), state)}
     else
       {:noreply, state}
     end
@@ -145,7 +145,7 @@ defmodule MdnsLite.Server do
         opcode: 0,
         rcode: 0
       },
-      # The orginal queries
+      # The original queries
       qdlist: query_list,
       # A list of answer entries. Can be empty.
       anlist: answer_list,
@@ -153,27 +153,38 @@ defmodule MdnsLite.Server do
       arlist: []
     }
 
-  defp prepare_response(dns_record, state) do
+  defp prepare_response(dns_record, dest, state) do
     # There can be multiple questions in a query. And it must be one of the
     # query types specified in the configuration
     dns_record.qdlist
     |> Enum.filter(fn q -> q.type in state.query_types end)
     |> Enum.each(fn %DNS.Query{} = query ->
       responses = Query.handle(query, state)
-      send_response(responses, dns_record, state)
+      send_response(responses, dns_record, dest, state)
     end)
 
     state
   end
 
-  defp send_response([], _dns_record, _state), do: :ok
+  defp mdns_destination(_src_address, @mdns_port), do: {@mdns_ipv4, @mdns_port}
 
-  defp send_response(dns_resource_records, dns_record, state) do
+  defp mdns_destination(src_address, src_port) do
+    # Legacy Unicast Response
+    # See RFC 6762 6.7
+    {src_address, src_port}
+  end
+
+  defp send_response([], _dns_record, _dest, _state), do: :ok
+
+  defp send_response(dns_resource_records, dns_record, {dest_address, dest_port}, state) do
     # Construct a DNS record from the query plus answers (resource records)
     packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
-    _ = Logger.debug("Sending DNS response packet\n#{inspect(packet)}")
+
+    _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
+    _ = Logger.debug("#{inspect(packet)}")
+
     dns_record = DNS.Record.encode(packet)
-    :gen_udp.send(state.udp, @mdns_ipv4, @mdns_port, dns_record)
+    :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
   end
 
   defp ifname_to_ip(ifname) do
