@@ -1,14 +1,16 @@
 defmodule MdnsLite.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :mdns_lite,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.8",
       build_permanent: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      docs: [extras: ["README.md"]],
+      docs: docs(),
       description: description(),
       package: package(),
       deps: deps()
@@ -43,6 +45,14 @@ defmodule MdnsLite.MixProject do
       {:dns, "~> 2.1"},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      extras: ["README.md"],
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/pcmarks/mdns_lite"
     ]
   end
 end
