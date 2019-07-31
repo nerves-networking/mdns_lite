@@ -42,7 +42,7 @@ defmodule MdnsLite.Server do
   ##############################################################################
   #   Public interface
   ##############################################################################
-  @spec start(tuple()) :: GenServer.on_start()
+  @spec start({String.t(), map(), [map()]}) :: GenServer.on_start()
   def start({_ifname, _mdns_config, _mdns_services} = opts) do
     GenServer.start(__MODULE__, opts)
   end
@@ -88,7 +88,7 @@ defmodule MdnsLite.Server do
        }}
     else
       {:error, reason} ->
-        Logger.error("reason: #{inspect(reason)}")
+        _ = Logger.error("reason: #{inspect(reason)}")
         {:stop, reason}
     end
   end
@@ -171,7 +171,7 @@ defmodule MdnsLite.Server do
   defp send_response(dns_resource_records, dns_record, state) do
     # Construct a DNS record from the query plus answers (resource records)
     packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
-    Logger.debug("Sending DNS response packet\n#{inspect(packet)}")
+    _ = Logger.debug("Sending DNS response packet\n#{inspect(packet)}")
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, @mdns_ipv4, @mdns_port, dns_record)
   end

@@ -95,12 +95,12 @@ defmodule MdnsLite do
   def handle_call({:start_mdns_server, ifname}, _from, state) do
     with {:ok, server_pid} <-
            MdnsLite.Server.start({ifname, state.mdns_config, state.mdns_services}) do
-      Logger.debug("Start mdns server: server_pid #{inspect(server_pid)}")
+      _ = Logger.debug("Start mdns server: server_pid #{inspect(server_pid)}")
       new_ifname_server_map = Map.put(state.ifname_server_map, ifname, server_pid)
       {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}
     else
       {:error, reason} ->
-        Logger.debug("Start mdns server: #{inspect(reason)}")
+        _ = Logger.error("Starting mdns server failed: #{inspect(reason)}")
         {:reply, :ok, state}
     end
   end

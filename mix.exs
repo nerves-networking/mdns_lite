@@ -13,6 +13,9 @@ defmodule MdnsLite.MixProject do
       docs: docs(),
       description: description(),
       package: package(),
+      dialyzer: [
+        flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs]
+      ],
       deps: deps()
     ]
   end
