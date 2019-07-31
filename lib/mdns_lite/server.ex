@@ -136,7 +136,7 @@ defmodule MdnsLite.Server do
   #   Private functions
   ##############################################################################
   # A standard mDNS response packet
-  defp response_packet(id, query_list, answer_list),
+  defp response_packet(id, answer_list),
     do: %DNS.Record{
       header: %DNS.Header{
         id: id,
@@ -145,8 +145,8 @@ defmodule MdnsLite.Server do
         opcode: 0,
         rcode: 0
       },
-      # The original queries
-      qdlist: query_list,
+      # Query list. Must be empty according to RFC 6762 Section 6.
+      qdlist: [],
       # A list of answer entries. Can be empty.
       anlist: answer_list,
       # A list of resource entries. Can be empty.
@@ -177,8 +177,8 @@ defmodule MdnsLite.Server do
   defp send_response([], _dns_record, _dest, _state), do: :ok
 
   defp send_response(dns_resource_records, dns_record, {dest_address, dest_port}, state) do
-    # Construct a DNS record from the query plus answers (resource records)
-    packet = response_packet(dns_record.header.id, dns_record.qdlist, dns_resource_records)
+    # Construct an mDNS response from the query plus answers (resource records)
+    packet = response_packet(dns_record.header.id, dns_resource_records)
 
     _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
     _ = Logger.debug("#{inspect(packet)}")
