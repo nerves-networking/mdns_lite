@@ -28,8 +28,8 @@ defmodule MdnsLite.MixProject do
     [
       name: "mdns_lite",
       maintainers: ["Peter C Marks"],
-      files: ~w(lib priv .formatter.exs mix.exs README* readme* LICENSE*
-                license* CHANGELOG* changelog* src),
+      files: ~w(lib mix.exs README.md LICENSE*
+                CHANGELOG* ),
       licenses: ["Apache-2.0"],
       links: "https://github.com/pcmarks/mdns_lite"
     ]
