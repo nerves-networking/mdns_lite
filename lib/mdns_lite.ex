@@ -1,6 +1,6 @@
 defmodule MdnsLite do
   @moduledoc """
-  A simple implementation of an mDNS (multicast DNS (Domain Name Server)) server. 
+  A simple implementation of an mDNS (multicast DNS (Domain Name Server)) server.
   Rather than accessing a DNS server directly, mDNS
   is based on multicast UDP. Hosts/services listen on a well-known ip address/port. If
   a request arrives that the service can answer, it constructs the approriate DNS response.
@@ -32,7 +32,6 @@ defmodule MdnsLite do
 
   @default_config %{
     host: :hostname,
-    domain: "local",
     ttl: 3600,
     query_types: [:a, :ptr, :srv]
   }

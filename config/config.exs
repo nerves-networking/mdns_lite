@@ -7,7 +7,6 @@ config :mdns_lite,
   # to a DNS query.
   mdns_config: %{
     host: :hostname,
-    domain: "local",
     ttl: 3600,
     query_types: [
       # IP address lookup,
