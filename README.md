@@ -24,9 +24,7 @@ These implementations provided valuable guidance in the building of MdnsLite.
 
 ## Configuration
 
-MDNSLite can be configured to recognize all or a subset of the
-mDNS query types listed above. Note that
-listing the service doesn't guarantee the existence of that service.
+Note that listing the service doesn't guarantee the existence of that service.
 
 ```elixir
 config :mdns_lite,
@@ -35,15 +33,7 @@ config :mdns_lite,
   mdns_config: %{
     host: :hostname,
     domain: "local",
-    ttl: 3600,
-    query_types: [
-      # IP address lookup,
-      :a,
-      # Reverse IP lookup
-      :ptr,
-      # Services - see below
-      :srv
-    ]
+    ttl: 3600
   },
   services: [
     # service type: _http._tcp.local - used in match

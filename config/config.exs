@@ -7,15 +7,7 @@ config :mdns_lite,
   # to a DNS query.
   mdns_config: %{
     host: :hostname,
-    ttl: 3600,
-    query_types: [
-      # IP address lookup,
-      :a,
-      # Reverse IP lookup
-      :ptr,
-      # Services - see below
-      :srv
-    ]
+    ttl: 3600
   },
   services: [
     # service type: _http._tcp - used in match

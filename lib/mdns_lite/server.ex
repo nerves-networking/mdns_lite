@@ -30,7 +30,6 @@ defmodule MdnsLite.Server do
   defmodule State do
     @type t() :: struct()
     defstruct ifname: nil,
-              query_types: [],
               services: [],
               # Note: Erlang string
               dot_local_name: '',
@@ -76,8 +75,6 @@ defmodule MdnsLite.Server do
 
       {:ok,
        %State{
-         # A list of query types that we'll respond to.
-         query_types: mdns_config.query_types,
          # A list of services with types that we'll match against
          services: mdns_services,
          ifname: ifname,
@@ -157,7 +154,6 @@ defmodule MdnsLite.Server do
     # There can be multiple questions in a query. And it must be one of the
     # query types specified in the configuration
     dns_record.qdlist
-    |> Enum.filter(fn q -> q.type in state.query_types end)
     |> Enum.each(fn %DNS.Query{} = query ->
       responses = Query.handle(query, state)
       send_response(responses, dns_record, dest, state)

@@ -32,8 +32,7 @@ defmodule MdnsLite do
 
   @default_config %{
     host: :hostname,
-    ttl: 3600,
-    query_types: [:a, :ptr, :srv]
+    ttl: 3600
   }
 
   defmodule State do

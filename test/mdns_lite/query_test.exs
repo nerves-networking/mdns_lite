@@ -10,7 +10,6 @@ defmodule MdnsLite.QueryTest do
       dot_local_name: 'nerves-21a5.local',
       ifname: "eth0",
       ip: {192, 168, 9, 57},
-      query_types: [:a, :ptr, :srv],
       services: [
         %{
           name: "Web Server",
