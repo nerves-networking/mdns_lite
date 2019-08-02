@@ -1,4 +1,4 @@
-defmodule MdnsLite.Server do
+defmodule MdnsLite.Responder do
   @moduledoc """
   A GenServer that is responsible for responding to a limited number of mDNS
   requests (queries). A UDP port is opened on the mDNS reserved IP/port. Any

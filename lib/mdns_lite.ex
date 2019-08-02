@@ -92,7 +92,7 @@ defmodule MdnsLite do
   @impl true
   def handle_call({:start_mdns_server, ifname}, _from, state) do
     with {:ok, server_pid} <-
-           MdnsLite.Server.start({ifname, state.mdns_config, state.mdns_services}) do
+           MdnsLite.Responder.start({ifname, state.mdns_config, state.mdns_services}) do
       _ = Logger.debug("Start mdns server: server_pid #{inspect(server_pid)}")
       new_ifname_server_map = Map.put(state.ifname_server_map, ifname, server_pid)
       {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}
@@ -111,7 +111,7 @@ defmodule MdnsLite do
           state.ifname_server_map
 
         pid ->
-          MdnsLite.Server.stop_server(pid)
+          MdnsLite.Responder.stop_server(pid)
           Map.delete(state.ifname_server_map, ifname)
       end
 
