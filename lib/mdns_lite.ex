@@ -30,29 +30,20 @@ defmodule MdnsLite do
   require Logger
   use GenServer
 
-  @default_config %{
-    host: :hostname,
-    ttl: 3600
-  }
-
   defmodule State do
     @moduledoc """
       A map of interface names to mdns GenServers (MdnsLite.Server).
-      And some configuration values that will be used when constructing a DNS
-      response packet.
     """
-    defstruct ifname_server_map: %{}, mdns_config: %{}, mdns_services: %{}
+    # TODO: ADD IP ADDRESS AND DOT LOCAL NAME TO SERVER MAP ???
+    defstruct ifname_server_map: %{}
   end
 
   @doc """
   Pro forma starting.
   """
   @spec start_link(any()) :: GenServer.on_start()
-  def start_link(_opts) do
-    opts = [
-      Application.get_env(:mdns_lite, :mdns_config, @default_config),
-      Application.get_env(:mdns_lite, :services, [])
-    ]
+  def start_link(opts) do
+    MdnsLite.Configuration.start_link([])
 
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -75,14 +66,14 @@ defmodule MdnsLite do
 
   @doc false
   @impl true
-  def init([mdns_config, mdns_services]) do
-    {:ok, %State{ifname_server_map: %{}, mdns_config: mdns_config, mdns_services: mdns_services}}
+  def init(_args) do
+    {:ok, %State{ifname_server_map: %{}}}
   end
 
   @impl true
   def handle_call({:start_mdns_server, ifname}, _from, state) do
     with {:ok, server_pid} <-
-           MdnsLite.Responder.start({ifname, state.mdns_config, state.mdns_services}) do
+           MdnsLite.Responder.start(ifname) do
       _ = Logger.debug("Start mdns server: server_pid #{inspect(server_pid)}")
       new_ifname_server_map = Map.put(state.ifname_server_map, ifname, server_pid)
       {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}

@@ -21,7 +21,7 @@ defmodule MdnsLite.Responder do
 
   use GenServer
   require Logger
-  alias MdnsLite.{Query, Utilities}
+  alias MdnsLite.{Configuration, Query, Utilities}
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
@@ -41,9 +41,9 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Public interface
   ##############################################################################
-  @spec start({String.t(), map(), [map()]}) :: GenServer.on_start()
-  def start({_ifname, _mdns_config, _mdns_services} = opts) do
-    GenServer.start(__MODULE__, opts)
+  @spec start(String.t()) :: GenServer.on_start()
+  def start(ifname) do
+    GenServer.start(__MODULE__, ifname)
   end
 
   @doc """
@@ -59,9 +59,12 @@ defmodule MdnsLite.Responder do
   #   GenServer callbacks
   ##############################################################################
   @impl true
-  def init({ifname, mdns_config, mdns_services}) do
+  def init(ifname) do
     # We need the IP address for this network interface
     with {:ok, ip_tuple} <- ifname_to_ip(ifname) do
+      # Retrieve some configuration values
+      mdns_config = Configuration.get_mdns_config()
+      mdns_services = Configuration.get_mdns_services()
       discovery_name = resolve_mdns_name(mdns_config.host)
       dot_local_name = discovery_name <> ".local"
       # Join the mDNS multicast group
