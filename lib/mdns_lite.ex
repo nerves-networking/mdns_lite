@@ -42,10 +42,9 @@ defmodule MdnsLite do
   Pro forma starting.
   """
   @spec start_link(any()) :: GenServer.on_start()
-  def start_link(opts) do
-    MdnsLite.Configuration.start_link([])
-
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(args) do
+    _ = MdnsLite.Configuration.start_link([])
+    GenServer.start_link(__MODULE__, args, name: __MODULE__)
   end
 
   @doc """
