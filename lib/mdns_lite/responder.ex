@@ -55,12 +55,6 @@ defmodule MdnsLite.Responder do
     GenServer.stop(pid)
   end
 
-  # TODO REMOVE ME
-  @spec get_state(pid()) :: State.t()
-  def get_state(pid) do
-    GenServer.call(pid, :get_state)
-  end
-
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
@@ -88,11 +82,6 @@ defmodule MdnsLite.Responder do
         _ = Logger.error("reason: #{inspect(reason)}")
         {:stop, reason}
     end
-  end
-
-  @impl true
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
   end
 
   @impl true

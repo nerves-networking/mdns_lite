@@ -73,16 +73,6 @@ defmodule MdnsLite do
     GenServer.call(__MODULE__, {:stop_mdns_server, ifname})
   end
 
-  # TODO REMOVE ME
-  def get_state() do
-    GenServer.call(__MODULE__, :get_state)
-  end
-
-  # TODO REMOVE
-  def get_pid(ifname) do
-    GenServer.call(__MODULE__, {:get_pid, ifname})
-  end
-
   @doc false
   @impl true
   def init([mdns_config, mdns_services]) do
@@ -116,18 +106,6 @@ defmodule MdnsLite do
       end
 
     {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}
-  end
-
-  # TODO REMOVE ME
-  @impl true
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
-
-  # TODO REMOVE ME
-  @impl true
-  def handle_call({:get_pid, ifname}, _from, state) do
-    {:reply, Map.get(state.ifname_server_map, ifname), state}
   end
 
   ##############################################################################
