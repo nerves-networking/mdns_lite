@@ -14,7 +14,7 @@ defmodule MdnsLite.Query do
   # An "A" type query. Address mapping record. Return the IP address if
   # this host name matches the query domain.
   def handle(%DNS.Query{class: :in, type: :a, domain: domain} = _query, state) do
-    _ = Logger.debug("DNS A RECORD for ifname #{inspect(state.ifname)}")
+    _ = Logger.debug("DNS A RECORD for interface at #{inspect(state.ip)}")
 
     case state.dot_local_name == domain do
       true ->
@@ -39,7 +39,7 @@ defmodule MdnsLite.Query do
         %DNS.Query{class: :in, type: :ptr, domain: domain} = _query,
         state
       ) do
-    _ = Logger.debug("DNS PTR RECORD for ifname #{inspect(state.ifname)}")
+    _ = Logger.debug("DNS PTR RECORD for interface at #{inspect(state.ip)}")
     # Convert our IP address so as to be able to match the arpa address
     # in the query. ARPA address for IP 192.168.0.112 is 112.0.168.192,in-addr.arpa
     arpa_address =
@@ -70,7 +70,7 @@ defmodule MdnsLite.Query do
         %DNS.Query{class: :in, type: :srv, domain: domain} = _query,
         state
       ) do
-    _ = Logger.debug("DNS SRV RECORD for ifname #{inspect(state.ifname)}")
+    _ = Logger.debug("DNS SRV RECORD for interface at #{inspect(state.ip)}")
 
     state.services
     |> Enum.filter(fn service ->
@@ -94,7 +94,7 @@ defmodule MdnsLite.Query do
 
   # Ignore any other type of query
   def handle(%DNS.Query{type: type} = _query, state) do
-    _ = Logger.debug("IGNORING #{inspect(type)} DNS RECORD for ifname #{inspect(state.ifname)}")
+    _ = Logger.debug("IGNORING #{inspect(type)} DNS RECORD for interface at #{inspect(state.ip)}")
 
     []
   end

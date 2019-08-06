@@ -1,6 +1,8 @@
 defmodule MdnsLite.InetMonitor do
   use GenServer
 
+  alias MdnsLite.{Responder, ResponderSupervisor}
+
   @scan_interval 10000
 
   @moduledoc """
@@ -10,7 +12,7 @@ defmodule MdnsLite.InetMonitor do
   defmodule State do
     @moduledoc false
 
-    defstruct [:ifnames, :ipv4_only, :ip_list]
+    defstruct [:excluded_ifnames, :ipv4_only, :ip_list]
   end
 
   @doc """
@@ -18,22 +20,22 @@ defmodule MdnsLite.InetMonitor do
 
   Parameters
 
-    * `:ifnames` - the list of interface names to watch
+    * `:excluded_ifnames` - the list of interface names not to watch
     * `:ipv4_only` - limit notifications to IPv4 addresses
   """
-  @spec start_link(ifnames: [String.t()], ipv4_only: boolean()) :: GenServer.on_start()
+  @spec start_link(excluded_ifnames: [String.t()], ipv4_only: boolean()) :: GenServer.on_start()
   def start_link(init_args) do
-    GenServer.start_link(__MODULE__, init_args)
+    GenServer.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
   @impl true
   def init(args) do
-    ifnames = Keyword.get(args, :ifnames, [])
-    ifnames_cl = Enum.map(ifnames, &to_charlist/1)
+    excluded_ifnames = Keyword.get(args, :excluded_ifnames, [])
+    excluded_ifnames_cl = Enum.map(excluded_ifnames, &to_charlist/1)
 
     ipv4_only = Keyword.get(args, :ipv4_only, true)
 
-    state = %State{ifnames: ifnames_cl, ip_list: [], ipv4_only: ipv4_only}
+    state = %State{excluded_ifnames: excluded_ifnames_cl, ip_list: [], ipv4_only: ipv4_only}
     {:ok, state, 1}
   end
 
@@ -47,20 +49,23 @@ defmodule MdnsLite.InetMonitor do
   defp update(state) do
     new_ip_list =
       get_all_ip_addrs()
-      |> filter_by_ifname(state.ifnames)
+      |> filter_excluded_ifnames(state.excluded_ifnames)
       |> filter_by_ipv4(state.ipv4_only)
 
     removed_ips = state.ip_list -- new_ip_list
     added_ips = new_ip_list -- state.ip_list
 
     IO.puts("Removed #{inspect(removed_ips)}")
+    Enum.each(removed_ips, fn {_ifname, addr} -> Responder.stop_server(addr) end)
+
     IO.puts("Added #{inspect(added_ips)}")
+    Enum.each(added_ips, fn {_ifname, addr} -> ResponderSupervisor.start_child(addr) end)
 
     %State{state | ip_list: new_ip_list}
   end
 
-  defp filter_by_ifname(ip_list, ifnames) do
-    Enum.filter(ip_list, fn {ifname, _addr} -> ifname in ifnames end)
+  defp filter_excluded_ifnames(ip_list, ifnames) do
+    Enum.filter(ip_list, fn {ifname, _addr} -> ifname not in ifnames end)
   end
 
   defp filter_by_ipv4(ip_list, false) do

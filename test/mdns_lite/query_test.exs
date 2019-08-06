@@ -8,7 +8,6 @@ defmodule MdnsLite.QueryTest do
   defp test_state() do
     %MdnsLite.Responder.State{
       dot_local_name: 'nerves-21a5.local',
-      ifname: "eth0",
       ip: {192, 168, 9, 57},
       services: [
         %{

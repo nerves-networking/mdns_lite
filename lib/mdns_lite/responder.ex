@@ -21,7 +21,7 @@ defmodule MdnsLite.Responder do
 
   use GenServer
   require Logger
-  alias MdnsLite.{Configuration, Query, Utilities}
+  alias MdnsLite.{Configuration, Query}
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
@@ -29,8 +29,7 @@ defmodule MdnsLite.Responder do
 
   defmodule State do
     @type t() :: struct()
-    defstruct ifname: nil,
-              services: [],
+    defstruct services: [],
               # Note: Erlang string
               dot_local_name: '',
               ttl: 3600,
@@ -41,53 +40,50 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Public interface
   ##############################################################################
-  @spec start_link(String.t()) :: GenServer.on_start()
-  def start_link(ifname) do
-    GenServer.start_link(__MODULE__, ifname, name: via_name(ifname))
+  @spec start_link(:inet.ip_address()) :: GenServer.on_start()
+  def start_link(address) do
+    GenServer.start_link(__MODULE__, address, name: via_name(address))
   end
 
-  defp via_name(ifname) do
-    {:via, Registry, {MdnsLite.ResponderRegistry, ifname}}
+  defp via_name(address) do
+    {:via, Registry, {MdnsLite.ResponderRegistry, address}}
   end
 
   @doc """
   Leave the mDNS group - close the UDP port. Stop this GenServer.
   """
-  @spec stop_server(String.t()) :: :ok
-  def stop_server(ifname) do
-    GenServer.stop(via_name(ifname))
+  @spec stop_server(:inet.ip_address()) :: :ok
+  def stop_server(address) do
+    GenServer.stop(via_name(address))
   end
 
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
   @impl true
-  def init(ifname) do
-    # We need the IP address for this network interface
-    with {:ok, ip_tuple} <- ifname_to_ip(ifname) do
-      # Retrieve some configuration values
-      mdns_config = Configuration.get_mdns_config()
-      mdns_services = Configuration.get_mdns_services()
-      discovery_name = resolve_mdns_name(mdns_config.host)
-      dot_local_name = discovery_name <> ".local"
-      # Join the mDNS multicast group
-      {:ok, udp} = :gen_udp.open(@mdns_port, udp_options(ip_tuple))
+  def init(address) do
+    # Retrieve some configuration values
+    mdns_config = Configuration.get_mdns_config()
+    mdns_services = Configuration.get_mdns_services()
+    discovery_name = resolve_mdns_name(mdns_config.host)
+    dot_local_name = discovery_name <> ".local"
+    # Join the mDNS multicast group
 
-      {:ok,
-       %State{
-         # A list of services with types that we'll match against
-         services: mdns_services,
-         ifname: ifname,
-         ip: ip_tuple,
-         ttl: mdns_config.ttl,
-         udp: udp,
-         dot_local_name: to_charlist(dot_local_name)
-       }}
-    else
-      {:error, reason} ->
-        _ = Logger.error("reason: #{inspect(reason)}")
-        {:stop, reason}
-    end
+    {:ok,
+     %State{
+       # A list of services with types that we'll match against
+       services: mdns_services,
+       ip: address,
+       ttl: mdns_config.ttl,
+       dot_local_name: to_charlist(dot_local_name)
+     }, {:continue, :initialization}}
+  end
+
+  @impl true
+  def handle_continue(:initialization, state) do
+    {:ok, udp} = :gen_udp.open(@mdns_port, udp_options(state.ip))
+
+    {:noreply, %{state | udp: udp}}
   end
 
   @doc """
@@ -166,22 +162,6 @@ defmodule MdnsLite.Responder do
     :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
   end
 
-  defp ifname_to_ip(ifname) do
-    with {:ok, ifaddrs} <- :inet.getifaddrs(),
-         addr when addr != nil <- find_ipv4_addr(ifaddrs, ifname) do
-      {:ok, addr}
-    else
-      _ ->
-        {:error, :no_ip_address}
-    end
-  end
-
-  defp find_ipv4_addr(ifaddrs, ifname) do
-    ifaddrs
-    |> Utilities.ifaddrs_to_ip_list(ifname)
-    |> Enum.find(&(Utilities.ip_family(&1) == :inet))
-  end
-
   defp resolve_mdns_name(nil), do: nil
 
   defp resolve_mdns_name(:hostname) do
@@ -195,7 +175,6 @@ defmodule MdnsLite.Responder do
     [
       :binary,
       active: true,
-      # add_membership: {@mdns_ipv4, {0, 0, 0, 0}},
       add_membership: {@mdns_ipv4, ip},
       multicast_if: ip,
       multicast_loop: true,

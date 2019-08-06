@@ -14,9 +14,12 @@ defmodule MdnsLite.Application do
 
     @impl true
     def init(_init_arg) do
+      excluded_ifnames = Application.get_env(:mdns_lite, :excluded_ifnames, ["lo0", "lo"])
+
       children = [
         {Registry, keys: :unique, name: MdnsLite.ResponderRegistry},
-        {MdnsLite.ResponderSupervisor, []}
+        {MdnsLite.ResponderSupervisor, []},
+        {MdnsLite.InetMonitor, excluded_ifnames: excluded_ifnames}
       ]
 
       Supervisor.init(children, strategy: :one_for_all)

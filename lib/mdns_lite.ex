@@ -27,24 +27,4 @@ defmodule MdnsLite do
   The code borrows heavily from [mdns](https://hex.pm/packages/mdns) and
   [shortishly's mdns](https://github.com/shortishly/mdns) packages.
   """
-
-  alias MdnsLite.{Responder, ResponderSupervisor}
-
-  require Logger
-
-  @doc """
-  Start an mDNS server for a network interface
-  """
-  @spec start_mdns_server(ifname :: String.t()) :: DynamicSupervisor.on_start_child()
-  def start_mdns_server(ifname) do
-    ResponderSupervisor.start_child(ifname)
-  end
-
-  @doc """
-  Stop the mDNS server for a network interface
-  """
-  @spec stop_mdns_server(ifname :: String.t()) :: :ok
-  def stop_mdns_server(ifname) do
-    Responder.stop_server(ifname)
-  end
 end
