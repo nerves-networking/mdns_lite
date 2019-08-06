@@ -32,7 +32,7 @@ config :mdns_lite,
   # to a DNS query.
   mdns_config: %{
     host: :hostname,
-    ttl: 3600
+    ttl: 120
   },
   services: [
     # service type: _http._tcp.local - used in match

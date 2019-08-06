@@ -14,7 +14,7 @@ defmodule MdnsLite.Configuration do
               mdns_services: [],
               # Note: Erlang string
               dot_local_name: '',
-              ttl: 3600
+              ttl: 120
 
     @type t :: %__MODULE__{
             mdns_config: map(),
@@ -26,7 +26,7 @@ defmodule MdnsLite.Configuration do
 
   @default_config %{
     host: :hostname,
-    ttl: 3600
+    ttl: 120
   }
 
   @spec start_link(any()) :: GenServer.on_start()

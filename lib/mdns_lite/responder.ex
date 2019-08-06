@@ -32,7 +32,7 @@ defmodule MdnsLite.Responder do
     defstruct services: [],
               # Note: Erlang string
               dot_local_name: '',
-              ttl: 3600,
+              ttl: 120,
               ip: {0, 0, 0, 0},
               udp: nil
   end

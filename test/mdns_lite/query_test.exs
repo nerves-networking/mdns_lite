@@ -29,7 +29,7 @@ defmodule MdnsLite.QueryTest do
           weight: 0
         }
       ],
-      ttl: 3600,
+      ttl: 120,
       udp: nil
     }
   end
@@ -46,7 +46,7 @@ defmodule MdnsLite.QueryTest do
         domain: 'nerves-21a5.local',
         func: false,
         tm: :undefined,
-        ttl: 3600,
+        ttl: 120,
         type: :a
       }
     ]
