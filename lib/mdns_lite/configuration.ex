@@ -1,20 +1,33 @@
 defmodule MdnsLite.Configuration do
-  @moduledoc false
-  @doc """
-  A singleton GenServer. It is responsible for maintaining the various
-  configuration values and services that can be specified at runtime and that
-  are used to recognize and respond to mDNS requests.
-  """
   use GenServer
 
+  @moduledoc false
+
+  # A singleton GenServer. It is responsible for maintaining the various
+  # configuration values and services that can be specified at runtime and that
+  # are used to recognize and respond to mDNS requests.
+
   defmodule State do
-    @type t() :: struct()
+    @moduledoc false
+
     defstruct mdns_config: %{},
               mdns_services: [],
               # Note: Erlang string
               dot_local_name: '',
               ttl: 3600
+
+    @type t :: %__MODULE__{
+            mdns_config: map(),
+            mdns_services: [map()],
+            dot_local_name: charlist(),
+            ttl: pos_integer()
+          }
   end
+
+  @default_config %{
+    host: :hostname,
+    ttl: 3600
+  }
 
   @spec start_link(any()) :: GenServer.on_start()
   def start_link(_opts) do
@@ -26,7 +39,7 @@ defmodule MdnsLite.Configuration do
     GenServer.call(__MODULE__, :get_mdns_config)
   end
 
-  @spec get_mdns_services() :: list()
+  @spec get_mdns_services() :: [map()]
   def get_mdns_services() do
     GenServer.call(__MODULE__, :get_mdns_services)
   end
@@ -34,10 +47,6 @@ defmodule MdnsLite.Configuration do
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
-  @default_config %{
-    host: :hostname,
-    ttl: 3600
-  }
   @impl true
   def init(_opts) do
     state = %State{
