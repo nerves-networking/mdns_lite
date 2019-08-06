@@ -43,7 +43,6 @@ defmodule MdnsLite do
   """
   @spec start_link(any()) :: GenServer.on_start()
   def start_link(args) do
-    _ = MdnsLite.Configuration.start_link([])
     GenServer.start_link(__MODULE__, args, name: __MODULE__)
   end
 
