@@ -178,6 +178,8 @@ defmodule MdnsLite.Responder do
       add_membership: {@mdns_ipv4, ip},
       multicast_if: ip,
       multicast_loop: true,
+
+      # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
       multicast_ttl: 255,
       reuseaddr: true
     ]
