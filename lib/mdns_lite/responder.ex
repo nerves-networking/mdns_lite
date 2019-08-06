@@ -41,18 +41,21 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Public interface
   ##############################################################################
-  @spec start(String.t()) :: GenServer.on_start()
-  def start(ifname) do
-    GenServer.start(__MODULE__, ifname)
+  @spec start_link(String.t()) :: GenServer.on_start()
+  def start_link(ifname) do
+    GenServer.start_link(__MODULE__, ifname, name: via_name(ifname))
+  end
+
+  defp via_name(ifname) do
+    {:via, Registry, {MdnsLite.ResponderRegistry, ifname}}
   end
 
   @doc """
   Leave the mDNS group - close the UDP port. Stop this GenServer.
   """
-  @spec stop_server(pid()) :: :ok
-  def stop_server(pid) do
-    GenServer.call(pid, :leave_mdns_group)
-    GenServer.stop(pid)
+  @spec stop_server(String.t()) :: :ok
+  def stop_server(ifname) do
+    GenServer.stop(via_name(ifname))
   end
 
   ##############################################################################
@@ -85,18 +88,6 @@ defmodule MdnsLite.Responder do
         _ = Logger.error("reason: #{inspect(reason)}")
         {:stop, reason}
     end
-  end
-
-  @impl true
-  @doc """
-  Leave the mDNS UDP group.
-  """
-  def handle_call(:leave_mdns_group, _from, state) do
-    if state.udp do
-      :gen_udp.close(state.udp)
-    end
-
-    {:reply, :ok, %State{state | udp: nil}}
   end
 
   @doc """

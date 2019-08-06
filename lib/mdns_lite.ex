@@ -27,77 +27,24 @@ defmodule MdnsLite do
   The code borrows heavily from [mdns](https://hex.pm/packages/mdns) and
   [shortishly's mdns](https://github.com/shortishly/mdns) packages.
   """
+
+  alias MdnsLite.{Responder, ResponderSupervisor}
+
   require Logger
-  use GenServer
-
-  defmodule State do
-    @moduledoc """
-      A map of interface names to mdns GenServers (MdnsLite.Server).
-    """
-    # TODO: ADD IP ADDRESS AND DOT LOCAL NAME TO SERVER MAP ???
-    defstruct ifname_server_map: %{}
-  end
-
-  @doc """
-  Pro forma starting.
-  """
-  @spec start_link(any()) :: GenServer.on_start()
-  def start_link(args) do
-    GenServer.start_link(__MODULE__, args, name: __MODULE__)
-  end
 
   @doc """
   Start an mDNS server for a network interface
   """
-  @spec start_mdns_server(ifname :: String.t()) :: term()
+  @spec start_mdns_server(ifname :: String.t()) :: DynamicSupervisor.on_start_child()
   def start_mdns_server(ifname) do
-    GenServer.call(__MODULE__, {:start_mdns_server, ifname})
+    ResponderSupervisor.start_child(ifname)
   end
 
   @doc """
   Stop the mDNS server for a network interface
   """
-  @spec stop_mdns_server(ifname :: String.t()) :: term()
+  @spec stop_mdns_server(ifname :: String.t()) :: :ok
   def stop_mdns_server(ifname) do
-    GenServer.call(__MODULE__, {:stop_mdns_server, ifname})
+    Responder.stop_server(ifname)
   end
-
-  @doc false
-  @impl true
-  def init(_args) do
-    {:ok, %State{ifname_server_map: %{}}}
-  end
-
-  @impl true
-  def handle_call({:start_mdns_server, ifname}, _from, state) do
-    with {:ok, server_pid} <-
-           MdnsLite.Responder.start(ifname) do
-      _ = Logger.debug("Start mdns server: server_pid #{inspect(server_pid)}")
-      new_ifname_server_map = Map.put(state.ifname_server_map, ifname, server_pid)
-      {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}
-    else
-      {:error, reason} ->
-        _ = Logger.error("Starting mdns server failed: #{inspect(reason)}")
-        {:reply, :ok, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:stop_mdns_server, ifname}, _from, state) do
-    new_ifname_server_map =
-      case Map.get(state.ifname_server_map, ifname, :not_here) do
-        :not_here ->
-          state.ifname_server_map
-
-        pid ->
-          MdnsLite.Responder.stop_server(pid)
-          Map.delete(state.ifname_server_map, ifname)
-      end
-
-    {:reply, :ok, %State{state | ifname_server_map: new_ifname_server_map}}
-  end
-
-  ##############################################################################
-  #   Private functions
-  ##############################################################################
 end
