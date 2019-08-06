@@ -32,6 +32,12 @@ config :mdns_lite,
     }
   ]
 
+if Mix.env() == :test do
+  # Disable the IP address monitor for mdns_lite unit tests (this is a no-op)
+  config :mdns_lite,
+    ip_address_monitor: {Agent, fn -> nil end}
+end
+
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
 # file won't be loaded nor affect the parent project. For this reason,
