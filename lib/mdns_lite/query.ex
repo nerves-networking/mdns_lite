@@ -1,13 +1,15 @@
 defmodule MdnsLite.Query do
   require Logger
 
+  alias MdnsLite.Configuration
+
   @moduledoc false
 
   @doc """
   Handle a DNS Query
 
-  This function returns a list of DNS Resources that should be sent back
-  to the querier.
+  This function returns a list of DNS Resource Records that should be sent back
+  to the querier. The list is dependent on the query type, e.g., PTR, SRV, etc.
   """
   @spec handle(DNS.Query.t(), map()) :: [DNS.Resource.t()]
 
@@ -34,7 +36,8 @@ defmodule MdnsLite.Query do
   end
 
   # A "PTR" type query. Reverse address lookup. Return the hostname of an
-  # IP address
+  # IP address and a "special" case that recognizes a special domain
+  # "_services._dns-sd._udp.local" - DNS-SD
   def handle(
         %DNS.Query{class: :in, type: :ptr, domain: domain} = _query,
         state
@@ -48,18 +51,35 @@ defmodule MdnsLite.Query do
       |> Enum.reverse()
       |> Enum.join(".")
 
-    # Only need to match the beginning characters
-    if String.starts_with?(to_string(domain), arpa_address) do
-      resource_record = %DNS.Resource{
-        class: :in,
-        type: :ptr,
-        ttl: state.ttl,
-        data: state.dot_local_name
-      }
+    cond do
+      # Only need to match the beginning characters
+      String.starts_with?(to_string(domain), arpa_address) ->
+        resource_record = %DNS.Resource{
+          class: :in,
+          type: :ptr,
+          ttl: state.ttl,
+          data: state.dot_local_name
+        }
 
-      [resource_record]
-    else
-      []
+        [resource_record]
+
+      domain == '_services._dns-sd._udp.local' ->
+        # services._dns-sd._udp.local. is a special name for
+        # "Service Type Enumeration" which is supposed to find all service
+        # types on the network. Let them know about ours.
+        Configuration.get_mdns_services()
+        |> Enum.map(fn service ->
+          %DNS.Resource{
+            domain: domain,
+            class: :in,
+            type: :ptr,
+            ttl: state.ttl,
+            data: to_charlist(service.type <> ".local")
+          }
+        end)
+
+      true ->
+        []
     end
   end
 
