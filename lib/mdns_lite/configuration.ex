@@ -29,6 +29,11 @@ defmodule MdnsLite.Configuration do
     ttl: 120
   }
 
+  @default_service %{
+    weight: 0,
+    priority: 0
+  }
+
   @spec start_link(any()) :: GenServer.on_start()
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -49,9 +54,18 @@ defmodule MdnsLite.Configuration do
   ##############################################################################
   @impl true
   def init(_opts) do
+    # Merge a service's default values and construct type string that is used in
+    # Query comparisons
+    services =
+      Application.get_env(:mdns_lite, :services, [])
+      |> Enum.map(fn service ->
+        Map.merge(@default_service, service)
+        |> Map.put(:type, "_#{service.protocol}._#{service.transport}")
+      end)
+
     state = %State{
       mdns_config: Application.get_env(:mdns_lite, :mdns_config, @default_config),
-      mdns_services: Application.get_env(:mdns_lite, :services, [])
+      mdns_services: services
     }
 
     {:ok, state}

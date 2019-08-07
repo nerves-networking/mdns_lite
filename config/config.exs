@@ -9,26 +9,20 @@ config :mdns_lite,
     host: :hostname,
     ttl: 120
   },
+  # A list of this host's services. NB: There are two other mDNS values: weight
+  # and priority that both default to zero unless included in the service below.
   services: [
-    # service type: _http._tcp - used in match
     %{
-      type: "_http._tcp",
       name: "Web Server",
       protocol: "http",
       transport: "tcp",
-      port: 80,
-      weight: 0,
-      priority: 0
+      port: 80
     },
-    # TODO: service_type: _ssh._tcp
     %{
-      type: "_ssh._tcp",
       name: "Secure Socket",
       protocol: "ssh",
       transport: "tcp",
-      port: 22,
-      weight: 0,
-      priority: 0
+      port: 22
     }
   ]
 
