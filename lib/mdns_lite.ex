@@ -1,30 +1,26 @@
 defmodule MdnsLite do
   @moduledoc """
   A simple implementation of an mDNS (multicast DNS (Domain Name Server)) server.
-  Rather than accessing a DNS server directly, mDNS
-  is based on multicast UDP. Hosts/services listen on a well-known ip address/port. If
-  a request arrives that the service can answer, it constructs the appropriate DNS response.
+  mDNS is based on multicast UDP rather than TCP. It's primary use is for DNS
+  support for the `local`. `MdnsLite` listen on a well-known ip address/port. If
+  a request arrives that is recognized, it constructs the appropriate DNS response.
 
-  This module runs as a GenServer responsible for maintaining a set of mDNS servers. The intent
-  is to have one server per network interface, e.g. "eth0", "lo", etc. Upon
-  receiving an mDNS request, these servers respond with mDNS (DNS) records with
-  host information for the host this module is running on. Also there will be
-  SRV (service) DNS records about network services that are available from this device.
-  SSH and FTP are examples of such services.
 
-  Note: the mDNS servers can be run directly. This module serves as a convenience
-  for apps that are dealing with multiple network interfaces.
+  MdnsLite responds to a limited number of DNS requests; they are all handled
+  in the `MdnsLite.Query` module. Of particular note is the SRV request. The
+  response will be a list of known services and how to contact them (domain and port)
+  as described in the configuration file.
 
-  This module is initialized with host information and service descriptions.
-  The descriptions will be used by the mDNS servers as a response to a matching service query.
+  MdnsLite uses a "network monitor", a module that listens for changes in a network.
+  Its purpose is to ensure that the network interfaces are up to date. The current
+  version of MdnsLite has an `MdnsLite.InetMonitor` which periodically checks via `inet:getifaddrs()`
+  for changes in the network. A change could be the re-assignment of IP addresses.
 
-  Please refer to the README for further information.
+  This module is initialized, at runtime, with host information and service descriptions found
+  in the `config.exs` file.  The descriptions will be used by the mDNS servers to
+  construct a response to query.
 
-  This package can be tested with the linux utility dig:
+  Please refer to the `README.md` for further information.
 
-  ``` dig @224.0.0.251 -p 5353 -t A petes-pt.local```
-
-  The code borrows heavily from [mdns](https://hex.pm/packages/mdns) and
-  [shortishly's mdns](https://github.com/shortishly/mdns) packages.
   """
 end

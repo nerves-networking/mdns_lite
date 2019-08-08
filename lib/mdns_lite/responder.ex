@@ -1,23 +1,23 @@
 defmodule MdnsLite.Responder do
-  @moduledoc """
-  A GenServer that is responsible for responding to a limited number of mDNS
-  requests (queries). A UDP port is opened on the mDNS reserved IP/port. Any
-  UDP packets will be caught by handle_info() but only a subset of them are
-  of interest.
+  @moduledoc false
 
-  For an 'A' type query - address mapping: If the query domain equals this
-  server's hostname, respond with an 'A' type resource containing an IP address.
-
-  For a 'PTR' type query - reverse UOP lookup: Given an IP address and it
-  matches the server's IP address, respond with the hostname.
-
-  'SRV' service queries.
-
-  Any other query types are ignored.
-
-  There is one of these servers for every network interface managed by
-  MdnsLite.
-  """
+  # A GenServer that is responsible for responding to a limited number of mDNS
+  # requests (queries). A UDP port is opened on the mDNS reserved IP/port. Any
+  # UDP packets will be caught by handle_info() but only a subset of them are
+  # of interest.
+  #
+  # For an 'A' type query - address mapping: If the query domain equals this
+  # server's hostname, respond with an 'A' type resource containing an IP address.
+  #
+  # For a 'PTR' type query - reverse UOP lookup: Given an IP address and it
+  # matches the server's IP address, respond with the hostname.
+  #
+  # 'SRV' service queries.
+  #
+  # Any other query types are ignored.
+  #
+  # There is one of these servers for every network interface managed by
+  # MdnsLite.
 
   use GenServer
   require Logger
@@ -28,6 +28,7 @@ defmodule MdnsLite.Responder do
   @mdns_port 5353
 
   defmodule State do
+    @moduledoc false
     @type t() :: struct()
     defstruct services: [],
               # Note: Erlang string

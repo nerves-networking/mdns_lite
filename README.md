@@ -5,15 +5,26 @@
 MdnsLite is a simple, limited, no frills implementation of an
 [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (multicast Domain Name System)
 server. It operates like a DNS server, the difference being that it uses multicast
-instead of unicast and is meant to be the DNS server for the _.local_ domain.
-This module is a GenServer that can  manages several GenServers - one for each
-network interface.
+instead of unicast and is meant to be the DNS server for the _.local_ domain. MdnsLite
+also provides for the advertising (discovery) of services offered by the host system.
+Examples of services are an HTTP or an SSH server. Read about configuring
+services in the Configuration section below.
+
+MdnsLite employs a network interface monitor that can dynamically adjust to
+network changes, e.g., assignment of a new IP address to a host. You can add your own Network Monitor;
+a future release will allow the use of another implementation.
 
 It recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
 * A - Find the IPv4 address of a hostname.
-* PTR - Given an IPv4 address, find its hostname.
+* PTR - Given an IPv4 address, find its hostname. If, however, it receives a request domain of
+"_services._dns-sd._udp.local", MdnsLite will respond with a list of
+every service available (and specified in the configuration) on the host.
 * SRV - Service Locator
+
+If you want to know the details of the various DNS/mDNS record types and their fields,
+a good source is
+[zytrax.com/books/dns](http://www.zytrax.com/books/dns).
 
 There are at least a couple of other Elixir/Erlang implementations of mDNS servers:
 
@@ -24,8 +35,8 @@ These implementations provided valuable guidance in the building of MdnsLite.
 
 ## Configuration
 
-Note that listing the service doesn't guarantee the existence of that service.
-
+A typical configuration in the `config.exs` file looks
+like:
 ```elixir
 config :mdns_lite,
   # Use these values to construct the DNS resource record responses
@@ -37,39 +48,35 @@ config :mdns_lite,
   services: [
     # service type: _http._tcp.local - used in match
     %{
-      type: "_http._tcp",
       name: "Web Server",
       protocol: "http",
       transport: "tcp",
       port: 80,
-      weight: 0,
-      priority: 0
     },
     # service_type: _ssh._tcp.local - used in match
     %{
-      type: "_ssh._tcp",
       name: "Secure Socket",
       protocol: "ssh",
       transport: "tcp",
       port: 22,
-      weight: 0,
-      priority: 0
     }
   ]
 ```
 
 The `mdns_config` section is where you specify values that will be used in the
-construction of mDNS responses. `host` can be `:hostname` in which case the value will be
+construction of mDNS (DNS) responses. `host` can be `:hostname` in which case the value will be
 replaced with the value of `:inet.gethostname()`, otherwise you can provide a
-string value.
+string value. `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
+DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
 
-The `services` section lists details of the services that a host can supply,
-such as providing an HTTP server.
+The `services` section lists the services that the host offers,
+such as providing an HTTP server. You must supply the `protocol`, `transport` and
+`port` values for each service.
 
-A detailed
-description of the various DNS/mDNS record types and their fields can be found
-at [zytrax.com/books/dns](http://www.zytrax.com/books/dns).
-
+MdnsLite uses a "network monitor", a module that listens for changes in a network.
+Its purpose is to ensure that the network interfaces are up to date. The current
+version of MdnsLite has an `InetMonitor` which periodically checks via `inet:getifaddrs()`
+for changes in the network. A change could be the re-assignment of IP addresses.
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
@@ -85,25 +92,22 @@ end
 
 ## Usage
 
-`MdnsLite` is started as a linked process. Subsequently, it is used to start an mDNS
-server for a given network interface. It is these servers that support mDNS queries coming via
-that network interface. Each server is started by
-executing `MdnsLite.start_mdns_server("eth0")`, for example. To stop responding to
-mDNS queries for a particular network, execute `MdnsLite.stop_mdns_server("eth0")`.
-
-If desired, the MdnsLite module can be bypassed and the mDNS servers started
-directly. It is then the user's responsibility for maintaining pointers to
-the server(s). To find out what network interfaces are available, execute `:inet.getiflist`.
+`MdnsLite` is an Elixir/Erlang application, hence it will start up automatically when
+its enclosing application starts.
 
 When MdnsLite is running, it can be tested using the linux `dig` utility:
 
 ```sh
 dig @224.0.0.251 -p 5353 -t A petes-pt.local => 192.168.0.102
 
-dig @224.0.0.251 -p 5353 -x 192.168.0.102 => petes-pt.local ``
+dig @224.0.0.251 -p 5353 -x 192.168.0.102 => petes-pt.local (reverse lookup)
 
 dig @224.0.0.251 -p 5353 -t SRV _http._tcp.local => Depends on the service(s) available
 ```
+Although `dig` is a lookup utility for DNS, it will send requests that MdnsLite
+can receive. Note,
+however, that you need to specify the ip address (`224.0.0.251`) and port(`5353`)
+when using `dig` to get mDNS responses.
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
