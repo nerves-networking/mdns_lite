@@ -54,6 +54,73 @@ defmodule MdnsLite.QueryTest do
     assert Query.handle(query, test_state()) == result
   end
 
+  test "responds to a PTR request" do
+    query = %DNS.Query{class: :in, domain: '57.9.168.192.in-addr.arpa', type: :ptr}
+
+    result = [
+      %DNS.Resource{
+        bm: [],
+        class: :in,
+        cnt: 0,
+        data: test_state().dot_local_name,
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :ptr
+      }
+    ]
+
+    assert Query.handle(query, test_state()) == result
+  end
+
+  test "responds to a PTR request with domain \'_services._dns-sd._udp.local\'" do
+    test_domain = '_services._dns-sd._udp.local'
+    query = %DNS.Query{class: :in, domain: test_domain, type: :ptr}
+
+    result =
+      test_state().services
+      |> Enum.map(fn service ->
+        %DNS.Resource{
+          domain: test_domain,
+          class: :in,
+          type: :ptr,
+          ttl: test_state().ttl,
+          data: to_charlist(service.type <> ".local")
+        }
+      end)
+
+    assert Query.handle(query, test_state()) == result
+  end
+
+  test "responds to an SRV request for a known service" do
+    known_service = "_http._tcp.local"
+    query = %DNS.Query{class: :in, domain: to_charlist(known_service), type: :srv}
+
+    result =
+      test_state().services
+      |> Enum.flat_map(fn service ->
+        local_service = service.type <> ".local"
+
+        if local_service == known_service do
+          target = test_state().dot_local_name ++ '.'
+          data = {service.priority, service.weight, service.port, target}
+
+          [
+            %DNS.Resource{
+              class: :in,
+              type: :srv,
+              ttl: test_state().ttl,
+              data: data
+            }
+          ]
+        else
+          []
+        end
+      end)
+
+    assert Query.handle(query, test_state()) == result
+  end
+
   test "ignores A request for someone else" do
     query = %DNS.Query{class: :in, domain: 'someone-else.local', type: :a}
 
