@@ -33,7 +33,7 @@ defmodule MdnsLite.MixProject do
       files: ~w(lib mix.exs README.md LICENSE*
                 CHANGELOG* ),
       licenses: ["Apache-2.0"],
-      links: "https://github.com/pcmarks/mdns_lite"
+      links: %{"GitHub" => "https://github.com/pcmarks/mdns_lite"}
     ]
   end
 
