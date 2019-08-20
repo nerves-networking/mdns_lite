@@ -56,10 +56,7 @@ defmodule MdnsLite.InetMonitor do
     removed_ips = state.ip_list -- new_ip_list
     added_ips = new_ip_list -- state.ip_list
 
-    _ = Logger.debug("inet_monitor - removed: #{inspect(removed_ips)}")
     Enum.each(removed_ips, fn {_ifname, addr} -> Responder.stop_server(addr) end)
-
-    _ = Logger.debug("inet_monitor - added: #{inspect(added_ips)}")
     Enum.each(added_ips, fn {_ifname, addr} -> ResponderSupervisor.start_child(addr) end)
 
     %State{state | ip_list: new_ip_list}
