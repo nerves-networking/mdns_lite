@@ -118,10 +118,9 @@ $ dig @224.0.0.251 -p 5353 -t SRV nerves-7fcb._ssh._tcp.local
 nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.
 nerves-7fcb.local.	120	IN	A	192.168.0.106
 ...
+```
 
-Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`.
-You can use the reserved ip address (`224.0.0.251`) and port(`5353`)
-when using `dig` to get mDNS responses. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port`5353`.  
+Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`. You can use the reserved ip address (`224.0.0.251`) and port(`5353`) when using `dig` to get mDNS responses. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port`5353`.  
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
