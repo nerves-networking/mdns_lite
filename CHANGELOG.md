@@ -9,3 +9,6 @@
 * Much better alignment with RFC 6763 - DNS Service-based discovery.
 * Affects handling of SRV and PTR queries.
 
+## v0.2.1
+
+* Update README to reflect changes in previous version.
