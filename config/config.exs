@@ -5,10 +5,10 @@ use Mix.Config
 config :mdns_lite,
   # Use these values to construct the DNS resource record responses
   # to a DNS query.
-  mdns_config: %{
-    host: :hostname,
-    ttl: 120
-  },
+
+  host: :hostname,
+  ttl: 120,
+
   # A list of this host's services. NB: There are two other mDNS values: weight
   # and priority that both default to zero unless included in the service below.
   services: [

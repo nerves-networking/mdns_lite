@@ -24,11 +24,8 @@ defmodule MdnsLite.Configuration do
           }
   end
 
-  @default_config %{
-    host: :hostname,
-    ttl: 120
-  }
-
+  @default_host :hostname
+  @default_ttl 120
   @default_service %{
     weight: 0,
     priority: 0
@@ -54,6 +51,8 @@ defmodule MdnsLite.Configuration do
   ##############################################################################
   @impl true
   def init(_opts) do
+    host = Application.get_env(:mdns_lite, :host, @default_host)
+    ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
     # Merge a service's default values and construct type string that is used in
     # Query comparisons
     services =
@@ -64,7 +63,7 @@ defmodule MdnsLite.Configuration do
       end)
 
     state = %State{
-      mdns_config: Application.get_env(:mdns_lite, :mdns_config, @default_config),
+      mdns_config: %{host: host, ttl: ttl},
       mdns_services: services
     }
 

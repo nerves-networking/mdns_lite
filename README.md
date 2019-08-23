@@ -11,10 +11,11 @@ Examples of services are an HTTP or an SSH server. Read about configuring
 services in the Configuration section below.
 
 MdnsLite employs a network interface monitor that can dynamically adjust to
-network changes, e.g., assignment of a new IP address to a host. You can add your own Network Monitor;
-a future release will allow the use of another implementation.
+network changes, e.g., assignment of a new IP address to a host. The current
+version of MdnsLite comes with an `InetMonitor` which periodically checks via `inet:getifaddrs()`
+for changes in the network. For exmaple, a change could be the re-assignment of IP addresses.
 
-It recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
+MdnsLite recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
 * A - Find the IPv4 address of a hostname.
 * PTR - Given an IPv4 address, find its hostname - reverse lookup. If, however, it receives a request domain of
@@ -37,14 +38,13 @@ These implementations provided valuable guidance in the building of MdnsLite.
 
 A typical configuration in the `config.exs` file looks
 like:
+
 ```elixir
 config :mdns_lite,
   # Use these values to construct the DNS resource record responses
   # to a DNS query.
-  mdns_config: %{
-    host: :hostname,
-    ttl: 120
-  },
+  host: :hostname,
+  ttl: 120,
   services: [
     # service type: _http._tcp.local - used in match
     %{
@@ -63,20 +63,18 @@ config :mdns_lite,
   ]
 ```
 
-The `mdns_config` section is where you specify values that will be used in the
-construction of mDNS (DNS) responses. `host` can be `:hostname` in which case the value will be
+(Note that the configuration changed from v0.2 to v0.3, eliminating a superflous map.)
+
+The `host` and `ttl` are values that will be used in the
+construction of mDNS (DNS) responses. `host` can have the value of  `:hostname` in which case the value will be
 replaced with the value of `:inet.gethostname()`, otherwise you can provide a
 string value. `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
 DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
 
 The `services` section lists the services that the host offers,
 such as providing an HTTP server. You must supply the `protocol`, `transport` and
-`port` values for each service.
+`port` values for each service. You may also specify `weight` and/or `host`. They each default to a zero value. Please consult the RFC for an explanation of these values. 
 
-MdnsLite uses a "network monitor", a module that listens for changes in a network.
-Its purpose is to ensure that the network interfaces are up to date. The current
-version of MdnsLite has an `InetMonitor` which periodically checks via `inet:getifaddrs()`
-for changes in the network. A change could be the re-assignment of IP addresses.
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
@@ -85,14 +83,14 @@ by adding `mdns_lite` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:mdns_lite, "~> 0.2"}
+    {:mdns_lite, "~> 0.3"}
   ]
 end
 ```
 
 ## Usage
 
-`MdnsLite` is an Elixir/Erlang application, hence it will start up automatically when
+`MdnsLite` is an Elixir/Erlang application; it will start up automatically when
 its enclosing application starts.
 
 When MdnsLite is running, it can be tested using the linux `dig` utility:
@@ -120,7 +118,7 @@ nerves-7fcb.local.	120	IN	A	192.168.0.106
 ...
 ```
 
-Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`. You can use the reserved ip address (`224.0.0.251`) and port(`5353`) when using `dig` to get mDNS responses. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port`5353`.  
+Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`. You can use the reserved ip address (`224.0.0.251`) and port(`5353`) and query the local domain. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port`5353`.  
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
