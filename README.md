@@ -17,9 +17,9 @@ a future release will allow the use of another implementation.
 It recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
 * A - Find the IPv4 address of a hostname.
-* PTR - Given an IPv4 address, find its hostname. If, however, it receives a request domain of
+* PTR - Given an IPv4 address, find its hostname - reverse lookup. If, however, it receives a request domain of
 "_services._dns-sd._udp.local", MdnsLite will respond with a list of
-every service available (and specified in the configuration) on the host.
+every service available (and is specified in the configuration) on the host.
 * SRV - Service Locator
 
 If you want to know the details of the various DNS/mDNS record types and their fields,
@@ -85,7 +85,7 @@ by adding `mdns_lite` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:mdns_lite, "~> 0.1.0"}
+    {:mdns_lite, "~> 0.2"}
   ]
 end
 ```
@@ -98,16 +98,30 @@ its enclosing application starts.
 When MdnsLite is running, it can be tested using the linux `dig` utility:
 
 ```sh
-dig @224.0.0.251 -p 5353 -t A petes-pt.local => 192.168.0.102
+$ dig @224.0.0.251 -p 5353 -t A nerves-7fcb.local
+...
+nerves-7fcb.local. 120	IN	A	192.168.0.106
+...
+$ dig @224.0.0.251 -p 5353 -x 192.168.0.106
+...
+106.0.168.192.in-addr.arpa. 120	IN	PTR	nerves-7fcb.local.
+...
+$ dig @nerves-7fcb.local -p 5353 -t PTR _ssh._tcp.local
+...
+_ssh._tcp.local.	120	IN	PTR	nerves-7fcb._ssh._tcp.local.
+nerves-7fcb._ssh._tcp.local. 120 IN	TXT	""
+nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.
+nerves-7fcb.local.	120	IN	A	192.168.0.106
+...
+$ dig @224.0.0.251 -p 5353 -t SRV nerves-7fcb._ssh._tcp.local
+...
+nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.
+nerves-7fcb.local.	120	IN	A	192.168.0.106
+...
 
-dig @224.0.0.251 -p 5353 -x 192.168.0.102 => petes-pt.local (reverse lookup)
-
-dig @224.0.0.251 -p 5353 -t SRV _http._tcp.local => Depends on the service(s) available
-```
-Although `dig` is a lookup utility for DNS, it will send requests that MdnsLite
-can receive. Note,
-however, that you need to specify the ip address (`224.0.0.251`) and port(`5353`)
-when using `dig` to get mDNS responses.
+Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`.
+You can use the reserved ip address (`224.0.0.251`) and port(`5353`)
+when using `dig` to get mDNS responses. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port`5353`.  
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
