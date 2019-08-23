@@ -31,6 +31,8 @@ defmodule MdnsLite.Responder do
     @moduledoc false
     @type t() :: struct()
     defstruct services: [],
+              # RFC 6763 nomenclature, aka hostname
+              instance_name: "",
               # Note: Erlang string
               dot_local_name: '',
               ttl: 120,
@@ -66,8 +68,8 @@ defmodule MdnsLite.Responder do
     # Retrieve some configuration values
     mdns_config = Configuration.get_mdns_config()
     mdns_services = Configuration.get_mdns_services()
-    discovery_name = resolve_mdns_name(mdns_config.host)
-    dot_local_name = discovery_name <> ".local"
+    instance_name = resolve_mdns_name(mdns_config.host)
+    dot_local_name = instance_name <> ".local"
     # Join the mDNS multicast group
 
     {:ok,
@@ -76,6 +78,7 @@ defmodule MdnsLite.Responder do
        services: mdns_services,
        ip: address,
        ttl: mdns_config.ttl,
+       instance_name: instance_name,
        dot_local_name: to_charlist(dot_local_name)
      }, {:continue, :initialization}}
   end

@@ -54,8 +54,14 @@ defmodule MdnsLite.QueryTest do
     assert Query.handle(query, test_state()) == result
   end
 
+  test "ignores A request for someone else" do
+    query = %DNS.Query{class: :in, domain: 'someone-else.local', type: :a}
+
+    assert Query.handle(query, test_state()) == []
+  end
+
   test "responds to a PTR request" do
-    query = %DNS.Query{class: :in, domain: '57.9.168.192.in-addr.arpa', type: :ptr}
+    query = %DNS.Query{class: :in, domain: '57.9.168.192', type: :ptr}
 
     result = [
       %DNS.Resource{
@@ -63,6 +69,7 @@ defmodule MdnsLite.QueryTest do
         class: :in,
         cnt: 0,
         data: test_state().dot_local_name,
+        domain: '57.9.168.192.in-addr.arpa.',
         func: false,
         tm: :undefined,
         ttl: 120,
@@ -93,7 +100,7 @@ defmodule MdnsLite.QueryTest do
   end
 
   test "responds to an SRV request for a known service" do
-    known_service = "_http._tcp.local"
+    known_service = "nerves-21a5.local._http._tcp.local"
     query = %DNS.Query{class: :in, domain: to_charlist(known_service), type: :srv}
 
     result =
@@ -121,9 +128,9 @@ defmodule MdnsLite.QueryTest do
     assert Query.handle(query, test_state()) == result
   end
 
-  test "ignores A request for someone else" do
-    query = %DNS.Query{class: :in, domain: 'someone-else.local', type: :a}
-
+  test "ignore SRV request without the host (instance) name" do
+    service_only = "_http._tcp.local"
+    query = %DNS.Query{class: :in, domain: to_charlist(service_only), type: :srv}
     assert Query.handle(query, test_state()) == []
   end
 end
