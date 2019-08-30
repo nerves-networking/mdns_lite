@@ -12,3 +12,8 @@
 ## v0.2.1
 
 * Update README to reflect changes in previous version.
+
+## v0.3.0
+
+* Remove a superfluous map from the config. 
+
