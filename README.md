@@ -13,7 +13,7 @@ services in the Configuration section below.
 MdnsLite employs a network interface monitor that can dynamically adjust to
 network changes, e.g., assignment of a new IP address to a host. The current
 version of MdnsLite comes with an `InetMonitor` which periodically checks via `inet:getifaddrs()`
-for changes in the network. For exmaple, a change could be the re-assignment of IP addresses.
+for changes in the network. For exmaple, a change could be the re-assignment of IP addresses. For configuration values related to the interface monitor, please see the Confgiration section below.
 
 MdnsLite recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
@@ -65,11 +65,14 @@ config :mdns_lite,
 
 (Note that the configuration changed from v0.2 to v0.3, eliminating a superflous map.)
 
-The `host` and `ttl` are values that will be used in the
-construction of mDNS (DNS) responses. `host` can have the value of  `:hostname` in which case the value will be
-replaced with the value of `:inet.gethostname()`, otherwise you can provide a
-string value. `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
+The `host` and `ttl` are values that will be used in the construction of mDNS (DNS) responses. 
+
+`host` can have the value of  `:hostname` in which case the value will be replaced with the value of `:inet.gethostname()`, otherwise you can provide a string value. You can specify an alias hostname in which case `host` will be `["hostname", "alias-example"]`. The second value must be a string. When you use an alias, an "A" query can be made to  `alias-example.local` as well as to `hostname.local`.
+
+`ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
 DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
+
+As mentioned above, `MdnsLite` uses an interface monitor. `InetMonitor` is currently the only monitor available. The configuration value `ip_address_monitor` (not shown) defaults to `Mdns.InetMonitor. And the configuration value `excluded_ifnames` represents those interfaces that the `InetMonitor` will **not** watch. Its default value is ["lo0", "lo"].
 
 The `services` section lists the services that the host offers,
 such as providing an HTTP server. You must supply the `protocol`, `transport` and

@@ -5,8 +5,12 @@ use Mix.Config
 config :mdns_lite,
   # Use these values to construct the DNS resource record responses
   # to a DNS query.
+  # host can be one of the values: hostname1, [hostname1], or [hostname1, hostname2]
+  # where hostname1 is the atom :hostname in which case it is replaced with the
+  # value of :int.gethostname() or a string and hostname2 is a string value.
+  # Exmple: [:hostname, "nerves"]
 
-  host: :hostname,
+  host: [:hostname, "nerves"],
   ttl: 120,
 
   # A list of this host's services. NB: There are two other mDNS values: weight

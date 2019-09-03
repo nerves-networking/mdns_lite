@@ -14,6 +14,7 @@ defmodule MdnsLite.Configuration do
               mdns_services: [],
               # Note: Erlang string
               dot_local_name: '',
+              host_name_alias: '',
               ttl: 120
 
     @type t :: %__MODULE__{
@@ -24,7 +25,7 @@ defmodule MdnsLite.Configuration do
           }
   end
 
-  @default_host :hostname
+  @default_host_name_list [:hostname]
   @default_ttl 120
   @default_service %{
     weight: 0,
@@ -51,7 +52,9 @@ defmodule MdnsLite.Configuration do
   ##############################################################################
   @impl true
   def init(_opts) do
-    host = Application.get_env(:mdns_lite, :host, @default_host)
+    env_host = Application.get_env(:mdns_lite, :host, @default_host_name_list)
+    hosts = configure_hosts(env_host)
+
     ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
     # Merge a service's default values and construct type string that is used in
     # Query comparisons
@@ -63,7 +66,7 @@ defmodule MdnsLite.Configuration do
       end)
 
     state = %State{
-      mdns_config: %{host: host, ttl: ttl},
+      mdns_config: %{host: List.first(hosts), host_name_alias: Enum.at(hosts, 1), ttl: ttl},
       mdns_services: services
     }
 
@@ -78,5 +81,20 @@ defmodule MdnsLite.Configuration do
   @impl true
   def handle_call(:get_mdns_services, _from, state) do
     {:reply, state.mdns_services, state}
+  end
+
+  ##############################################################################
+  #  Private functions
+  ##############################################################################
+  defp configure_hosts(nil) do
+    @default_host_name_list
+  end
+
+  defp configure_hosts(env_host) when is_list(env_host) do
+    env_host
+  end
+
+  defp configure_hosts(env_host) do
+    [env_host]
   end
 end

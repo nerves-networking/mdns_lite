@@ -8,6 +8,7 @@ defmodule MdnsLite.QueryTest do
   defp test_state() do
     %MdnsLite.Responder.State{
       dot_local_name: 'nerves-21a5.local',
+      dot_alias_name: nil,
       ip: {192, 168, 9, 57},
       services: [
         %{
@@ -34,6 +35,11 @@ defmodule MdnsLite.QueryTest do
     }
   end
 
+  defp test_alias_state() do
+    test_state = test_state()
+    %MdnsLite.Responder.State{test_state | dot_alias_name: 'nerves.local'}
+  end
+
   test "responds to an A request" do
     query = %DNS.Query{class: :in, domain: 'nerves-21a5.local', type: :a}
 
@@ -52,6 +58,26 @@ defmodule MdnsLite.QueryTest do
     ]
 
     assert Query.handle(query, test_state()) == result
+  end
+
+  test "responds to an A request for the alias" do
+    query = %DNS.Query{class: :in, domain: 'nerves.local', type: :a}
+
+    result = [
+      %DNS.Resource{
+        bm: [],
+        class: :in,
+        cnt: 0,
+        data: {192, 168, 9, 57},
+        domain: 'nerves.local',
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :a
+      }
+    ]
+
+    assert Query.handle(query, test_alias_state()) == result
   end
 
   test "ignores A request for someone else" do

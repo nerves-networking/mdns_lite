@@ -4,17 +4,9 @@ defmodule MdnsLite.Responder do
   # A GenServer that is responsible for responding to a limited number of mDNS
   # requests (queries). A UDP port is opened on the mDNS reserved IP/port. Any
   # UDP packets will be caught by handle_info() but only a subset of them are
-  # of interest.
+  # of interest. The module `MdnsLite.Query does the actual query parsing.
   #
-  # For an 'A' type query - address mapping: If the query domain equals this
-  # server's hostname, respond with an 'A' type resource containing an IP address.
-  #
-  # For a 'PTR' type query - reverse UOP lookup: Given an IP address and it
-  # matches the server's IP address, respond with the hostname.
-  #
-  # 'SRV' service queries.
-  #
-  # Any other query types are ignored.
+  # This module is started and stopped dynamically by MdnsLite.ResponderSupervisor
   #
   # There is one of these servers for every network interface managed by
   # MdnsLite.
@@ -35,6 +27,7 @@ defmodule MdnsLite.Responder do
               instance_name: "",
               # Note: Erlang string
               dot_local_name: '',
+              dot_alias_name: '',
               ttl: 120,
               ip: {0, 0, 0, 0},
               udp: nil
@@ -70,6 +63,10 @@ defmodule MdnsLite.Responder do
     mdns_services = Configuration.get_mdns_services()
     instance_name = resolve_mdns_name(mdns_config.host)
     dot_local_name = instance_name <> ".local"
+
+    dot_alias_name =
+      if mdns_config.host_name_alias, do: mdns_config.host_name_alias <> ".local", else: ""
+
     # Join the mDNS multicast group
 
     {:ok,
@@ -79,7 +76,8 @@ defmodule MdnsLite.Responder do
        ip: address,
        ttl: mdns_config.ttl,
        instance_name: instance_name,
-       dot_local_name: to_charlist(dot_local_name)
+       dot_local_name: to_charlist(dot_local_name),
+       dot_alias_name: to_charlist(dot_alias_name)
      }, {:continue, :initialization}}
   end
 
@@ -101,10 +99,15 @@ defmodule MdnsLite.Responder do
     dns_record = DNS.Record.decode(packet)
     # qr is the query/response flag; false (0) = query, true (1) = response
     if !dns_record.header.qr && length(dns_record.qdlist) > 0 do
-      {:noreply, prepare_response(dns_record, mdns_destination(src_ip, src_port), state)}
-    else
-      {:noreply, state}
+      # There can be multiple queries in each request
+      dns_record.qdlist
+      |> Enum.map(fn qd -> Query.handle(qd, state) end)
+      |> Enum.each(fn resources ->
+        send_response(resources, dns_record, mdns_destination(src_ip, src_port), state)
+      end)
     end
+
+    {:noreply, state}
   end
 
   @impl true
@@ -115,6 +118,19 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Private functions
   ##############################################################################
+  defp send_response([], _dns_record, _dest, _state), do: :ok
+
+  defp send_response(dns_resource_records, dns_record, {dest_address, dest_port}, state) do
+    # Construct an mDNS response from the query plus answers (resource records)
+    packet = response_packet(dns_record.header.id, dns_resource_records)
+
+    _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
+    _ = Logger.debug("#{inspect(packet)}")
+
+    dns_record = DNS.Record.encode(packet)
+    :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
+  end
+
   # A standard mDNS response packet
   defp response_packet(id, answer_list),
     do: %DNS.Record{
@@ -133,37 +149,12 @@ defmodule MdnsLite.Responder do
       arlist: []
     }
 
-  defp prepare_response(dns_record, dest, state) do
-    # There can be multiple questions in a query. And it must be one of the
-    # query types specified in the configuration
-    dns_record.qdlist
-    |> Enum.each(fn %DNS.Query{} = query ->
-      responses = Query.handle(query, state)
-      send_response(responses, dns_record, dest, state)
-    end)
-
-    state
-  end
-
   defp mdns_destination(_src_address, @mdns_port), do: {@mdns_ipv4, @mdns_port}
 
   defp mdns_destination(src_address, src_port) do
     # Legacy Unicast Response
     # See RFC 6762 6.7
     {src_address, src_port}
-  end
-
-  defp send_response([], _dns_record, _dest, _state), do: :ok
-
-  defp send_response(dns_resource_records, dns_record, {dest_address, dest_port}, state) do
-    # Construct an mDNS response from the query plus answers (resource records)
-    packet = response_packet(dns_record.header.id, dns_resource_records)
-
-    _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
-    _ = Logger.debug("#{inspect(packet)}")
-
-    dns_record = DNS.Record.encode(packet)
-    :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
   end
 
   defp resolve_mdns_name(nil), do: nil

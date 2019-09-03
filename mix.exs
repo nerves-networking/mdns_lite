@@ -1,13 +1,13 @@
 defmodule MdnsLite.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.4.0"
 
   def project do
     [
       app: :mdns_lite,
       version: @version,
-      elixir: "~> 1.8",
+      elixir: "~> 1.9",
       build_embedded: true,
       start_permanent: Mix.env() == :prod,
       docs: docs(),

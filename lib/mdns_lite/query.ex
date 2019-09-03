@@ -6,34 +6,37 @@ defmodule MdnsLite.Query do
   @moduledoc false
 
   @doc """
-  Handle a DNS Query
+  Decompose a DNS Query.
 
   This function returns a list of DNS Resource Records that should be sent back
-  to the querier. The list is dependent on the query type: A, PTR, SRV.
+  to the querier. The following query types are recognized: A, PTR, and SRV.
   """
   @spec handle(DNS.Query.t(), map()) :: [DNS.Resource.t()]
 
   # An "A" type query. Address mapping record. Return the IP address if
-  # this host's local name matches the query domain.
+  # this host's local name or alias, if specified, matches the query domain.
   def handle(%DNS.Query{class: :in, type: :a, domain: domain} = _query, state) do
-    case state.dot_local_name == domain do
-      true ->
-        _ = Logger.debug("DNS A RECORD for interface at #{inspect(state.ip)}")
-
+    cond do
+      state.dot_local_name == domain ->
         [
           dns_resource(:a, state.dot_local_name, state.ttl, state.ip)
         ]
 
-      _ ->
+      state.dot_alias_name == domain ->
+        [
+          dns_resource(:a, state.dot_alias_name, state.ttl, state.ip)
+        ]
+
+      true ->
         []
     end
   end
 
   # A "PTR" type query. Thre are three different responses depending on the
   # domain value of the query:
-  # 1. Reverse address lookup. Return the hostname of an IP address,
-  # 2. A "special" domain value of "_services._dns-sd._udp.local" - DNS-SD
-  # 3. A "service domain, e.g., "foobar.local._ssh._tcp.local"
+  # 1. A "special" domain value of "_services._dns-sd._udp.local" - DNS-SD
+  # 2. A specific service domain, e.g., "_ssh._tcp.local"
+  # 3. Reverse address lookup. Return the hostname for a matching IP address,
   def handle(
         %DNS.Query{class: :in, type: :ptr, domain: domain} = _query,
         state
@@ -94,7 +97,7 @@ defmodule MdnsLite.Query do
   end
 
   # An "SRV" type query. Find services, e.g., HTTP, SSH. The domain field in a
-  # SRV service query will look like, for example, "<host name>._http._tcp.local".
+  # SRV service query will look like: "<host name>._http._tcp.local".
   # Respond only on an exact # match
   def handle(
         %DNS.Query{class: :in, type: :srv, domain: domain} = _query,
