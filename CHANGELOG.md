@@ -17,3 +17,8 @@
 
 * Remove a superfluous map from the config. 
 
+## v0.4.0
+
+* The value of host in the configuration file can have two values. The second can serve as an alias for the first.
+* Updated documentation and comments.
+* Created a new test.
