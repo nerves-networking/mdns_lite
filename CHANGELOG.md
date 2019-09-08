@@ -22,3 +22,8 @@
 * The value of host in the configuration file can have two values. The second can serve as an alias for the first.
 * Updated documentation and comments.
 * Created a new test.
+
+## v0.4.1
+
+* Correct bad tag in README.md and correct grammar.
+* Correct documentation of the MdnsLite module

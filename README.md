@@ -65,14 +65,15 @@ config :mdns_lite,
 
 (Note that the configuration changed from v0.2 to v0.3, eliminating a superflous map.)
 
-The `host` and `ttl` are values that will be used in the construction of mDNS (DNS) responses. 
+The values of `host` and `ttl` will be used in the construction of mDNS (DNS) responses.
 
 `host` can have the value of  `:hostname` in which case the value will be replaced with the value of `:inet.gethostname()`, otherwise you can provide a string value. You can specify an alias hostname in which case `host` will be `["hostname", "alias-example"]`. The second value must be a string. When you use an alias, an "A" query can be made to  `alias-example.local` as well as to `hostname.local`.
 
 `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
 DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
 
-As mentioned above, `MdnsLite` uses an interface monitor. `InetMonitor` is currently the only monitor available. The configuration value `ip_address_monitor` (not shown) defaults to `Mdns.InetMonitor. And the configuration value `excluded_ifnames` represents those interfaces that the `InetMonitor` will **not** watch. Its default value is ["lo0", "lo"].
+As mentioned above, `MdnsLite` uses an interface monitor. `InetMonitor` is currently the only monitor available.
+The configuration value `ip_address_monitor` (not shown) defaults to `Mdns.InetMonitor`. And the configuration value `excluded_ifnames` represents those interfaces that the `InetMonitor` will **not** watch. Its default value is ["lo0", "lo"].
 
 The `services` section lists the services that the host offers,
 such as providing an HTTP server. You must supply the `protocol`, `transport` and
@@ -86,7 +87,7 @@ by adding `mdns_lite` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:mdns_lite, "~> 0.3"}
+    {:mdns_lite, "~> 0.4"}
   ]
 end
 ```
@@ -99,26 +100,26 @@ its enclosing application starts.
 When MdnsLite is running, it can be tested using the linux `dig` utility:
 
 ```sh
-$ dig @224.0.0.251 -p 5353 -t A nerves-7fcb.local
-...
-nerves-7fcb.local. 120	IN	A	192.168.0.106
-...
-$ dig @224.0.0.251 -p 5353 -x 192.168.0.106
-...
-106.0.168.192.in-addr.arpa. 120	IN	PTR	nerves-7fcb.local.
-...
-$ dig @nerves-7fcb.local -p 5353 -t PTR _ssh._tcp.local
-...
-_ssh._tcp.local.	120	IN	PTR	nerves-7fcb._ssh._tcp.local.
-nerves-7fcb._ssh._tcp.local. 120 IN	TXT	""
-nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.
-nerves-7fcb.local.	120	IN	A	192.168.0.106
-...
-$ dig @224.0.0.251 -p 5353 -t SRV nerves-7fcb._ssh._tcp.local
-...
-nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.
-nerves-7fcb.local.	120	IN	A	192.168.0.106
-...
+$ dig @224.0.0.251 -p 5353 -t A nerves-7fcb.local  
+...  
+nerves-7fcb.local. 120	IN	A	192.168.0.106  
+...  
+$ dig @224.0.0.251 -p 5353 -x 192.168.0.106  
+...  
+106.0.168.192.in-addr.arpa. 120	IN	PTR	nerves-7fcb.local.  
+...  
+$ dig @nerves-7fcb.local -p 5353 -t PTR _ssh._tcp.local  
+...  
+_ssh._tcp.local.	120	IN	PTR	nerves-7fcb._ssh._tcp.local.  
+nerves-7fcb._ssh._tcp.local. 120 IN	TXT	""  
+nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.  
+nerves-7fcb.local.	120	IN	A	192.168.0.106  
+...  
+$ dig @224.0.0.251 -p 5353 -t SRV nerves-7fcb._ssh._tcp.local  
+...  
+nerves-7fcb._ssh._tcp.local. 120 IN	SRV	0 0 22 nerves-7fcb.local.  
+nerves-7fcb.local.	120	IN	A	192.168.0.106  
+...  
 ```
 
 Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`. You can use the reserved ip address (`224.0.0.251`) and port(`5353`) and query the local domain. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port`5353`.  
