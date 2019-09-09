@@ -1,5 +1,6 @@
 # MdnsLite
 
+[![Hex version](https://img.shields.io/hexpm/v/mdns_lite.svg "Hex version")](https://hex.pm/packages/mdns_lite)
 [![CircleCI](https://circleci.com/gh/pcmarks/mdns_lite.svg?style=svg)](https://circleci.com/gh/pcmarks/mdns_lite)
 
 MdnsLite is a simple, limited, no frills implementation of an
