@@ -124,14 +124,7 @@ defmodule MdnsLite.Query do
   end
 
   # Ignore any other type of query
-  def handle(%DNS.Query{class: class, type: type} = _query, state) do
-    _ =
-      Logger.debug(
-        "IGNORING #{inspect(class)} #{inspect(type)} DNS RECORD for interface at #{
-          inspect(state.ip)
-        }"
-      )
-
+  def handle(_query, _state) do
     []
   end
 
