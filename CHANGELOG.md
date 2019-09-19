@@ -1,21 +1,14 @@
 # CHANGELOG
 
-## v0.1.0
+## v0.4.2
 
-* Initial release
+* Remove un-helpful Logger.debug statements - Issue #49
+* Put this file into the proper order.
 
-## v0.2.0
+## v0.4.1
 
-* Much better alignment with RFC 6763 - DNS Service-based discovery.
-* Affects handling of SRV and PTR queries.
-
-## v0.2.1
-
-* Update README to reflect changes in previous version.
-
-## v0.3.0
-
-* Remove a superfluous map from the config. 
+* Correct bad tag in README.md and correct grammar.
+* Correct documentation of the MdnsLite module
 
 ## v0.4.0
 
@@ -23,7 +16,19 @@
 * Updated documentation and comments.
 * Created a new test.
 
-## v0.4.1
+## v0.3.0
 
-* Correct bad tag in README.md and correct grammar.
-* Correct documentation of the MdnsLite module
+* Remove a superfluous map from the config. 
+
+## v0.2.1
+
+* Update README to reflect changes in previous version.
+
+## v0.2.0
+
+* Much better alignment with RFC 6763 - DNS Service-based discovery.
+* Affects handling of SRV and PTR queries.
+
+## v0.1.0
+
+* Initial release
