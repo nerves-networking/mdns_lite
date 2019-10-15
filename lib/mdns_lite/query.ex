@@ -32,7 +32,7 @@ defmodule MdnsLite.Query do
     end
   end
 
-  # A "PTR" type query. Thre are three different responses depending on the
+  # A "PTR" type query. There are three different responses depending on the
   # domain value of the query:
   # 1. A "special" domain value of "_services._dns-sd._udp.local" - DNS-SD
   # 2. A specific service domain, e.g., "_ssh._tcp.local"

@@ -14,7 +14,7 @@ services in the Configuration section below.
 MdnsLite employs a network interface monitor that can dynamically adjust to
 network changes, e.g., assignment of a new IP address to a host. The current
 version of MdnsLite comes with an `InetMonitor` which periodically checks via `inet:getifaddrs()`
-for changes in the network. For exmaple, a change could be the re-assignment of IP addresses. For configuration values related to the interface monitor, please see the Confgiration section below.
+for changes in the network. For example, a change could be the re-assignment of IP addresses. For configuration values related to the interface monitor, please see the Configuration section below.
 
 MdnsLite recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
@@ -64,7 +64,7 @@ config :mdns_lite,
   ]
 ```
 
-(Note that the configuration changed from v0.2 to v0.3, eliminating a superflous map.)
+(Note that the configuration changed from v0.2 to v0.3, eliminating a superfluous map.)
 
 The values of `host` and `ttl` will be used in the construction of mDNS (DNS) responses.
 
@@ -78,7 +78,7 @@ The configuration value `ip_address_monitor` (not shown) defaults to `Mdns.InetM
 
 The `services` section lists the services that the host offers,
 such as providing an HTTP server. You must supply the `protocol`, `transport` and
-`port` values for each service. You may also specify `weight` and/or `host`. They each default to a zero value. Please consult the RFC for an explanation of these values. 
+`port` values for each service. You may also specify `weight` and/or `host`. They each default to a zero value. Please consult the RFC for an explanation of these values.
 
 ## Installation
 
