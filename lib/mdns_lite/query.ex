@@ -51,7 +51,7 @@ defmodule MdnsLite.Query do
 
     cond do
       domain == '_services._dns-sd._udp.local' ->
-        _ = Logger.debug("DNS PTR RECORD for interface at #{inspect(state.ip)} for DNS-SD")
+        # _ = Logger.debug("DNS PTR RECORD for interface at #{inspect(state.ip)} for DNS-SD")
         # services._dns-sd._udp.local. is a special name for
         # "Service Type Enumeration" which is supposed to find all service
         # types on the network. Let them know about ours.

@@ -124,8 +124,8 @@ defmodule MdnsLite.Responder do
     # Construct an mDNS response from the query plus answers (resource records)
     packet = response_packet(dns_record.header.id, dns_resource_records)
 
-    _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
-    _ = Logger.debug("#{inspect(packet)}")
+    # _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
+    # _ = Logger.debug("#{inspect(packet)}")
 
     dns_record = DNS.Record.encode(packet)
     :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
