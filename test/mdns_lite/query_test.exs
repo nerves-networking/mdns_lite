@@ -80,6 +80,26 @@ defmodule MdnsLite.QueryTest do
     assert Query.handle(query, test_alias_state()) == result
   end
 
+  test "responds to a unicast A requrest" do
+    query = %DNS.Query{class: 32769, domain: 'nerves-21a5.local', type: :a}
+
+    result = [
+      %DNS.Resource{
+        bm: [],
+        class: :in,
+        cnt: 0,
+        data: {192, 168, 9, 57},
+        domain: 'nerves-21a5.local',
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :a
+      }
+    ]
+
+    assert Query.handle(query, test_state()) == result
+  end
+
   test "ignores A request for someone else" do
     query = %DNS.Query{class: :in, domain: 'someone-else.local', type: :a}
 

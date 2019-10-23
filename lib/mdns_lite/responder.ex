@@ -101,9 +101,14 @@ defmodule MdnsLite.Responder do
     if !dns_record.header.qr && length(dns_record.qdlist) > 0 do
       # There can be multiple queries in each request
       dns_record.qdlist
-      |> Enum.map(fn qd -> Query.handle(qd, state) end)
-      |> Enum.each(fn resources ->
-        send_response(resources, dns_record, mdns_destination(src_ip, src_port), state)
+      |> Enum.map(fn qd -> {qd.class, Query.handle(qd, state)} end)
+      |> Enum.each(fn
+        # Erlang doesn't know about unicast class
+        {32769, resources} ->
+          send_response(resources, dns_record, {src_ip, src_port}, state)
+
+        {_, resources} ->
+          send_response(resources, dns_record, mdns_destination(src_ip, src_port), state)
       end)
     end
 

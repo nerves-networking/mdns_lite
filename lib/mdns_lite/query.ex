@@ -13,18 +13,21 @@ defmodule MdnsLite.Query do
   """
   @spec handle(DNS.Query.t(), map()) :: [DNS.Resource.t()]
 
+  @in_class [:in, 32769]
+
   # An "A" type query. Address mapping record. Return the IP address if
   # this host's local name or alias, if specified, matches the query domain.
-  def handle(%DNS.Query{class: :in, type: :a, domain: domain} = _query, state) do
+  def handle(%DNS.Query{class: class, type: :a, domain: domain} = _query, state)
+      when class in @in_class do
     cond do
       state.dot_local_name == domain ->
         [
-          dns_resource(:a, state.dot_local_name, state.ttl, state.ip)
+          dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
         ]
 
       state.dot_alias_name == domain ->
         [
-          dns_resource(:a, state.dot_alias_name, state.ttl, state.ip)
+          dns_resource(:in, :a, state.dot_alias_name, state.ttl, state.ip)
         ]
 
       true ->
@@ -38,9 +41,10 @@ defmodule MdnsLite.Query do
   # 2. A specific service domain, e.g., "_ssh._tcp.local"
   # 3. Reverse address lookup. Return the hostname for a matching IP address,
   def handle(
-        %DNS.Query{class: :in, type: :ptr, domain: domain} = _query,
+        %DNS.Query{class: class, type: :ptr, domain: domain} = _query,
         state
-      ) do
+      )
+      when class in @in_class do
     # Convert our IP address so as to be able to match the arpa address
     # in the query. ARPA address for IP 192.168.0.112 is 112.0.168.192.in-addr.arpa
     arpa_address =
@@ -58,7 +62,7 @@ defmodule MdnsLite.Query do
         Configuration.get_mdns_services()
         |> Enum.flat_map(fn service ->
           [
-            dns_resource(:ptr, domain, state.ttl, to_charlist(service.type <> ".local"))
+            dns_resource(:in, :ptr, domain, state.ttl, to_charlist(service.type <> ".local"))
           ]
         end)
 
@@ -76,12 +80,12 @@ defmodule MdnsLite.Query do
           srv_data = {service.priority, service.weight, service.port, target}
 
           [
-            dns_resource(:ptr, domain, state.ttl, service_instance_name),
+            dns_resource(:in, :ptr, domain, state.ttl, service_instance_name),
             # Until we support the user specification of TXT values,
             # the RFC says at a minimum return a TXT record with an empty string
-            dns_resource(:txt, service_instance_name, state.ttl, [""]),
-            dns_resource(:srv, service_instance_name, state.ttl, srv_data),
-            dns_resource(:a, state.dot_local_name, state.ttl, state.ip)
+            dns_resource(:in, :txt, service_instance_name, state.ttl, [""]),
+            dns_resource(:in, :srv, service_instance_name, state.ttl, srv_data),
+            dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
           ]
         end)
 
@@ -89,7 +93,7 @@ defmodule MdnsLite.Query do
       String.starts_with?(to_string(domain), arpa_address) ->
         full_arpa_address = to_charlist(arpa_address <> ".in-addr.arpa.")
 
-        [dns_resource(:ptr, full_arpa_address, state.ttl, state.dot_local_name)]
+        [dns_resource(:in, :ptr, full_arpa_address, state.ttl, state.dot_local_name)]
 
       true ->
         []
@@ -100,9 +104,10 @@ defmodule MdnsLite.Query do
   # SRV service query will look like: "<host name>._http._tcp.local".
   # Respond only on an exact # match
   def handle(
-        %DNS.Query{class: :in, type: :srv, domain: domain} = _query,
+        %DNS.Query{class: class, type: :srv, domain: domain} = _query,
         state
-      ) do
+      )
+      when class in @in_class do
     state.services
     |> Enum.filter(fn service ->
       instance_service_name = "#{state.instance_name}.#{service.type}.local"
@@ -117,8 +122,8 @@ defmodule MdnsLite.Query do
       srv_data = {service.priority, service.weight, service.port, target}
 
       [
-        dns_resource(:srv, service_instance_name, state.ttl, srv_data),
-        dns_resource(:a, state.dot_local_name, state.ttl, state.ip)
+        dns_resource(:in, :srv, service_instance_name, state.ttl, srv_data),
+        dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
       ]
     end)
   end
@@ -128,10 +133,10 @@ defmodule MdnsLite.Query do
     []
   end
 
-  defp dns_resource(type, domain, ttl, data) do
+  defp dns_resource(class, type, domain, ttl, data) do
     %DNS.Resource{
       domain: domain,
-      class: :in,
+      class: class,
       type: type,
       ttl: ttl,
       data: data
