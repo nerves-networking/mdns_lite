@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.4.3
+
+* Correct typos and white space
+* Comment out logger messages
+
 ## v0.4.2
 
 * Remove un-helpful Logger.debug statements - Issue #49
