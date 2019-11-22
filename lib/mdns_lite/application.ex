@@ -14,13 +14,11 @@ defmodule MdnsLite.Application do
 
     @impl true
     def init(_init_arg) do
-      excluded_ifnames = Application.get_env(:mdns_lite, :excluded_ifnames, ["lo0", "lo"])
-
       ip_address_monitor =
         Application.get_env(
           :mdns_lite,
           :ip_address_monitor,
-          {MdnsLite.InetMonitor, excluded_ifnames: excluded_ifnames}
+          default_monitor()
         )
 
       children = [
@@ -30,6 +28,17 @@ defmodule MdnsLite.Application do
       ]
 
       Supervisor.init(children, strategy: :one_for_all)
+    end
+
+    defp default_monitor() do
+      excluded_ifnames = Application.get_env(:mdns_lite, :excluded_ifnames, ["lo0", "lo"])
+
+      if Code.ensure_loaded?(VintageNet) do
+        Application.ensure_all_started(:vintage_net)
+        {MdnsLite.VintageNetMonitor, excluded_ifnames: excluded_ifnames}
+      else
+        {MdnsLite.InetMonitor, excluded_ifnames: excluded_ifnames}
+      end
     end
   end
 

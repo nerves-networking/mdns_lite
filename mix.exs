@@ -15,6 +15,7 @@ defmodule MdnsLite.MixProject do
       package: package(),
       dialyzer: [
         flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+        plt_add_apps: [:vintage_net],
         ignore_warnings: "dialyzer.ignore_warnings",
         list_unused_filters: true
       ],
@@ -50,7 +51,8 @@ defmodule MdnsLite.MixProject do
     [
       {:dns, "~> 2.1"},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.21", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
+      {:vintage_net, "~> 0.6", optional: true}
     ]
   end
 
