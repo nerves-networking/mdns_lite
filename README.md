@@ -78,7 +78,45 @@ The configuration value `ip_address_monitor` (not shown) defaults to `Mdns.InetM
 
 The `services` section lists the services that the host offers,
 such as providing an HTTP server. You must supply the `protocol`, `transport` and
-`port` values for each service. You may also specify `weight` and/or `host`. They each default to a zero value. Please consult the RFC for an explanation of these values.
+`port` values for each service. You may also specify `weight` and/or `host`.
+They each default to a zero value. Please consult the RFC for an explanation of
+these values. Services can be configured in `config.exs` as shown above, or at
+runtime:
+
+```elixir
+iex)> services = [
+  # service type: _http._tcp.local - used in match
+  %{
+    name: "Web Server",
+    protocol: "http",
+    transport: "tcp",
+    port: 80,
+  },
+  # service_type: _ssh._tcp.local - used in match
+  %{
+    name: "Secure Socket",
+    protocol: "ssh",
+    transport: "tcp",
+    port: 22,
+  }
+]
+
+iex)> MdnsLite.add_mds_services(services)
+:ok
+```
+
+Services can also be removed at runtime via `remove_mdns_services/1` with the
+service name to remove:
+
+```elixir
+iex)> service_names = ["Web Server", "Secure Socket"]
+iex)> MdnsLite.remove_mdns_services(services)
+:ok
+
+# Remove just a single service
+iex)> MdnsLite.remove_mdns_services("Secure Socket")
+:ok
+```
 
 ## Installation
 

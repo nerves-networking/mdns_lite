@@ -24,4 +24,6 @@ defmodule MdnsLite do
   Please refer to the `README.md` for further information.
 
   """
+  defdelegate add_mdns_services(services), to: MdnsLite.Configuration
+  defdelegate remove_mdns_services(service_names), to: MdnsLite.Configuration
 end

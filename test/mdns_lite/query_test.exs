@@ -132,6 +132,7 @@ defmodule MdnsLite.QueryTest do
 
     result =
       test_state().services
+      |> Enum.reverse()
       |> Enum.map(fn service ->
         %DNS.Resource{
           domain: test_domain,

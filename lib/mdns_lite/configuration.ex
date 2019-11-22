@@ -11,7 +11,7 @@ defmodule MdnsLite.Configuration do
     @moduledoc false
 
     defstruct mdns_config: %{},
-              mdns_services: [],
+              mdns_services: MapSet.new(),
               # Note: Erlang string
               dot_local_name: '',
               host_name_alias: '',
@@ -19,7 +19,7 @@ defmodule MdnsLite.Configuration do
 
     @type t :: %__MODULE__{
             mdns_config: map(),
-            mdns_services: [map()],
+            mdns_services: MapSet.t(map()),
             dot_local_name: charlist(),
             ttl: pos_integer()
           }
@@ -37,6 +37,15 @@ defmodule MdnsLite.Configuration do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
+  @spec add_mdns_services(map() | [map()]) :: :ok
+  def add_mdns_services(service) when is_map(service) do
+    add_mdns_services([service])
+  end
+
+  def add_mdns_services(services) do
+    GenServer.call(__MODULE__, {:add_services, services})
+  end
+
   @spec get_mdns_config() :: map()
   def get_mdns_config() do
     GenServer.call(__MODULE__, :get_mdns_config)
@@ -45,6 +54,15 @@ defmodule MdnsLite.Configuration do
   @spec get_mdns_services() :: [map()]
   def get_mdns_services() do
     GenServer.call(__MODULE__, :get_mdns_services)
+  end
+
+  @spec remove_mdns_services(String.t() | [String.t()]) :: :ok
+  def remove_mdns_services(service_name) when is_bitstring(service_name) do
+    remove_mdns_services([service_name])
+  end
+
+  def remove_mdns_services(service_names) do
+    GenServer.call(__MODULE__, {:remove_services, service_names})
   end
 
   ##############################################################################
@@ -56,36 +74,52 @@ defmodule MdnsLite.Configuration do
     hosts = configure_hosts(env_host)
 
     ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
-    # Merge a service's default values and construct type string that is used in
-    # Query comparisons
-    services =
-      Application.get_env(:mdns_lite, :services, [])
-      |> Enum.map(fn service ->
-        Map.merge(@default_service, service)
-        |> Map.put(:type, "_#{service.protocol}._#{service.transport}")
-      end)
+
+    config_services = Application.get_env(:mdns_lite, :services, [])
 
     state = %State{
-      mdns_config: %{host: List.first(hosts), host_name_alias: Enum.at(hosts, 1), ttl: ttl},
-      mdns_services: services
+      mdns_config: %{host: List.first(hosts), host_name_alias: Enum.at(hosts, 1), ttl: ttl}
     }
 
-    {:ok, state}
+    {:ok, add_services(config_services, state)}
   end
 
   @impl true
+  def handle_call({:add_services, services}, _from, state) do
+    {:reply, :ok, add_services(services, state)}
+  end
+
   def handle_call(:get_mdns_config, _from, state) do
     {:reply, state.mdns_config, state}
   end
 
   @impl true
   def handle_call(:get_mdns_services, _from, state) do
-    {:reply, state.mdns_services, state}
+    {:reply, MapSet.to_list(state.mdns_services), state}
+  end
+
+  def handle_call({:remove_services, service_names}, _from, state) do
+    {:reply, :ok, remove_services(service_names, state)}
   end
 
   ##############################################################################
   #  Private functions
   ##############################################################################
+  defp add_service(service, services_set) do
+    # Merge a service's default values and construct type string that is used in
+    # Query comparisons
+    formatted =
+      Map.merge(@default_service, service)
+      |> Map.put(:type, "_#{service.protocol}._#{service.transport}")
+
+    MapSet.put(services_set, formatted)
+  end
+
+  defp add_services(services, %{mdns_services: services_set} = state) do
+    updated = Enum.reduce(services, services_set, &add_service/2)
+    %{state | mdns_services: updated}
+  end
+
   defp configure_hosts(nil) do
     @default_host_name_list
   end
@@ -96,5 +130,14 @@ defmodule MdnsLite.Configuration do
 
   defp configure_hosts(env_host) do
     [env_host]
+  end
+
+  defp remove_services(service_names, %{mdns_services: services_set} = state) do
+    services_set =
+      services_set
+      |> Enum.reject(&(&1.name in service_names))
+      |> MapSet.new()
+
+    %{state | mdns_services: services_set}
   end
 end
