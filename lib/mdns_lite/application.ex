@@ -34,7 +34,6 @@ defmodule MdnsLite.Application do
       excluded_ifnames = Application.get_env(:mdns_lite, :excluded_ifnames, ["lo0", "lo"])
 
       if Code.ensure_loaded?(VintageNet) do
-        Application.ensure_all_started(:vintage_net)
         {MdnsLite.VintageNetMonitor, excluded_ifnames: excluded_ifnames}
       else
         {MdnsLite.InetMonitor, excluded_ifnames: excluded_ifnames}

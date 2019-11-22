@@ -31,9 +31,22 @@ config :mdns_lite,
   ]
 
 if Mix.env() == :test do
-  # Disable the IP address monitor for mdns_lite unit tests (this is a no-op)
+  # Allow Responders to still be created, but skip starting gen_udp
+  # so tests can pass
   config :mdns_lite,
-    ip_address_monitor: {Agent, fn -> nil end}
+    skip_udp: true
+
+  # Overrides for unit tests:
+  #
+  # * udhcpc_handler: capture whatever happens with udhcpc
+  # * resolvconf: don't update the real resolv.conf
+  # * persistence_dir: use the current directory
+  # * bin_ip: just fail if anything calls ip rather that run it
+  config :vintage_net,
+    udhcpc_handler: VintageNetTest.CapturingUdhcpcHandler,
+    resolvconf: "/dev/null",
+    persistence_dir: "./test_tmp/persistence",
+    bin_ip: "false"
 end
 
 # This configuration is loaded before any dependency and is restricted
