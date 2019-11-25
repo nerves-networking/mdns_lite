@@ -13,8 +13,17 @@ services in the Configuration section below.
 
 MdnsLite employs a network interface monitor that can dynamically adjust to
 network changes, e.g., assignment of a new IP address to a host. The current
-version of MdnsLite comes with an `InetMonitor` which periodically checks via `inet:getifaddrs()`
-for changes in the network. For example, a change could be the re-assignment of IP addresses. For configuration values related to the interface monitor, please see the Configuration section below.
+version of MdnsLite supports two default monitors:
+
+* `InetMonitor` which periodically checks via `inet:getifaddrs()` for changes
+  in the network. For example, a change could be the re-assignment of IP
+  addresses. 
+
+* `VintageNetMonitor` which subscribes to [`VintageNet`](https://github.com/nerves-networking/vintage_net) address events for all
+interfaces as they happen.
+
+For configuration values related to the interface monitor, please see the Configuration
+section below.
 
 MdnsLite recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
@@ -73,8 +82,12 @@ The values of `host` and `ttl` will be used in the construction of mDNS (DNS) re
 `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
 DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
 
-As mentioned above, `MdnsLite` uses an interface monitor. `InetMonitor` is currently the only monitor available.
-The configuration value `ip_address_monitor` (not shown) defaults to `Mdns.InetMonitor`. And the configuration value `excluded_ifnames` represents those interfaces that the `InetMonitor` will **not** watch. Its default value is ["lo0", "lo"].
+As mentioned above, `MdnsLite` uses an interface monitor. The configuration
+value `ip_address_monitor` (not shown) defaults to `VintageNetMonitor` if
+[`VintageNet`](https://github.com/nerves-networking/vintage_net) is added as a dependency to your project using `MdnsLite`.
+Otherwise, `InetMonitor` will be the default. The
+configuration value `excluded_ifnames` represents those interfaces that the
+monitor will **not** watch. Its default value is `["lo0", "lo"]`.
 
 The `services` section lists the services that the host offers,
 such as providing an HTTP server. You must supply the `protocol`, `transport` and
