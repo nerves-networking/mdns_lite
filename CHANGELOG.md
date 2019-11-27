@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.5.0
+
+* Allow services to be added and removed at runtime.
+
 ## v0.4.3
 
 * Correct typos and white space
