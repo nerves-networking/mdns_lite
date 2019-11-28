@@ -41,4 +41,26 @@ defmodule MdnsLite.ConfigurationTest do
     :ok = Configuration.remove_mdns_services([result.name])
     assert result not in Configuration.get_mdns_services()
   end
+
+  test "can set hostname string" do
+    host = "howdy"
+    :ok = Configuration.set_host(host)
+    assert :sys.get_state(Configuration).mdns_config.host == host
+  end
+
+  test "can set hostname with alias" do
+    host = "howdy"
+    host_alias = "partner"
+    :ok = Configuration.set_host([host, host_alias])
+
+    assert :sys.get_state(Configuration).mdns_config.host == host
+    assert :sys.get_state(Configuration).mdns_config.host_name_alias == host_alias
+  end
+
+  test "fails with invalid host" do
+    host = :wat
+    error = {:error, "must be a host or list [hostname, alias]. Got: #{inspect(host)}"}
+
+    assert Configuration.set_host(:wat) == error
+  end
 end

@@ -65,6 +65,15 @@ defmodule MdnsLite.Configuration do
     GenServer.call(__MODULE__, {:remove_services, service_names})
   end
 
+  @spec set_host(String.t() | [String.t() | :hostname] | :hostname) :: :ok | {:error, String.t()}
+  def set_host(host) when is_binary(host) or is_list(host) or host == :hostname do
+    GenServer.call(__MODULE__, {:set_host, host})
+  end
+
+  def set_host(host) do
+    {:error, "must be a host or list [hostname, alias]. Got: #{inspect(host)}"}
+  end
+
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
@@ -100,6 +109,12 @@ defmodule MdnsLite.Configuration do
 
   def handle_call({:remove_services, service_names}, _from, state) do
     {:reply, :ok, remove_services(service_names, state)}
+  end
+
+  def handle_call({:set_host, host}, _from, %{mdns_config: mdns_config} = state) do
+    hosts = configure_hosts(host)
+    mdns_config = %{mdns_config | host: hd(hosts), host_name_alias: Enum.at(hosts, 1)}
+    {:reply, :ok, %{state | mdns_config: mdns_config}}
   end
 
   ##############################################################################

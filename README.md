@@ -77,7 +77,18 @@ config :mdns_lite,
 
 The values of `host` and `ttl` will be used in the construction of mDNS (DNS) responses.
 
-`host` can have the value of  `:hostname` in which case the value will be replaced with the value of `:inet.gethostname()`, otherwise you can provide a string value. You can specify an alias hostname in which case `host` will be `["hostname", "alias-example"]`. The second value must be a string. When you use an alias, an "A" query can be made to  `alias-example.local` as well as to `hostname.local`.
+`host` can have the value of  `:hostname` in which case the value will be
+replaced with the value of `:inet.gethostname()`, otherwise you can provide a
+string value. You can specify an alias hostname in which case `host` will be
+`["hostname", "alias-example"]`. The second value must be a string. When you use
+an alias, an "A" query can be made to  `alias-example.local` as well as to
+`hostname.local`. This can also be configured at runtime via
+`MdnsLite.set_host/1`:
+
+```elixir
+iex)> MdnsLite.set_host([:hostname, "nerves"])
+:ok
+```
 
 `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
 DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
