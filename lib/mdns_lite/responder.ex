@@ -81,7 +81,7 @@ defmodule MdnsLite.Responder do
   def init(address) do
     # Join the mDNS multicast group
     state =
-      %State{ip: address}
+      %State{ip: address, skip_udp: Application.get_env(:mdns_lite, :skip_udp)}
       |> add_config_values()
 
     {:ok, state, {:continue, :initialization}}
