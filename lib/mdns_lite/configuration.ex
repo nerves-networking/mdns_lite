@@ -1,6 +1,8 @@
 defmodule MdnsLite.Configuration do
   use GenServer
 
+  alias MdnsLite.ResponderSupervisor
+
   @moduledoc false
 
   # A singleton GenServer. It is responsible for maintaining the various
@@ -95,7 +97,7 @@ defmodule MdnsLite.Configuration do
 
   @impl true
   def handle_call({:add_services, services}, _from, state) do
-    {:reply, :ok, add_services(services, state)}
+    {:reply, :ok, add_services(services, state), {:continue, :refresh_responders}}
   end
 
   def handle_call(:get_mdns_config, _from, state) do
@@ -108,13 +110,23 @@ defmodule MdnsLite.Configuration do
   end
 
   def handle_call({:remove_services, service_names}, _from, state) do
-    {:reply, :ok, remove_services(service_names, state)}
+    {:reply, :ok, remove_services(service_names, state), {:continue, :refresh_responders}}
   end
 
   def handle_call({:set_host, host}, _from, %{mdns_config: mdns_config} = state) do
     hosts = configure_hosts(host)
     mdns_config = %{mdns_config | host: hd(hosts), host_name_alias: Enum.at(hosts, 1)}
-    {:reply, :ok, %{state | mdns_config: mdns_config}}
+    {:reply, :ok, %{state | mdns_config: mdns_config}, {:continue, :refresh_responders}}
+  end
+
+  @impl true
+  def handle_continue(:refresh_responders, state) do
+    :ok =
+      Map.take(state, [:mdns_config, :mdns_services])
+      |> Map.to_list()
+      |> ResponderSupervisor.refresh_children()
+
+    {:noreply, state}
   end
 
   ##############################################################################

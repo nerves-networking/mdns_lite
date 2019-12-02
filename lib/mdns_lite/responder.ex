@@ -59,33 +59,32 @@ defmodule MdnsLite.Responder do
     end
   end
 
+  @spec refresh(:inet.ip_address() | pid(), any) :: :ok | {:error, :no_responder}
+  def refresh(address_or_pid, data \\ [])
+
+  def refresh(address, config) when is_tuple(address) do
+    via_name(address)
+    |> GenServer.whereis()
+    |> refresh(config)
+  end
+
+  def refresh(pid, config) when is_pid(pid) do
+    GenServer.call(pid, {:refresh, config})
+  end
+
+  def refresh(_, _), do: {:error, :no_responder}
+
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
   @impl true
   def init(address) do
-    # Retrieve some configuration values
-    mdns_config = Configuration.get_mdns_config()
-    mdns_services = Configuration.get_mdns_services()
-    instance_name = resolve_mdns_name(mdns_config.host)
-    dot_local_name = instance_name <> ".local"
-
-    dot_alias_name =
-      if mdns_config.host_name_alias, do: mdns_config.host_name_alias <> ".local", else: ""
-
     # Join the mDNS multicast group
+    state =
+      %State{ip: address}
+      |> add_config_values()
 
-    {:ok,
-     %State{
-       # A list of services with types that we'll match against
-       services: mdns_services,
-       ip: address,
-       ttl: mdns_config.ttl,
-       instance_name: instance_name,
-       dot_local_name: to_charlist(dot_local_name),
-       dot_alias_name: to_charlist(dot_alias_name),
-       skip_udp: Application.get_env(:mdns_lite, :skip_udp)
-     }, {:continue, :initialization}}
+    {:ok, state, {:continue, :initialization}}
   end
 
   @impl true
@@ -98,6 +97,11 @@ defmodule MdnsLite.Responder do
     {:ok, udp} = :gen_udp.open(@mdns_port, udp_options(state.ip))
 
     {:noreply, %{state | udp: udp}}
+  end
+
+  @impl true
+  def handle_call({:refresh, config}, _from, state) do
+    {:reply, :ok, add_config_values(state, config)}
   end
 
   @doc """
@@ -182,6 +186,27 @@ defmodule MdnsLite.Responder do
   end
 
   defp resolve_mdns_name(mdns_name), do: mdns_name
+
+  defp add_config_values(state, config \\ []) do
+    config = if is_list(config), do: config, else: []
+    mdns_config = Keyword.get(config, :mdns_config, Configuration.get_mdns_config())
+    mdns_services = Keyword.get(config, :mdns_services, Configuration.get_mdns_services())
+    instance_name = resolve_mdns_name(mdns_config[:host]) || state.host
+    dot_local_name = "#{instance_name}.local"
+
+    dot_alias_name =
+      if mdns_config[:host_name_alias], do: "#{mdns_config.host_name_alias}.local", else: ""
+
+    %{
+      state
+      | # A list of services with types that we'll match against
+        services: mdns_services,
+        ttl: mdns_config[:ttl] || state.ttl,
+        instance_name: instance_name,
+        dot_local_name: to_charlist(dot_local_name),
+        dot_alias_name: to_charlist(dot_alias_name)
+    }
+  end
 
   defp udp_options(ip) do
     [
