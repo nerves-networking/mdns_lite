@@ -1,5 +1,5 @@
 defmodule MdnsLite.VintageNetMonitorTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias MdnsLite.{VintageNetMonitor, ResponderSupervisor}
 
@@ -56,7 +56,10 @@ defmodule MdnsLite.VintageNetMonitorTest do
   end
 
   test "can exclude ifnames", %{ipv4: ipv4} do
-    :sys.replace_state(VintageNetMonitor, fn state -> %{state | excluded_ifnames: ["wat"]} end)
+    :sys.replace_state(VintageNetMonitor, fn state ->
+      %{state | excluded_ifnames: ["wat"], ip_list: MapSet.new()}
+    end)
+
     event = {VintageNet, ["interface", "wat", "addresses"], [], [ipv4], %{}}
 
     send(VintageNetMonitor, event)

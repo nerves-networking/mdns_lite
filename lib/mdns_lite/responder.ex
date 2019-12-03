@@ -189,8 +189,8 @@ defmodule MdnsLite.Responder do
 
   defp add_config_values(state, config \\ []) do
     config = if is_list(config), do: config, else: []
-    mdns_config = Keyword.get(config, :mdns_config, Configuration.get_mdns_config())
-    mdns_services = Keyword.get(config, :mdns_services, Configuration.get_mdns_services())
+    mdns_config = Keyword.get_lazy(config, :mdns_config, &Configuration.get_mdns_config/0)
+    mdns_services = Keyword.get_lazy(config, :mdns_services, &Configuration.get_mdns_services/0)
     instance_name = resolve_mdns_name(mdns_config[:host]) || state.host
     dot_local_name = "#{instance_name}.local"
 
