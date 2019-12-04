@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.6.0
+
+* Allow mdns host to be change at runtime
+* New network monitor: VintageNetMonitor
+
 ## v0.5.0
 
 * Allow services to be added and removed at runtime.
