@@ -30,8 +30,39 @@ defmodule MdnsLite.VintageNetMonitorTest do
     assert Supervisor.count_children(ResponderSupervisor).active == responders + 1
   end
 
+  test "can add ips from first event", %{ipv4: ipv4} do
+    # The first event sent from VintageNet has the old value set to nil
+    # since the property didn't exist before this.
+    event = {VintageNet, ["interface", "wlan0", "addresses"], nil, [ipv4], %{}}
+
+    responders = Supervisor.count_children(ResponderSupervisor).specs
+
+    send(VintageNetMonitor, event)
+
+    assert ipv4.address in :sys.get_state(VintageNetMonitor).ip_list
+    assert Supervisor.count_children(ResponderSupervisor).active == responders + 1
+  end
+
   test "can remove ips from event", %{ipv4: ipv4} do
     event = {VintageNet, ["interface", "wlan0", "addresses"], [ipv4], [], %{}}
+
+    :sys.replace_state(VintageNetMonitor, fn state ->
+      %{state | ip_list: MapSet.new([ipv4.address])}
+    end)
+
+    responders = Supervisor.count_children(ResponderSupervisor).specs
+
+    assert ipv4.address in :sys.get_state(VintageNetMonitor).ip_list
+
+    send(VintageNetMonitor, event)
+
+    assert ipv4.address not in :sys.get_state(VintageNetMonitor).ip_list
+    assert Supervisor.count_children(ResponderSupervisor).active == responders
+  end
+
+  test "can remove ips from last event", %{ipv4: ipv4} do
+    # The very last event reports nil before the property goes away.
+    event = {VintageNet, ["interface", "wlan0", "addresses"], [ipv4], nil, %{}}
 
     :sys.replace_state(VintageNetMonitor, fn state ->
       %{state | ip_list: MapSet.new([ipv4.address])}

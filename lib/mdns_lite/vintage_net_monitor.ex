@@ -60,6 +60,8 @@ defmodule MdnsLite.VintageNetMonitor do
     {:noreply, new_state}
   end
 
+  defp add_ips(state, nil), do: state
+
   defp add_ips(%{ip_list: ip_list} = state, address_data) do
     ip_list =
       fetch_ips(address_data)
@@ -89,6 +91,8 @@ defmodule MdnsLite.VintageNetMonitor do
   defp filter_by_ipv4(ip_list, true) do
     Enum.filter(ip_list, &(MdnsLite.Utilities.ip_family(&1) == :inet))
   end
+
+  defp remove_ips(state, nil), do: state
 
   defp remove_ips(%{ip_list: ip_list} = state, address_data) do
     ip_list =
