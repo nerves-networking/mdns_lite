@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.6.1
+
+* Handle nil from VintageNet reports
+
 ## v0.6.0
 
 * Allow mdns host to be change at runtime
