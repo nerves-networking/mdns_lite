@@ -80,7 +80,7 @@ defmodule MdnsLite.QueryTest do
     assert Query.handle(query, test_alias_state()) == result
   end
 
-  test "responds to a unicast A requrest" do
+  test "responds to a unicast A request" do
     query = %DNS.Query{class: 32769, domain: 'nerves-21a5.local', type: :a}
 
     result = [

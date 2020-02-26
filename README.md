@@ -17,7 +17,7 @@ version of MdnsLite supports two default monitors:
 
 * `InetMonitor` which periodically checks via `inet:getifaddrs()` for changes
   in the network. For example, a change could be the re-assignment of IP
-  addresses. 
+  addresses.
 
 * `VintageNetMonitor` which subscribes to [`VintageNet`](https://github.com/nerves-networking/vintage_net) address events for all
 interfaces as they happen.
