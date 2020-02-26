@@ -112,19 +112,20 @@ defmodule MdnsLite.Responder do
   @impl true
   def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
     # Decode the UDP packet
-    dns_record = DNS.Record.decode(packet)
-    # qr is the query/response flag; false (0) = query, true (1) = response
-    if !dns_record.header.qr && length(dns_record.qdlist) > 0 do
+    with {:ok, dns_record} <- :inet_dns.decode(packet),
+         dns = DNS.Record.from_record(dns_record),
+         # qr is the query/response flag; false (0) = query, true (1) = response
+         false <- dns.header.qr do
       # There can be multiple queries in each request
-      dns_record.qdlist
+      dns.qdlist
       |> Enum.map(fn qd -> {qd.class, Query.handle(qd, state)} end)
       |> Enum.each(fn
         # Erlang doesn't know about unicast class
         {32769, resources} ->
-          send_response(resources, dns_record, {src_ip, src_port}, state)
+          send_response(resources, dns, {src_ip, src_port}, state)
 
         {_, resources} ->
-          send_response(resources, dns_record, mdns_destination(src_ip, src_port), state)
+          send_response(resources, dns, mdns_destination(src_ip, src_port), state)
       end)
     end
 
