@@ -8,6 +8,7 @@ defmodule MdnsLite.InetMonitor do
   @scan_interval 10000
 
   @moduledoc false
+
   # Watch :inet.getifaddrs/0 for IP address changes and update the active responders.
 
   defmodule State do
