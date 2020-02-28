@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.6.2
+
+* Bug fixes
+  * Fix crash when handling undecodable mDNS messages
+
 ## v0.6.1
 
 * Handle nil from VintageNet reports
@@ -36,7 +41,7 @@
 
 ## v0.3.0
 
-* Remove a superfluous map from the config. 
+* Remove a superfluous map from the config.
 
 ## v0.2.1
 
