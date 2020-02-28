@@ -1,5 +1,6 @@
 defmodule MdnsLite.VintageNetMonitor do
   use GenServer
+  @moduledoc false
 
   alias MdnsLite.{Responder, ResponderSupervisor}
 

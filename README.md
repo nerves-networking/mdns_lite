@@ -4,37 +4,39 @@
 [![CircleCI](https://circleci.com/gh/pcmarks/mdns_lite.svg?style=svg)](https://circleci.com/gh/pcmarks/mdns_lite)
 
 MdnsLite is a simple, limited, no frills implementation of an
-[mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (multicast Domain Name System)
-server. It operates like a DNS server, the difference being that it uses multicast
-instead of unicast and is meant to be the DNS server for the _.local_ domain. MdnsLite
-also provides for the advertising (discovery) of services offered by the host system.
-Examples of services are an HTTP or an SSH server. Read about configuring
-services in the Configuration section below.
+[mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (multicast Domain Name
+System) server. It operates like a DNS server, the difference being that it uses
+multicast instead of unicast and is meant to be the DNS server for the _.local_
+domain. MdnsLite also provides for the advertising (discovery) of services
+offered by the host system.  Examples of services are an HTTP or an SSH server.
+Read about configuring services in the Configuration section below.
 
 MdnsLite employs a network interface monitor that can dynamically adjust to
 network changes, e.g., assignment of a new IP address to a host. The current
 version of MdnsLite supports two default monitors:
 
-* `InetMonitor` which periodically checks via `inet:getifaddrs()` for changes
-  in the network. For example, a change could be the re-assignment of IP
-  addresses.
+* `InetMonitor` which periodically checks via `inet:getifaddrs()` for changes in
+  the network. For example, a change could be the re-assignment of IP addresses.
 
-* `VintageNetMonitor` which subscribes to [`VintageNet`](https://github.com/nerves-networking/vintage_net) address events for all
-interfaces as they happen.
+* `VintageNetMonitor` which subscribes to
+  [`VintageNet`](https://github.com/nerves-networking/vintage_net) address
+  events for all interfaces as they happen.
 
-For configuration values related to the interface monitor, please see the Configuration
-section below.
+For configuration values related to the interface monitor, please see the
+Configuration section below.
 
-MdnsLite recognizes the following [query types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
+MdnsLite recognizes the following [query
+types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
 
 * A - Find the IPv4 address of a hostname.
-* PTR - Given an IPv4 address, find its hostname - reverse lookup. If, however, it receives a request domain of
-"_services._dns-sd._udp.local", MdnsLite will respond with a list of
-every service available (and is specified in the configuration) on the host.
+* PTR - Given an IPv4 address, find its hostname - reverse lookup. If, however,
+  it receives a request domain of "_services._dns-sd._udp.local", MdnsLite will
+  respond with a list of every service available (and is specified in the
+  configuration) on the host.
 * SRV - Service Locator
 
-If you want to know the details of the various DNS/mDNS record types and their fields,
-a good source is
+If you want to know the details of the various DNS/mDNS record types and their
+fields, a good source is
 [zytrax.com/books/dns](http://www.zytrax.com/books/dns).
 
 There are at least a couple of other Elixir/Erlang implementations of mDNS servers:
@@ -46,8 +48,7 @@ These implementations provided valuable guidance in the building of MdnsLite.
 
 ## Configuration
 
-A typical configuration in the `config.exs` file looks
-like:
+A typical configuration in the `config.exs` file looks like:
 
 ```elixir
 config :mdns_lite,
@@ -73,9 +74,11 @@ config :mdns_lite,
   ]
 ```
 
-(Note that the configuration changed from v0.2 to v0.3, eliminating a superfluous map.)
+(Note that the configuration changed from v0.2 to v0.3, eliminating a
+superfluous map.)
 
-The values of `host` and `ttl` will be used in the construction of mDNS (DNS) responses.
+The values of `host` and `ttl` will be used in the construction of mDNS (DNS)
+responses.
 
 `host` can have the value of  `:hostname` in which case the value will be
 replaced with the value of `:inet.gethostname()`, otherwise you can provide a
@@ -86,29 +89,31 @@ an alias, an "A" query can be made to  `alias-example.local` as well as to
 `MdnsLite.set_host/1`:
 
 ```elixir
-iex)> MdnsLite.set_host([:hostname, "nerves"])
+iex> MdnsLite.set_host([:hostname, "nerves"])
 :ok
 ```
 
 `ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
-DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120 seconds.
+DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120
+seconds.
 
 As mentioned above, `MdnsLite` uses an interface monitor. The configuration
 value `ip_address_monitor` (not shown) defaults to `VintageNetMonitor` if
-[`VintageNet`](https://github.com/nerves-networking/vintage_net) is added as a dependency to your project using `MdnsLite`.
-Otherwise, `InetMonitor` will be the default. The
-configuration value `excluded_ifnames` represents those interfaces that the
-monitor will **not** watch. Its default value is `["lo0", "lo"]`.
+[`VintageNet`](https://github.com/nerves-networking/vintage_net) is added as a
+dependency to your project using `MdnsLite`.  Otherwise, `InetMonitor` will be
+the default. The configuration value `excluded_ifnames` represents those
+interfaces that the monitor will **not** watch. Its default value is `["lo0",
+"lo"]`.
 
-The `services` section lists the services that the host offers,
-such as providing an HTTP server. You must supply the `protocol`, `transport` and
-`port` values for each service. You may also specify `weight` and/or `host`.
-They each default to a zero value. Please consult the RFC for an explanation of
-these values. Services can be configured in `config.exs` as shown above, or at
+The `services` section lists the services that the host offers, such as
+providing an HTTP server. You must supply the `protocol`, `transport` and `port`
+values for each service. You may also specify `weight` and/or `host`.  They each
+default to a zero value. Please consult the RFC for an explanation of these
+values. Services can be configured in `config.exs` as shown above, or at
 runtime:
 
 ```elixir
-iex)> services = [
+iex> services = [
   # service type: _http._tcp.local - used in match
   %{
     name: "Web Server",
@@ -125,7 +130,7 @@ iex)> services = [
   }
 ]
 
-iex)> MdnsLite.add_mds_services(services)
+iex> MdnsLite.add_mds_services(services)
 :ok
 ```
 
@@ -133,12 +138,12 @@ Services can also be removed at runtime via `remove_mdns_services/1` with the
 service name to remove:
 
 ```elixir
-iex)> service_names = ["Web Server", "Secure Socket"]
-iex)> MdnsLite.remove_mdns_services(services)
+iex> service_names = ["Web Server", "Secure Socket"]
+iex> MdnsLite.remove_mdns_services(services)
 :ok
 
 # Remove just a single service
-iex)> MdnsLite.remove_mdns_services("Secure Socket")
+iex> MdnsLite.remove_mdns_services("Secure Socket")
 :ok
 ```
 
@@ -185,8 +190,12 @@ nerves-7fcb.local.  120 IN  A 192.168.0.106
 ...
 ```
 
-Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`. You can use the reserved ip address (`224.0.0.251`) and port(`5353`) and query the local domain. Or you can use the local hostname, e.g., `nerves-7fcb.local` of the host that is providing the mDNS responses along with port `5353`.
+Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`.
+You can use the reserved ip address (`224.0.0.251`) and port(`5353`) and query
+the local domain. Or you can use the local hostname, e.g., `nerves-7fcb.local`
+of the host that is providing the mDNS responses along with port `5353`.
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/mdns_lite](https://hexdocs.pm/mdns_lite).
+Documentation can be generated with
+[ExDoc](https://github.com/elixir-lang/ex_doc) and published on
+[HexDocs](https://hexdocs.pm). Once published, the docs can be found at
+[https://hexdocs.pm/mdns_lite](https://hexdocs.pm/mdns_lite).
