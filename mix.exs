@@ -56,7 +56,7 @@ defmodule MdnsLite.MixProject do
       {:dns, "~> 2.1"},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
-      {:vintage_net, "~> 0.6", optional: true}
+      {:vintage_net, "~> 0.7", optional: true}
     ]
   end
 
