@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.3
+
+* Bug fixes
+  * Update default so that ppp interfaces are ignored. This prevents surprises
+    of having a responder run on a cellular link.
+
 ## v0.6.2
 
 * Bug fixes
