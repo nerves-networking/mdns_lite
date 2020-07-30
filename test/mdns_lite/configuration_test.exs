@@ -10,6 +10,7 @@ defmodule MdnsLite.ConfigurationTest do
     %{
       result: %{
         name: "SSH Remote Login Protocol",
+        payload: [""],
         port: 22,
         priority: 0,
         protocol: "ssh",

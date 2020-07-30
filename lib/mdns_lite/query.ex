@@ -81,9 +81,7 @@ defmodule MdnsLite.Query do
 
           [
             dns_resource(:in, :ptr, domain, state.ttl, service_instance_name),
-            # Until we support the user specification of TXT values,
-            # the RFC says at a minimum return a TXT record with an empty string
-            dns_resource(:in, :txt, service_instance_name, state.ttl, [""]),
+            dns_resource(:in, :txt, service_instance_name, state.ttl, service.payload),
             dns_resource(:in, :srv, service_instance_name, state.ttl, srv_data),
             dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
           ]

@@ -109,8 +109,10 @@ The `services` section lists the services that the host offers, such as
 providing an HTTP server. You must supply the `protocol`, `transport` and `port`
 values for each service. You may also specify `weight` and/or `host`.  They each
 default to a zero value. Please consult the RFC for an explanation of these
-values. Services can be configured in `config.exs` as shown above, or at
-runtime:
+values. You can also specify `payload` which is used to define the data in a TXT
+DNS resource record, it should be a list of strings containing a key and value
+separated by a `=`. Services can be configured in `config.exs` as shown above,
+or at runtime:
 
 ```elixir
 iex> services = [
@@ -127,6 +129,7 @@ iex> services = [
     protocol: "ssh",
     transport: "tcp",
     port: 22,
+    payload: ["key=value"],
   }
 ]
 
@@ -179,7 +182,7 @@ $ dig @224.0.0.251 -p 5353 -x 192.168.0.106
 $ dig @nerves-7fcb.local -p 5353 -t PTR _ssh._tcp.local
 ...
 _ssh._tcp.local.  120 IN  PTR nerves-7fcb._ssh._tcp.local.
-nerves-7fcb._ssh._tcp.local. 120 IN TXT ""
+nerves-7fcb._ssh._tcp.local. 120 IN TXT "key=value"
 nerves-7fcb._ssh._tcp.local. 120 IN SRV 0 0 22 nerves-7fcb.local.
 nerves-7fcb.local.  120 IN  A 192.168.0.106
 ...
