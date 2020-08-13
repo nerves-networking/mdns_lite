@@ -34,7 +34,7 @@ defmodule MdnsLite.MixProject do
       files: ~w(lib mix.exs README.md LICENSE*
                 CHANGELOG* ),
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/pcmarks/mdns_lite"}
+      links: %{"GitHub" => "https://github.com/nerves-networking/mdns_lite"}
     ]
   end
 
@@ -64,7 +64,7 @@ defmodule MdnsLite.MixProject do
     [
       extras: ["README.md"],
       source_ref: "v#{@version}",
-      source_url: "https://github.com/pcmarks/mdns_lite"
+      source_url: "https://github.com/nerves-networking/mdns_lite"
     ]
   end
 end

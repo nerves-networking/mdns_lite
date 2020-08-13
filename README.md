@@ -1,7 +1,7 @@
 # MdnsLite
 
 [![Hex version](https://img.shields.io/hexpm/v/mdns_lite.svg "Hex version")](https://hex.pm/packages/mdns_lite)
-[![CircleCI](https://circleci.com/gh/pcmarks/mdns_lite.svg?style=svg)](https://circleci.com/gh/pcmarks/mdns_lite)
+[![CircleCI](https://circleci.com/gh/nerves-networking/mdns_lite.svg?style=svg)](https://circleci.com/gh/nerves-networking/mdns_lite)
 
 MdnsLite is a simple, limited, no frills implementation of an
 [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (multicast Domain Name
