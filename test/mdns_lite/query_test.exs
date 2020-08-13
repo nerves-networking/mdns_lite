@@ -9,10 +9,12 @@ defmodule MdnsLite.QueryTest do
     %MdnsLite.Responder.State{
       dot_local_name: 'nerves-21a5.local',
       dot_alias_name: nil,
+      instance_name: "nerves-21a5",
       ip: {192, 168, 9, 57},
       services: [
         %{
           name: "Web Server",
+          txt_payload: ["key=value"],
           port: 80,
           priority: 0,
           protocol: "http",
@@ -22,6 +24,7 @@ defmodule MdnsLite.QueryTest do
         },
         %{
           name: "Secure Socket",
+          txt_payload: [""],
           port: 22,
           priority: 0,
           protocol: "ssh",
@@ -106,7 +109,7 @@ defmodule MdnsLite.QueryTest do
     assert Query.handle(query, test_state()) == []
   end
 
-  test "responds to a PTR request" do
+  test "responds to a PTR request with a reverse lookup domain" do
     query = %DNS.Query{class: :in, domain: '57.9.168.192', type: :ptr}
 
     result = [
@@ -120,6 +123,60 @@ defmodule MdnsLite.QueryTest do
         tm: :undefined,
         ttl: 120,
         type: :ptr
+      }
+    ]
+
+    assert Query.handle(query, test_state()) == result
+  end
+
+  test "responds to a PTR request with a specific domain" do
+    test_domain = '_http._tcp.local'
+    query = %DNS.Query{class: :in, domain: test_domain, type: :ptr}
+
+    result = [
+      %DNS.Resource{
+        bm: '',
+        class: :in,
+        cnt: 0,
+        data: 'nerves-21a5._http._tcp.local',
+        domain: test_domain,
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :ptr
+      },
+      %DNS.Resource{
+        bm: [],
+        class: :in,
+        cnt: 0,
+        data: ["key=value"],
+        domain: 'nerves-21a5._http._tcp.local',
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :txt
+      },
+      %DNS.Resource{
+        bm: [],
+        class: :in,
+        cnt: 0,
+        data: {0, 0, 80, 'nerves-21a5.local.'},
+        domain: 'nerves-21a5._http._tcp.local',
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :srv
+      },
+      %DNS.Resource{
+        bm: [],
+        class: :in,
+        cnt: 0,
+        data: {192, 168, 9, 57},
+        domain: 'nerves-21a5.local',
+        func: false,
+        tm: :undefined,
+        ttl: 120,
+        type: :a
       }
     ]
 

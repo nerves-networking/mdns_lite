@@ -31,7 +31,8 @@ defmodule MdnsLite.Configuration do
   @default_ttl 120
   @default_service %{
     weight: 0,
-    priority: 0
+    priority: 0,
+    txt_payload: [""]
   }
 
   @spec start_link(any()) :: GenServer.on_start()
