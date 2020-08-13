@@ -81,7 +81,7 @@ defmodule MdnsLite.Query do
 
           [
             dns_resource(:in, :ptr, domain, state.ttl, service_instance_name),
-            dns_resource(:in, :txt, service_instance_name, state.ttl, service.payload),
+            dns_resource(:in, :txt, service_instance_name, state.ttl, service.txt_payload),
             dns_resource(:in, :srv, service_instance_name, state.ttl, srv_data),
             dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
           ]

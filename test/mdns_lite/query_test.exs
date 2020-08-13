@@ -14,7 +14,7 @@ defmodule MdnsLite.QueryTest do
       services: [
         %{
           name: "Web Server",
-          payload: ["key=value"],
+          txt_payload: ["key=value"],
           port: 80,
           priority: 0,
           protocol: "http",
@@ -24,7 +24,7 @@ defmodule MdnsLite.QueryTest do
         },
         %{
           name: "Secure Socket",
-          payload: [""],
+          txt_payload: [""],
           port: 22,
           priority: 0,
           protocol: "ssh",

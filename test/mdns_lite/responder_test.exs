@@ -8,7 +8,7 @@ defmodule MdnsLite.ResponderTest do
 
     some_service = %{
       name: "My Service",
-      payload: [""],
+      txt_payload: [""],
       port: 1234,
       priority: 0,
       protocol: "nunya",

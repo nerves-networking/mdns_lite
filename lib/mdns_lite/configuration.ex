@@ -32,7 +32,7 @@ defmodule MdnsLite.Configuration do
   @default_service %{
     weight: 0,
     priority: 0,
-    payload: [""]
+    txt_payload: [""]
   }
 
   @spec start_link(any()) :: GenServer.on_start()

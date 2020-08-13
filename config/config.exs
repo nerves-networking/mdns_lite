@@ -15,7 +15,7 @@ config :mdns_lite,
 
   # A list of this host's services. NB: There are two other mDNS values: weight
   # and priority that both default to zero unless included in the service below.
-  # The payload value is optional and can be used to define the data in TXT
+  # The txt_payload value is optional and can be used to define the data in TXT
   # DNS resource records, it should be a list of strings containing a key and
   # value separated by a '='.
   services: [
@@ -24,7 +24,7 @@ config :mdns_lite,
       protocol: "http",
       transport: "tcp",
       port: 80,
-      payload: ["key=value"]
+      txt_payload: ["key=value"]
     },
     %{
       name: "Secure Socket",
