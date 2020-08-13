@@ -198,7 +198,7 @@ You can use the reserved ip address (`224.0.0.251`) and port(`5353`) and query
 the local domain. Or you can use the local hostname, e.g., `nerves-7fcb.local`
 of the host that is providing the mDNS responses along with port `5353`.
 
-Documentation can be generated with
-[ExDoc](https://github.com/elixir-lang/ex_doc) and published on
-[HexDocs](https://hexdocs.pm). Once published, the docs can be found at
-[https://hexdocs.pm/mdns_lite](https://hexdocs.pm/mdns_lite).
+## In memory
+
+[Peter Marks](https://github.com/pcmarks/) wrote and maintained the original
+version of `mdns_lite`.
