@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.4
+
+* New features
+  * Support custom TXT record contents. See the `:txt_payload`. Thanks to
+    Eduardo Cunha for adding this.
+
 ## v0.6.3
 
 * Bug fixes
