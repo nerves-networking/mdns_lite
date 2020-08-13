@@ -2,40 +2,39 @@ defmodule MdnsLite.MixProject do
   use Mix.Project
 
   @version "0.6.3"
+  @source_url "https://github.com/nerves-networking/mdns_lite"
 
   def project do
     [
       app: :mdns_lite,
       version: @version,
       elixir: "~> 1.7",
-      build_embedded: true,
       start_permanent: Mix.env() == :prod,
       docs: docs(),
       description: description(),
       package: package(),
-      dialyzer: [
-        flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
-        plt_add_apps: [:vintage_net],
-        ignore_warnings: "dialyzer.ignore_warnings",
-        list_unused_filters: true
-      ],
-      deps: deps()
+      dialyzer: dialyzer(),
+      deps: deps(),
+      preferred_cli_env: %{
+        docs: :docs,
+        "hex.publish": :docs,
+        "hex.build": :docs,
+        credo: :test
+      }
     ]
   end
 
-  def description do
+  defp description do
     "A simple, limited, no frills implementation of an mDNS server"
   end
 
-  def package do
-    [
-      name: "mdns_lite",
-      maintainers: ["Peter C Marks"],
+  defp package do
+    %{
       files: ~w(lib mix.exs README.md LICENSE*
                 CHANGELOG* ),
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/nerves-networking/mdns_lite"}
-    ]
+      links: %{"GitHub" => @source_url}
+    }
   end
 
   # Run "mix help compile.app" to learn about applications.
@@ -54,17 +53,29 @@ defmodule MdnsLite.MixProject do
   defp deps do
     [
       {:dns, "~> 2.1"},
-      {:dialyxir, "~> 1.0.0", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.0.0", only: :dev, runtime: false},
+      {:credo, "~> 1.2", only: :test, runtime: false},
+      {:ex_doc, "~> 0.22", only: :docs, runtime: false},
       {:vintage_net, "~> 0.7", optional: true}
+    ]
+  end
+
+  defp dialyzer() do
+    [
+      flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+      plt_add_apps: [:vintage_net],
+      ignore_warnings: "dialyzer.ignore_warnings",
+      list_unused_filters: true
     ]
   end
 
   defp docs do
     [
-      extras: ["README.md"],
+      extras: ["README.md", "CHANGELOG.md"],
+      main: "readme",
       source_ref: "v#{@version}",
-      source_url: "https://github.com/nerves-networking/mdns_lite"
+      source_url: @source_url,
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 end

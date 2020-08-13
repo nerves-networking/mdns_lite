@@ -1,7 +1,7 @@
 defmodule MdnsLite.VintageNetMonitorTest do
   use ExUnit.Case, async: false
 
-  alias MdnsLite.{VintageNetMonitor, ResponderSupervisor}
+  alias MdnsLite.{ResponderSupervisor, VintageNetMonitor}
 
   setup do
     %{
