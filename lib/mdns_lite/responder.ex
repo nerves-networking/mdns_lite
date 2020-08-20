@@ -18,6 +18,8 @@ defmodule MdnsLite.Responder do
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
   @mdns_port 5353
+  @sol_socket 0xFFFF
+  @so_reuseport 0x0200
 
   defmodule State do
     @moduledoc false
@@ -220,6 +222,16 @@ defmodule MdnsLite.Responder do
       # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
       multicast_ttl: 255,
       reuseaddr: true
-    ]
+    ] ++ reuse_port()
+  end
+
+  defp reuse_port do
+    case :os.type() do
+      {:unix, os_name} when os_name in [:darwin, :freebsd, :openbsd, :netbsd] ->
+        [{:raw, @sol_socket, @so_reuseport, <<1::native-32>>}]
+
+      _ ->
+        []
+    end
   end
 end
