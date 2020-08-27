@@ -226,7 +226,7 @@ defmodule MdnsLite.Responder do
     ] ++ reuse_port()
   end
 
-  def reuse_port() do
+  defp reuse_port() do
     case :os.type() do
       {:unix, :linux} ->
         reuse_port_linux()
