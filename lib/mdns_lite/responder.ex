@@ -80,7 +80,7 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
-  @impl true
+  @impl GenServer
   def init(address) do
     # Join the mDNS multicast group
     state =
@@ -90,7 +90,7 @@ defmodule MdnsLite.Responder do
     {:ok, state, {:continue, :initialization}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_continue(:initialization, %{skip_udp: true} = state) do
     # Used only for testing.
     {:noreply, state}
@@ -102,7 +102,7 @@ defmodule MdnsLite.Responder do
     {:noreply, %{state | udp: udp}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:refresh, config}, _from, state) do
     {:reply, :ok, add_config_values(state, config)}
   end
@@ -112,7 +112,7 @@ defmodule MdnsLite.Responder do
   written to the mDNS multicast port. We are only interested in queries and of
   those queries those that are germane.
   """
-  @impl true
+  @impl GenServer
   def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
     # Decode the UDP packet
     with {:ok, dns_record} <- :inet_dns.decode(packet),
@@ -135,7 +135,7 @@ defmodule MdnsLite.Responder do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(_msg, state) do
     {:noreply, state}
   end

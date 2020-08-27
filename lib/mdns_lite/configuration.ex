@@ -80,7 +80,7 @@ defmodule MdnsLite.Configuration do
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
-  @impl true
+  @impl GenServer
   def init(_opts) do
     env_host = Application.get_env(:mdns_lite, :host, @default_host_name_list)
     hosts = configure_hosts(env_host)
@@ -96,7 +96,7 @@ defmodule MdnsLite.Configuration do
     {:ok, add_services(config_services, state)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:add_services, services}, _from, state) do
     {:reply, :ok, add_services(services, state), {:continue, :refresh_responders}}
   end
@@ -105,7 +105,6 @@ defmodule MdnsLite.Configuration do
     {:reply, state.mdns_config, state}
   end
 
-  @impl true
   def handle_call(:get_mdns_services, _from, state) do
     {:reply, MapSet.to_list(state.mdns_services), state}
   end
@@ -120,7 +119,7 @@ defmodule MdnsLite.Configuration do
     {:reply, :ok, %{state | mdns_config: mdns_config}, {:continue, :refresh_responders}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_continue(:refresh_responders, state) do
     :ok =
       Map.take(state, [:mdns_config, :mdns_services])

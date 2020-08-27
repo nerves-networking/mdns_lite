@@ -12,7 +12,7 @@ defmodule MdnsLite.Application do
       Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
     end
 
-    @impl true
+    @impl Supervisor
     def init(_init_arg) do
       ip_address_monitor =
         Application.get_env(
@@ -41,7 +41,7 @@ defmodule MdnsLite.Application do
     end
   end
 
-  @impl true
+  @impl Application
   def start(_type, _args) do
     children = [
       {MdnsLite.Configuration, []},

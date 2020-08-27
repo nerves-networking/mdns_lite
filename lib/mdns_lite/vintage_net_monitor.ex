@@ -18,7 +18,7 @@ if Code.ensure_loaded?(VintageNet) do
       GenServer.start_link(__MODULE__, opts, name: __MODULE__)
     end
 
-    @impl true
+    @impl GenServer
     def init(opts) do
       excluded_ifnames =
         Keyword.get(opts, :excluded_ifnames, [])
@@ -37,7 +37,7 @@ if Code.ensure_loaded?(VintageNet) do
       {:ok, state, {:continue, :initialization}}
     end
 
-    @impl true
+    @impl GenServer
     def handle_continue(:initialization, state) do
       address_data =
         VintageNet.match(@addresses_topic)
@@ -48,7 +48,7 @@ if Code.ensure_loaded?(VintageNet) do
       {:noreply, add_ips(state, address_data)}
     end
 
-    @impl true
+    @impl GenServer
     def handle_info({VintageNet, ["interface", ifname, "addresses"], old, new, _}, state) do
       new_state =
         if allowed_interface?(ifname, state) do

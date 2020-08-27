@@ -22,7 +22,7 @@ defmodule MdnsLite.ResponderSupervisor do
     |> Enum.each(&Responder.refresh(&1, config))
   end
 
-  @impl true
+  @impl DynamicSupervisor
   def init(_init_arg) do
     DynamicSupervisor.init(strategy: :one_for_one)
   end

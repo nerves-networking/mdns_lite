@@ -30,7 +30,7 @@ defmodule MdnsLite.InetMonitor do
     GenServer.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
-  @impl true
+  @impl GenServer
   def init(args) do
     excluded_ifnames = Keyword.get(args, :excluded_ifnames, [])
     excluded_ifnames_cl = Enum.map(excluded_ifnames, &to_charlist/1)
@@ -41,7 +41,7 @@ defmodule MdnsLite.InetMonitor do
     {:ok, state, 1}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:timeout, state) do
     new_state = update(state)
 
