@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.6.5
+
+* Bug fixes
+  * Reuse addresses and ports when binding to the multicast socket to coexist
+    with other mDNS software. Thanks to Eduardo Cunha and Matt Myers for the
+    updates.
+
 ## v0.6.4
 
 * New features
