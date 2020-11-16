@@ -73,8 +73,7 @@ defmodule MdnsLite.Query do
           to_string(domain) == service.type <> ".local"
         end)
         |> Enum.flat_map(fn service ->
-          service_instance_name =
-            String.to_charlist("#{state.instance_name}.#{service.type}.local")
+          service_instance_name = String.to_charlist("#{service.name}.#{service.type}.local")
 
           target = state.dot_local_name ++ '.'
           srv_data = {service.priority, service.weight, service.port, target}
@@ -108,13 +107,13 @@ defmodule MdnsLite.Query do
       when class in @in_class do
     state.services
     |> Enum.filter(fn service ->
-      instance_service_name = "#{state.instance_name}.#{service.type}.local"
+      instance_service_name = "#{service.name}.#{service.type}.local"
       to_string(domain) == instance_service_name
     end)
     |> Enum.flat_map(fn service ->
       # construct the data value to be returned
       # Note: The spec - RFC 2782 - specifies that the target/hostname end with a dot.
-      service_instance_name = String.to_charlist("#{state.instance_name}.#{service.type}.local")
+      service_instance_name = String.to_charlist("#{service.name}.#{service.type}.local")
 
       target = state.dot_local_name ++ '.'
       srv_data = {service.priority, service.weight, service.port, target}
