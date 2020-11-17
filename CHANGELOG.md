@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.6
+
+* Bug fixes
+  * Advertise services based on service names & not hostname. Thanks to Matt
+    Trudel for this fix.
+
 ## v0.6.5
 
 * Bug fixes

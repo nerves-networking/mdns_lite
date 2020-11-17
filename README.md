@@ -158,7 +158,7 @@ by adding `mdns_lite` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:mdns_lite, "~> 0.4"}
+    {:mdns_lite, "~> 0.6"}
   ]
 end
 ```
