@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.7
+
+* Improvements
+  * Exclude `"wwan0"` by default. These interfaces are cellular links like ppp
+    and it's not appropriate to respond to mDNS on them either.
+
 ## v0.6.6
 
 * Bug fixes
