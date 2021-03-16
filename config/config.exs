@@ -8,7 +8,7 @@ config :mdns_lite,
   # host can be one of the values: hostname1, [hostname1], or [hostname1, hostname2]
   # where hostname1 is the atom :hostname in which case it is replaced with the
   # value of :int.gethostname() or a string and hostname2 is a string value.
-  # Exmple: [:hostname, "nerves"]
+  # Example: [:hostname, "nerves"]
 
   host: [:hostname, "nerves"],
   ttl: 120,
