@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.8
+
+* Improvements
+  * Removed the dependency on `DNS`.
+  * Remove optional dependency on VintageNet.
+
 ## v0.6.7
 
 * Improvements
