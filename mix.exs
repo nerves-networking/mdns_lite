@@ -64,7 +64,7 @@ defmodule MdnsLite.MixProject do
     [
       flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
       plt_add_apps: [:vintage_net],
-      ignore_warnings: "dialyzer.ignore_warnings",
+      ignore_warnings: ".dialyzer_ignore.exs",
       list_unused_filters: true
     ]
   end
