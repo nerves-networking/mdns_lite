@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.7.0
+
+* Breaking change
+  * Change optional dependency on VintageNet to a mandatory one. Probably all
+    `:mdns_lite` users were already using VintageNet and since Mix releases
+    doesn't support optional dependencies yet, some users got errors when the
+    release misordered them. This avoids the problem.
+
+* Improvements
+  * Removed the `:dns` package dependency. There as an Erlang crypto API call in
+    a dependency of `:dns` that was removed in OTP 24. This change makes it
+    possible to use `:mdns_lite` on OTP 24 without worrying about a missing
+    crypto API call.
+
 ## v0.6.7
 
 * Improvements
