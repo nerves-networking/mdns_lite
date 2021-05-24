@@ -52,7 +52,6 @@ defmodule MdnsLite.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:dns, "~> 2.1"},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:credo, "~> 1.2", only: :test, runtime: false},
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},

@@ -14,6 +14,12 @@ defmodule MdnsLite.Responder do
   use GenServer
   require Logger
   alias MdnsLite.{Configuration, Query}
+  import Record, only: [defrecord: 2]
+
+  defrecord :dns_rec, Record.extract(:dns_rec, from_lib: "kernel/src/inet_dns.hrl")
+  defrecord :dns_header, Record.extract(:dns_header, from_lib: "kernel/src/inet_dns.hrl")
+  defrecord :dns_query, Record.extract(:dns_query, from_lib: "kernel/src/inet_dns.hrl")
+  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: "kernel/src/inet_dns.hrl")
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
@@ -116,19 +122,21 @@ defmodule MdnsLite.Responder do
   def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
     # Decode the UDP packet
     with {:ok, dns_record} <- :inet_dns.decode(packet),
-         dns = DNS.Record.from_record(dns_record),
+         dns_rec(header: header, qdlist: qdlist) = dns_record,
          # qr is the query/response flag; false (0) = query, true (1) = response
-         false <- dns.header.qr do
+         dns_header(qr: false) <- header do
       # There can be multiple queries in each request
-      dns.qdlist
-      |> Enum.map(fn qd -> {qd.class, Query.handle(qd, state)} end)
+      qdlist
+      |> Enum.map(fn dns_query(class: class) = qd ->
+        {class, Query.handle(qd, state)}
+      end)
       |> Enum.each(fn
         # Erlang doesn't know about unicast class
         {32769, resources} ->
-          send_response(resources, dns, {src_ip, src_port}, state)
+          send_response(resources, dns_record, {src_ip, src_port}, state)
 
         {_, resources} ->
-          send_response(resources, dns, mdns_destination(src_ip, src_port), state)
+          send_response(resources, dns_record, mdns_destination(src_ip, src_port), state)
       end)
     end
 
@@ -145,34 +153,36 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   defp send_response([], _dns_record, _dest, _state), do: :ok
 
-  defp send_response(dns_resource_records, dns_record, {dest_address, dest_port}, state) do
+  defp send_response(
+         dns_resource_records,
+         dns_rec(header: dns_header(id: id)),
+         {dest_address, dest_port},
+         state
+       ) do
     # Construct an mDNS response from the query plus answers (resource records)
-    packet = response_packet(dns_record.header.id, dns_resource_records)
+    packet = response_packet(id, dns_resource_records)
 
     # _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
     # _ = Logger.debug("#{inspect(packet)}")
 
-    dns_record = DNS.Record.encode(packet)
+    dns_record = :inet_dns.encode(packet)
     :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
   end
 
   # A standard mDNS response packet
   defp response_packet(id, answer_list),
-    do: %DNS.Record{
-      header: %DNS.Header{
-        id: id,
-        aa: true,
-        qr: true,
-        opcode: 0,
-        rcode: 0
-      },
-      # Query list. Must be empty according to RFC 6762 Section 6.
-      qdlist: [],
-      # A list of answer entries. Can be empty.
-      anlist: answer_list,
-      # A list of resource entries. Can be empty.
-      arlist: []
-    }
+    do:
+      dns_rec(
+        header: dns_header(id: id, qr: true, aa: true),
+        # Query list. Must be empty according to RFC 6762 Section 6.
+        qdlist: [],
+        # A list of answer entries. Can be empty.
+        anlist: answer_list,
+        # nslist Can be empty.
+        nslist: [],
+        # arlist A list of resource entries. Can be empty.
+        arlist: []
+      )
 
   defp mdns_destination(_src_address, @mdns_port), do: {@mdns_ipv4, @mdns_port}
 

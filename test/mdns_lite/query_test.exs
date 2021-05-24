@@ -2,6 +2,10 @@ defmodule MdnsLite.QueryTest do
   use ExUnit.Case
 
   alias MdnsLite.Query
+  import Record, only: [defrecord: 2]
+
+  defrecord :dns_query, Record.extract(:dns_query, from_lib: "kernel/src/inet_dns.hrl")
+  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: "kernel/src/inet_dns.hrl")
 
   doctest MdnsLite.Query
 
@@ -44,86 +48,52 @@ defmodule MdnsLite.QueryTest do
   end
 
   test "responds to an A request" do
-    query = %DNS.Query{class: :in, domain: 'nerves-21a5.local', type: :a}
+    query = dns_query(domain: 'nerves-21a5.local', type: :a, class: :in)
 
     result = [
-      %DNS.Resource{
-        bm: [],
-        class: :in,
-        cnt: 0,
-        data: {192, 168, 9, 57},
-        domain: 'nerves-21a5.local',
-        func: false,
-        tm: :undefined,
-        ttl: 120,
-        type: :a
-      }
+      dns_rr(domain: 'nerves-21a5.local', type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
     ]
 
     assert Query.handle(query, test_state()) == result
   end
 
   test "responds to an A request for the alias" do
-    query = %DNS.Query{class: :in, domain: 'nerves.local', type: :a}
+    query = dns_query(domain: 'nerves.local', type: :a, class: :in)
 
     result = [
-      %DNS.Resource{
-        bm: [],
-        class: :in,
-        cnt: 0,
-        data: {192, 168, 9, 57},
-        domain: 'nerves.local',
-        func: false,
-        tm: :undefined,
-        ttl: 120,
-        type: :a
-      }
+      dns_rr(domain: 'nerves.local', type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
     ]
 
     assert Query.handle(query, test_alias_state()) == result
   end
 
   test "responds to a unicast A request" do
-    query = %DNS.Query{class: 32769, domain: 'nerves-21a5.local', type: :a}
+    query = dns_query(domain: 'nerves-21a5.local', type: :a, class: 32769)
 
     result = [
-      %DNS.Resource{
-        bm: [],
-        class: :in,
-        cnt: 0,
-        data: {192, 168, 9, 57},
-        domain: 'nerves-21a5.local',
-        func: false,
-        tm: :undefined,
-        ttl: 120,
-        type: :a
-      }
+      dns_rr(domain: 'nerves-21a5.local', type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
     ]
 
     assert Query.handle(query, test_state()) == result
   end
 
   test "ignores A request for someone else" do
-    query = %DNS.Query{class: :in, domain: 'someone-else.local', type: :a}
+    query = dns_query(domain: 'someone-else.local', type: :a, class: 32769)
 
     assert Query.handle(query, test_state()) == []
   end
 
   test "responds to a PTR request with a reverse lookup domain" do
-    query = %DNS.Query{class: :in, domain: '57.9.168.192', type: :ptr}
+    query = dns_query(domain: '57.9.168.192', type: :ptr, class: :in)
 
     result = [
-      %DNS.Resource{
-        bm: [],
-        class: :in,
-        cnt: 0,
-        data: test_state().dot_local_name,
+      dns_rr(
         domain: '57.9.168.192.in-addr.arpa.',
-        func: false,
-        tm: :undefined,
+        type: :ptr,
+        class: :in,
         ttl: 120,
-        type: :ptr
-      }
+        data: test_state().dot_local_name
+      )
     ]
 
     assert Query.handle(query, test_state()) == result
@@ -131,53 +101,31 @@ defmodule MdnsLite.QueryTest do
 
   test "responds to a PTR request with a specific domain" do
     test_domain = '_http._tcp.local'
-    query = %DNS.Query{class: :in, domain: test_domain, type: :ptr}
+    query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
     result = [
-      %DNS.Resource{
-        bm: '',
-        class: :in,
-        cnt: 0,
-        data: 'Web Server._http._tcp.local',
+      dns_rr(
         domain: test_domain,
-        func: false,
-        tm: :undefined,
-        ttl: 120,
-        type: :ptr
-      },
-      %DNS.Resource{
-        bm: [],
+        type: :ptr,
         class: :in,
-        cnt: 0,
-        data: ["key=value"],
+        ttl: 120,
+        data: 'Web Server._http._tcp.local'
+      ),
+      dns_rr(
         domain: 'Web Server._http._tcp.local',
-        func: false,
-        tm: :undefined,
-        ttl: 120,
-        type: :txt
-      },
-      %DNS.Resource{
-        bm: [],
+        type: :txt,
         class: :in,
-        cnt: 0,
-        data: {0, 0, 80, 'nerves-21a5.local.'},
+        ttl: 120,
+        data: ["key=value"]
+      ),
+      dns_rr(
         domain: 'Web Server._http._tcp.local',
-        func: false,
-        tm: :undefined,
-        ttl: 120,
-        type: :srv
-      },
-      %DNS.Resource{
-        bm: [],
+        type: :srv,
         class: :in,
-        cnt: 0,
-        data: {192, 168, 9, 57},
-        domain: 'nerves-21a5.local',
-        func: false,
-        tm: :undefined,
         ttl: 120,
-        type: :a
-      }
+        data: {0, 0, 80, 'nerves-21a5.local.'}
+      ),
+      dns_rr(domain: 'nerves-21a5.local', type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
     ]
 
     assert Query.handle(query, test_state()) == result
@@ -185,19 +133,19 @@ defmodule MdnsLite.QueryTest do
 
   test "responds to a PTR request with domain \'_services._dns-sd._udp.local\'" do
     test_domain = '_services._dns-sd._udp.local'
-    query = %DNS.Query{class: :in, domain: test_domain, type: :ptr}
+    query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
     result =
       test_state().services
       |> Enum.reverse()
       |> Enum.map(fn service ->
-        %DNS.Resource{
+        dns_rr(
           domain: test_domain,
-          class: :in,
           type: :ptr,
+          class: :in,
           ttl: test_state().ttl,
           data: to_charlist(service.type <> ".local")
-        }
+        )
       end)
 
     assert Query.handle(query, test_state()) == result
@@ -205,7 +153,7 @@ defmodule MdnsLite.QueryTest do
 
   test "responds to an SRV request for a known service" do
     known_service = "nerves-21a5.local._http._tcp.local"
-    query = %DNS.Query{class: :in, domain: to_charlist(known_service), type: :srv}
+    query = dns_query(domain: to_charlist(known_service), type: :srv, class: :in)
 
     result =
       test_state().services
@@ -217,12 +165,13 @@ defmodule MdnsLite.QueryTest do
           data = {service.priority, service.weight, service.port, target}
 
           [
-            %DNS.Resource{
-              class: :in,
+            dns_rr(
+              domain: to_charlist(known_service),
               type: :srv,
-              ttl: test_state().ttl,
+              class: :in,
+              ttl: 120,
               data: data
-            }
+            )
           ]
         else
           []
@@ -234,7 +183,8 @@ defmodule MdnsLite.QueryTest do
 
   test "ignore SRV request without the host (instance) name" do
     service_only = "_http._tcp.local"
-    query = %DNS.Query{class: :in, domain: to_charlist(service_only), type: :srv}
+    query = dns_query(domain: to_charlist(service_only), type: :srv, class: :in)
+
     assert Query.handle(query, test_state()) == []
   end
 end

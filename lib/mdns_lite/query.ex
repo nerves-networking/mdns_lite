@@ -2,6 +2,13 @@ defmodule MdnsLite.Query do
   require Logger
 
   alias MdnsLite.Configuration
+  import Record, only: [defrecord: 2]
+
+  defrecord :dns_query, Record.extract(:dns_query, from_lib: "kernel/src/inet_dns.hrl")
+  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: "kernel/src/inet_dns.hrl")
+
+  @type dns_query :: record(:dns_query, [])
+  @type dns_resource :: record(:dns_rr, [])
 
   @moduledoc false
 
@@ -11,23 +18,34 @@ defmodule MdnsLite.Query do
   This function returns a list of DNS Resource Records that should be sent back
   to the querier. The following query types are recognized: A, PTR, and SRV.
   """
-  @spec handle(DNS.Query.t(), map()) :: [DNS.Resource.t()]
+  @spec handle(dns_query, map()) :: [dns_resource]
 
   @in_class [:in, 32769]
 
   # An "A" type query. Address mapping record. Return the IP address if
   # this host's local name or alias, if specified, matches the query domain.
-  def handle(%DNS.Query{class: class, type: :a, domain: domain} = _query, state)
-      when class in @in_class do
+  def handle(dns_query(domain: domain, class: class, type: :a), state) when class in @in_class do
     cond do
       state.dot_local_name == domain ->
         [
-          dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
+          dns_rr(
+            class: :in,
+            type: :a,
+            domain: state.dot_local_name,
+            ttl: state.ttl,
+            data: state.ip
+          )
         ]
 
       state.dot_alias_name == domain ->
         [
-          dns_resource(:in, :a, state.dot_alias_name, state.ttl, state.ip)
+          dns_rr(
+            class: :in,
+            type: :a,
+            domain: state.dot_alias_name,
+            ttl: state.ttl,
+            data: state.ip
+          )
         ]
 
       true ->
@@ -40,10 +58,7 @@ defmodule MdnsLite.Query do
   # 1. A "special" domain value of "_services._dns-sd._udp.local" - DNS-SD
   # 2. A specific service domain, e.g., "_ssh._tcp.local"
   # 3. Reverse address lookup. Return the hostname for a matching IP address,
-  def handle(
-        %DNS.Query{class: class, type: :ptr, domain: domain} = _query,
-        state
-      )
+  def handle(dns_query(domain: domain, class: class, type: :ptr), state)
       when class in @in_class do
     # Convert our IP address so as to be able to match the arpa address
     # in the query. ARPA address for IP 192.168.0.112 is 112.0.168.192.in-addr.arpa
@@ -62,7 +77,13 @@ defmodule MdnsLite.Query do
         Configuration.get_mdns_services()
         |> Enum.flat_map(fn service ->
           [
-            dns_resource(:in, :ptr, domain, state.ttl, to_charlist(service.type <> ".local"))
+            dns_rr(
+              class: :in,
+              type: :ptr,
+              domain: domain,
+              ttl: state.ttl,
+              data: to_charlist(service.type <> ".local")
+            )
           ]
         end)
 
@@ -79,10 +100,34 @@ defmodule MdnsLite.Query do
           srv_data = {service.priority, service.weight, service.port, target}
 
           [
-            dns_resource(:in, :ptr, domain, state.ttl, service_instance_name),
-            dns_resource(:in, :txt, service_instance_name, state.ttl, service.txt_payload),
-            dns_resource(:in, :srv, service_instance_name, state.ttl, srv_data),
-            dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
+            dns_rr(
+              class: :in,
+              type: :ptr,
+              domain: domain,
+              ttl: state.ttl,
+              data: service_instance_name
+            ),
+            dns_rr(
+              class: :in,
+              type: :txt,
+              domain: service_instance_name,
+              ttl: state.ttl,
+              data: service.txt_payload
+            ),
+            dns_rr(
+              class: :in,
+              type: :srv,
+              domain: service_instance_name,
+              ttl: state.ttl,
+              data: srv_data
+            ),
+            dns_rr(
+              class: :in,
+              type: :a,
+              domain: state.dot_local_name,
+              ttl: state.ttl,
+              data: state.ip
+            )
           ]
         end)
 
@@ -90,7 +135,15 @@ defmodule MdnsLite.Query do
       String.starts_with?(to_string(domain), arpa_address) ->
         full_arpa_address = to_charlist(arpa_address <> ".in-addr.arpa.")
 
-        [dns_resource(:in, :ptr, full_arpa_address, state.ttl, state.dot_local_name)]
+        [
+          dns_rr(
+            class: :in,
+            type: :ptr,
+            domain: full_arpa_address,
+            ttl: state.ttl,
+            data: state.dot_local_name
+          )
+        ]
 
       true ->
         []
@@ -100,10 +153,7 @@ defmodule MdnsLite.Query do
   # An "SRV" type query. Find services, e.g., HTTP, SSH. The domain field in a
   # SRV service query will look like: "<host name>._http._tcp.local".
   # Respond only on an exact # match
-  def handle(
-        %DNS.Query{class: class, type: :srv, domain: domain} = _query,
-        state
-      )
+  def handle(dns_query(domain: domain, class: class, type: :srv), state)
       when class in @in_class do
     state.services
     |> Enum.filter(fn service ->
@@ -119,8 +169,14 @@ defmodule MdnsLite.Query do
       srv_data = {service.priority, service.weight, service.port, target}
 
       [
-        dns_resource(:in, :srv, service_instance_name, state.ttl, srv_data),
-        dns_resource(:in, :a, state.dot_local_name, state.ttl, state.ip)
+        dns_rr(
+          class: :in,
+          type: :srv,
+          domain: service_instance_name,
+          ttl: state.ttl,
+          data: srv_data
+        ),
+        dns_rr(class: :in, type: :a, domain: state.dot_local_name, ttl: state.ttl, data: state.ip)
       ]
     end)
   end
@@ -128,15 +184,5 @@ defmodule MdnsLite.Query do
   # Ignore any other type of query
   def handle(_query, _state) do
     []
-  end
-
-  defp dns_resource(class, type, domain, ttl, data) do
-    %DNS.Resource{
-      domain: domain,
-      class: class,
-      type: type,
-      ttl: ttl,
-      data: data
-    }
   end
 end
