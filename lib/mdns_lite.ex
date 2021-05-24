@@ -11,12 +11,6 @@ defmodule MdnsLite do
   response will be a list of known services and how to contact them (domain and
   port) as described in the configuration file.
 
-  `MdnsLite` uses a "network monitor", a module that listens for changes in a
-  network.  Its purpose is to ensure that the network interfaces are up to
-  date. The current version of `MdnsLite` has an `MdnsLite.InetMonitor` which
-  periodically checks, via `inet:getifaddrs()`, for changes in the network. For
-  example, a change could be the re-assignment of IP addresses.
-
   This module is initialized, at runtime, with host information and service
   descriptions found in the `config.exs` file.  The descriptions will be used
   by `MdnsLite` to construct a response to a query.
