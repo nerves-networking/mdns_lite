@@ -36,22 +36,14 @@ defmodule MdnsLite.TableTest do
         }
       ])
 
-    if_info = %MdnsLite.IfInfo{ipv4_address: {192, 168, 9, 57}}
-
-    Table.to_table(config, if_info)
+    Table.new(config)
   end
 
   def do_query(query) do
     table = test_table()
-    table[normalize_query(query)] || []
+    if_info = %MdnsLite.IfInfo{ipv4_address: {192, 168, 9, 57}}
+    Table.lookup(table, query, if_info)
   end
-
-  defp normalize_query(dns_query(domain: domain, type: type, class: class)) do
-    dns_query(domain: domain, type: type, class: normalize_class(class))
-  end
-
-  defp normalize_class(32769), do: :in
-  defp normalize_class(other), do: other
 
   test "responds to an A request" do
     query = dns_query(domain: 'nerves-21a5.local', type: :a, class: :in)
