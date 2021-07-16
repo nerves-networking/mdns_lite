@@ -1,8 +1,6 @@
 defmodule MdnsLite.ResponderSupervisor do
   use DynamicSupervisor
 
-  alias MdnsLite.Responder
-
   @moduledoc false
 
   @spec start_link(any) :: GenServer.on_start()
@@ -14,12 +12,6 @@ defmodule MdnsLite.ResponderSupervisor do
   def start_child(address) do
     spec = {MdnsLite.Responder, address}
     DynamicSupervisor.start_child(__MODULE__, spec)
-  end
-
-  def refresh_children(config \\ []) do
-    DynamicSupervisor.which_children(__MODULE__)
-    |> Enum.map(&elem(&1, 1))
-    |> Enum.each(&Responder.refresh(&1, config))
   end
 
   @impl DynamicSupervisor

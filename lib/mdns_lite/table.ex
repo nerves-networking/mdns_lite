@@ -1,19 +1,13 @@
 defmodule MdnsLite.Table do
-  alias MdnsLite.{Config, IfInfo}
+  import MdnsLite.DNS
+  alias MdnsLite.{Options, IfInfo}
 
-  import Record, only: [defrecord: 2]
-
-  defrecord :dns_query, Record.extract(:dns_query, from_lib: "kernel/src/inet_dns.hrl")
-  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: "kernel/src/inet_dns.hrl")
-
-  @type dns_query :: record(:dns_query, [])
-  @type dns_rr :: record(:dns_rr, [])
-  @type t :: %{dns_query() => [dns_rr()]}
+  @type t :: %{DNS.dns_query() => [DNS.dns_rr()]}
 
   @moduledoc false
 
-  @spec new(Config.t()) :: t()
-  def new(%Config{} = config) do
+  @spec new(Options.t()) :: t()
+  def new(%Options{} = config) do
     %{}
     |> add_a_records(config)
     |> add_ptr_records(config)
@@ -22,7 +16,7 @@ defmodule MdnsLite.Table do
     |> add_srv_records(config)
   end
 
-  @spec lookup(t(), dns_query(), IfInfo.t()) :: [dns_rr()]
+  @spec lookup(t(), DNS.dns_query(), IfInfo.t()) :: [DNS.dns_rr()]
   def lookup(table, query, %IfInfo{} = if_info) do
     normalized = normalize_query(query, if_info)
 
@@ -76,14 +70,14 @@ defmodule MdnsLite.Table do
     end
   end
 
-  defp add_ptr_records(records, %Config{} = config) do
+  defp add_ptr_records(records, %Options{} = config) do
     # services._dns-sd._udp.local. is a special name for
     # "Service Type Enumeration" which is supposed to find all service
     # types on the network. Let them know about ours.
     domain = "_services._dns-sd._udp.local"
 
     resources =
-      Config.get_mdns_services(config)
+      Options.get_services(config)
       |> Enum.map(fn service ->
         to_dns_rr(:in, :ptr, domain, config.ttl, to_charlist(service.type <> ".local"))
       end)
@@ -92,7 +86,7 @@ defmodule MdnsLite.Table do
   end
 
   defp add_ptr_records2(records, config) do
-    Config.get_mdns_services(config)
+    Options.get_services(config)
     |> Enum.group_by(fn service -> service.type <> ".local" end)
     |> Enum.reduce(records, &records_for_service_type(&1, &2, config))
   end
@@ -123,7 +117,7 @@ defmodule MdnsLite.Table do
     ]
   end
 
-  defp add_ptr_records3(records, %Config{} = config) do
+  defp add_ptr_records3(records, %Options{} = config) do
     first_dot_local_name = hd(config.dot_local_names)
 
     Map.put(records, to_dns_query(:in, :ptr, :ipv4_arpa_address), [
@@ -131,8 +125,8 @@ defmodule MdnsLite.Table do
     ])
   end
 
-  defp add_srv_records(records, %Config{} = config) do
-    Config.get_mdns_services(config)
+  defp add_srv_records(records, %Options{} = config) do
+    Options.get_services(config)
     |> Enum.group_by(fn service -> '#{service.name}.#{service.type}.local' end)
     |> Enum.reduce(records, &srv_records_for_service_type(&1, &2, config))
   end

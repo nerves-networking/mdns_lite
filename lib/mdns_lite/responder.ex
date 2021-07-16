@@ -13,13 +13,8 @@ defmodule MdnsLite.Responder do
 
   use GenServer
   require Logger
-  alias MdnsLite.{Configuration, Query}
-  import Record, only: [defrecord: 2]
-
-  defrecord :dns_rec, Record.extract(:dns_rec, from_lib: "kernel/src/inet_dns.hrl")
-  defrecord :dns_header, Record.extract(:dns_header, from_lib: "kernel/src/inet_dns.hrl")
-  defrecord :dns_query, Record.extract(:dns_query, from_lib: "kernel/src/inet_dns.hrl")
-  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: "kernel/src/inet_dns.hrl")
+  alias MdnsLite.{IfInfo, TableServer}
+  import MdnsLite.DNS
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
@@ -31,14 +26,7 @@ defmodule MdnsLite.Responder do
   defmodule State do
     @moduledoc false
     @type t() :: struct()
-    defstruct services: [],
-              # RFC 6763 nomenclature, aka hostname
-              instance_name: "",
-              # Note: Erlang string
-              dot_local_name: '',
-              dot_alias_name: '',
-              ttl: 120,
-              ip: {0, 0, 0, 0},
+    defstruct ip: {0, 0, 0, 0},
               udp: nil,
               skip_udp: false
   end
@@ -60,28 +48,13 @@ defmodule MdnsLite.Responder do
   """
   @spec stop_server(:inet.ip_address()) :: :ok
   def stop_server(address) do
-    via_name(address)
-    |> GenServer.whereis()
-    |> case do
-      nil -> :ok
-      pid -> GenServer.stop(pid)
-    end
+    GenServer.stop(via_name(address))
   end
 
-  @spec refresh(:inet.ip_address() | pid(), any) :: :ok | {:error, :no_responder}
-  def refresh(address_or_pid, data \\ [])
-
-  def refresh(address, config) when is_tuple(address) do
-    via_name(address)
-    |> GenServer.whereis()
-    |> refresh(config)
+  @spec refresh(:inet.ip_address(), any) :: :ok | {:error, :no_responder}
+  def refresh(address, config) do
+    GenServer.call(via_name(address), {:refresh, config})
   end
-
-  def refresh(pid, config) when is_pid(pid) do
-    GenServer.call(pid, {:refresh, config})
-  end
-
-  def refresh(_, _), do: {:error, :no_responder}
 
   ##############################################################################
   #   GenServer callbacks
@@ -89,9 +62,7 @@ defmodule MdnsLite.Responder do
   @impl GenServer
   def init(address) do
     # Join the mDNS multicast group
-    state =
-      %State{ip: address, skip_udp: Application.get_env(:mdns_lite, :skip_udp)}
-      |> add_config_values()
+    state = %State{ip: address, skip_udp: Application.get_env(:mdns_lite, :skip_udp)}
 
     {:ok, state, {:continue, :initialization}}
   end
@@ -106,11 +77,6 @@ defmodule MdnsLite.Responder do
     {:ok, udp} = :gen_udp.open(@mdns_port, udp_options(state.ip))
 
     {:noreply, %{state | udp: udp}}
-  end
-
-  @impl GenServer
-  def handle_call({:refresh, config}, _from, state) do
-    {:reply, :ok, add_config_values(state, config)}
   end
 
   @doc """
@@ -128,7 +94,7 @@ defmodule MdnsLite.Responder do
       # There can be multiple queries in each request
       qdlist
       |> Enum.map(fn dns_query(class: class) = qd ->
-        {class, Query.handle(qd, state)}
+        {class, TableServer.lookup(qd, %IfInfo{ipv4_address: state.ip})}
       end)
       |> Enum.each(fn
         # Erlang doesn't know about unicast class
@@ -193,36 +159,6 @@ defmodule MdnsLite.Responder do
     {src_address, src_port}
   end
 
-  defp resolve_mdns_name(nil), do: nil
-
-  defp resolve_mdns_name(:hostname) do
-    {:ok, hostname} = :inet.gethostname()
-    hostname |> to_string
-  end
-
-  defp resolve_mdns_name(mdns_name), do: mdns_name
-
-  defp add_config_values(state, config \\ []) do
-    config = if is_list(config), do: config, else: []
-    mdns_config = Keyword.get_lazy(config, :mdns_config, &Configuration.get_mdns_config/0)
-    mdns_services = Keyword.get_lazy(config, :mdns_services, &Configuration.get_mdns_services/0)
-    instance_name = resolve_mdns_name(mdns_config[:host]) || state.host
-    dot_local_name = "#{instance_name}.local"
-
-    dot_alias_name =
-      if mdns_config[:host_name_alias], do: "#{mdns_config.host_name_alias}.local", else: ""
-
-    %{
-      state
-      | # A list of services with types that we'll match against
-        services: mdns_services,
-        ttl: mdns_config[:ttl] || state.ttl,
-        instance_name: instance_name,
-        dot_local_name: to_charlist(dot_local_name),
-        dot_alias_name: to_charlist(dot_alias_name)
-    }
-  end
-
   defp udp_options(ip) do
     [
       :binary,
@@ -234,26 +170,10 @@ defmodule MdnsLite.Responder do
       # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
       multicast_ttl: 255,
       reuseaddr: true
-    ] ++ reuse_port()
+    ] ++ reuse_port(:os.type())
   end
 
-  defp reuse_port() do
-    case :os.type() do
-      {:unix, :linux} ->
-        reuse_port_linux()
-
-      {:unix, os_name} when os_name in [:darwin, :freebsd, :openbsd, :netbsd] ->
-        get_reuse_port()
-
-      {:win32, _unused} ->
-        get_reuse_address()
-
-      _ ->
-        []
-    end
-  end
-
-  defp reuse_port_linux() do
+  defp reuse_port({:unix, :linux}) do
     case :os.version() do
       {major, minor, _} when major > 3 or (major == 3 and minor >= 9) ->
         get_reuse_port()
@@ -262,6 +182,16 @@ defmodule MdnsLite.Responder do
         get_reuse_address()
     end
   end
+
+  defp reuse_port({:unix, os_name}) when os_name in [:darwin, :freebsd, :openbsd, :netbsd] do
+    get_reuse_port()
+  end
+
+  defp reuse_port({:win32, _}) do
+    get_reuse_address()
+  end
+
+  defp reuse_port(_), do: []
 
   defp get_reuse_port(), do: [{:raw, @sol_socket, @so_reuseport, <<1::native-32>>}]
 

@@ -1,19 +1,16 @@
 defmodule MdnsLite.TableTest do
   use ExUnit.Case
 
-  alias MdnsLite.{Config, Table}
-  import Record, only: [defrecord: 2]
-
-  defrecord :dns_query, Record.extract(:dns_query, from_lib: "kernel/src/inet_dns.hrl")
-  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: "kernel/src/inet_dns.hrl")
+  alias MdnsLite.{Options, Table}
+  import MdnsLite.DNS
 
   doctest MdnsLite.Table
 
   defp test_table() do
     config =
-      %Config{}
-      |> Config.add_hosts(["nerves-21a5", "nerves"])
-      |> Config.add_mdns_services([
+      %Options{}
+      |> Options.add_hosts(["nerves-21a5", "nerves"])
+      |> Options.add_services([
         %{
           name: "Web Server",
           txt_payload: ["key=value"],
