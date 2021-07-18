@@ -51,9 +51,11 @@ defmodule MdnsLite.VintageNetMonitor do
   def handle_info({VintageNet, ["interface", ifname, "addresses"], old, new, _}, state) do
     new_state =
       if allowed_interface?(ifname, state) do
+        {removed_ips, added_ips} = delta_ips(old, new)
+
         state
-        |> remove_ips(old)
-        |> add_ips(new)
+        |> remove_ips(removed_ips)
+        |> add_ips(added_ips)
       else
         state
       end
@@ -61,13 +63,16 @@ defmodule MdnsLite.VintageNetMonitor do
     {:noreply, new_state}
   end
 
-  defp add_ips(state, nil), do: state
+  defp delta_ips(nil, nil), do: {[], []}
+  defp delta_ips(nil, new), do: {[], new}
+  defp delta_ips(old, nil), do: {old, []}
+  defp delta_ips(old, new), do: {old -- new, new -- old}
 
-  defp add_ips(%{ip_list: ip_list} = state, address_data) do
+  defp add_ips(state, address_data) do
     ip_list =
       fetch_ips(address_data)
       |> filter_by_ipv4(state.ipv4_only)
-      |> Enum.reduce(ip_list, fn ip, acc ->
+      |> Enum.reduce(state.ip_list, fn ip, acc ->
         _ = ResponderSupervisor.start_child(ip)
         MapSet.put(acc, ip)
       end)
@@ -75,8 +80,15 @@ defmodule MdnsLite.VintageNetMonitor do
     %{state | ip_list: ip_list}
   end
 
-  defp allowed_interface?({["interface", ifname, _], _}, state) do
-    allowed_interface?(ifname, state)
+  defp remove_ips(state, address_data) do
+    ip_list =
+      fetch_ips(address_data)
+      |> Enum.reduce(state.ip_list, fn ip, acc ->
+        _ = Responder.stop_server(ip)
+        MapSet.delete(acc, ip)
+      end)
+
+    %{state | ip_list: ip_list}
   end
 
   defp allowed_interface?(ifname, %{excluded_ifnames: excluded_ifnames}) do
@@ -91,18 +103,5 @@ defmodule MdnsLite.VintageNetMonitor do
 
   defp filter_by_ipv4(ip_list, true) do
     Enum.filter(ip_list, &(MdnsLite.Utilities.ip_family(&1) == :inet))
-  end
-
-  defp remove_ips(state, nil), do: state
-
-  defp remove_ips(%{ip_list: ip_list} = state, address_data) do
-    ip_list =
-      fetch_ips(address_data)
-      |> Enum.reduce(ip_list, fn ip, acc ->
-        _ = Responder.stop_server(ip)
-        MapSet.delete(acc, ip)
-      end)
-
-    %{state | ip_list: ip_list}
   end
 end
