@@ -26,7 +26,10 @@ defmodule MdnsLite.Service do
     |> add_type()
   end
 
+  # If the type field isn't filled out...
   defp add_type(%{type: ""} = service) do
     %{service | type: "_#{service.protocol}._#{service.transport}"}
   end
+
+  defp add_type(service), do: service
 end
