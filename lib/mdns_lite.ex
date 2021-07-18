@@ -64,7 +64,7 @@ defmodule MdnsLite do
     }
   ]
 
-  iex> MdnsLite.add_mds_services(services)
+  iex> MdnsLite.add_mdns_services(services)
   :ok
   ```
   """
