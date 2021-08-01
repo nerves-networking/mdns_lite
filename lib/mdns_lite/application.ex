@@ -14,6 +14,7 @@ defmodule MdnsLite.Application do
       {MdnsLite.TableServer, config},
       {Registry, keys: :unique, name: MdnsLite.ResponderRegistry},
       {MdnsLite.ResponderSupervisor, []},
+      {MdnsLite.LocalResponder, []},
       {MdnsLite.VintageNetMonitor, excluded_ifnames: excluded_ifnames}
     ]
 
