@@ -173,6 +173,7 @@ defmodule MdnsLite.Responder do
   defp response_packet(id, answer_list),
     do:
       dns_rec(
+        # AA (Authoritative Answer) bit MUST be true - RFC 6762 18.4
         header: dns_header(id: id, qr: true, aa: true),
         # Query list. Must be empty according to RFC 6762 Section 6.
         qdlist: [],
