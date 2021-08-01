@@ -1,4 +1,6 @@
 defmodule MdnsLite do
+  import MdnsLite.DNS
+
   @moduledoc """
   A simple implementation of an mDNS (multicast DNS (Domain Name Server))
   server.  mDNS uses multicast UDP rather than TCP. Its primary use is to
@@ -87,4 +89,19 @@ defmodule MdnsLite do
   ```
   """
   defdelegate remove_mdns_services(service_names), to: MdnsLite.Configuration
+
+  @doc """
+  Lookup a hostname using mDNS
+
+  The hostname should be a .local name since the query only goes out via mDNS.
+  On success, an IP address is returned.
+  """
+  @spec gethostbyname(String.t()) :: {:ok, :inet.ip()} | {:error, any()}
+  def gethostbyname(hostname) do
+    dns_query(class: :in, type: :a, domain: to_charlist(hostname))
+  end
+
+  def query(q) do
+    
+  end
 end
