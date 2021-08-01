@@ -30,7 +30,7 @@ defmodule MdnsLite.TableServer do
   ##############################################################################
   @impl GenServer
   def init(opts) do
-    {:ok, %{options: opts, table: Table.new(opts)}}
+    {:ok, %{options: opts, table: Table.Builder.from_options(opts)}}
   end
 
   @impl GenServer
@@ -41,7 +41,7 @@ defmodule MdnsLite.TableServer do
   def handle_call({:update_options, fun}, _from, state) do
     new_options = fun.(state.options)
 
-    {:reply, :ok, %{options: new_options, table: Table.new(new_options)}}
+    {:reply, :ok, %{options: new_options, table: Table.Builder.from_options(new_options)}}
   end
 
   def handle_call({:lookup, query, if_info}, _from, state) do

@@ -1,34 +1,112 @@
 defmodule MdnsLite.Table do
   import MdnsLite.DNS
-  alias MdnsLite.{Options, IfInfo}
+  alias MdnsLite.IfInfo
 
-  @type t :: %{DNS.dns_query() => [DNS.dns_rr()]}
+  @type t :: [DNS.dns_rr()]
 
   @moduledoc false
 
-  @spec new(Options.t()) :: t()
-  def new(%Options{} = config) do
-    %{}
-    |> add_a_records(config)
-    |> add_ptr_records(config)
-    |> add_ptr_records2(config)
-    |> add_ptr_records3(config)
-    |> add_srv_records(config)
-  end
-
+  # RFC6762 Section 6: Responding
+  #
+  # The determination of whether a given record answers a given question
+  # is made using the standard DNS rules: the record name must match the
+  # question name, the record rrtype must match the question qtype unless
+  # the qtype is "ANY" (255) or the rrtype is "CNAME" (5), and the record
+  # rrclass must match the question qclass unless the qclass is "ANY"
+  # (255).
   @spec lookup(t(), DNS.dns_query(), IfInfo.t()) :: [DNS.dns_rr()]
   def lookup(table, query, %IfInfo{} = if_info) do
-    normalized = normalize_query(query, if_info)
+    query
+    |> normalize_query(if_info)
+    |> run_query(table)
+    |> Enum.flat_map(&fixup_rr(&1, if_info))
+  end
 
-    Map.get(table, normalized, [])
-    |> Enum.map(&fixup_rr(&1, if_info))
+  @doc """
+  Add additional records per RFC 6763 Section 12
+
+  Note: The following text in the RFC indicates that this is optional,
+  but it really seems based on PRs/issues that it is not.
+
+  >>>
+   Clients MUST be capable of functioning correctly with DNS servers
+   (and Multicast DNS Responders) that fail to generate these additional
+   records automatically, by issuing subsequent queries for any further
+   record(s) they require.  The additional-record generation rules in
+   this section are RECOMMENDED for improving network efficiency, but
+   are not required for correctness.
+  >>>
+  """
+  def additional_records(table, rr, %IfInfo{} = if_info) do
+    rr
+    |> Enum.reduce([], &add_additional_records(&1, &2, table, if_info))
+    |> Enum.uniq()
+  end
+
+  # RFC 6763 12.3 No additional records for text records
+  defp add_additional_records(dns_rr(type: :text), acc, _table, _if_info) do
+    acc
+  end
+
+  # RFC 6763 12.2 All address records (type "A" and "AAAA") named in the SRV rdata
+  defp add_additional_records(
+         dns_rr(type: :srv, data: {_priority, _weight, _port, domain}),
+         acc,
+         table,
+         if_info
+       ) do
+    # Remove the trailing dot at the end of the domain
+    hostname = List.delete_at(domain, -1)
+
+    acc ++
+      lookup(table, dns_query(class: :in, type: :a, domain: hostname), if_info) ++
+      lookup(table, dns_query(class: :in, type: :aaaa, domain: hostname), if_info)
+  end
+
+  # RFC 6763 12.1
+  #  The SRV record(s) named in the PTR rdata.
+  #  The TXT record(s) named in the PTR rdata.
+  #  All address records (type "A" and "AAAA") named in the SRV rdata.
+  defp add_additional_records(
+         dns_rr(type: :ptr, data: domain),
+         acc,
+         table,
+         if_info
+       ) do
+    srv_records = lookup(table, dns_query(class: :in, type: :srv, domain: domain), if_info)
+    txt_records = lookup(table, dns_query(class: :in, type: :txt, domain: domain), if_info)
+    a_records = additional_records(table, srv_records, if_info)
+
+    acc ++ srv_records ++ txt_records ++ a_records
+  end
+
+  # RFC 6763 12.4 No additional records for other types
+  defp add_additional_records(_record, acc, _table, _if_info) do
+    acc
+  end
+
+  defp run_query(dns_query(class: :any, type: :any, domain: domain), table) do
+    Enum.filter(table, fn dns_rr(domain: d) -> d == domain end)
+  end
+
+  defp run_query(dns_query(class: class, type: :any, domain: domain), table) do
+    Enum.filter(table, fn dns_rr(class: c, domain: d) -> c == class and d == domain end)
+  end
+
+  defp run_query(dns_query(class: :any, type: type, domain: domain), table) do
+    Enum.filter(table, fn dns_rr(type: t, domain: d) -> t == type and d == domain end)
+  end
+
+  defp run_query(dns_query(class: class, type: type, domain: domain), table) do
+    Enum.filter(table, fn dns_rr(class: c, type: t, domain: d) ->
+      c == class and t == type and d == domain
+    end)
   end
 
   defp normalize_query(dns_query(class: class, type: :ptr, domain: domain) = q, if_info) do
-    if domain == ipv4_arpa_address(if_info) do
-      dns_query(class: :in, type: :ptr, domain: :ipv4_arpa_address)
-    else
-      dns_query(q, class: normalize_class(class))
+    case test_known_in_addr_arpa(domain, if_info) do
+      {:ok, value} -> dns_query(class: :in, type: :ptr, domain: value)
+      _ -> dns_query(q, class: normalize_class(class))
     end
   end
 
@@ -39,17 +117,57 @@ defmodule MdnsLite.Table do
   defp normalize_class(32769), do: :in
   defp normalize_class(other), do: other
 
+  # TODO: Fate sharing - send IPv6 records when sending IPv4 ones and vice versa
   defp fixup_rr(dns_rr(class: :in, type: :a, data: :ipv4_address) = rr, if_info) do
-    dns_rr(rr, data: if_info.ipv4_address)
+    [dns_rr(rr, data: if_info.ipv4_address)]
+  end
+
+  defp fixup_rr(dns_rr(class: :in, type: :aaaa, data: :ipv6_address) = rr, if_info) do
+    for address <- if_info.ipv6_addresses do
+      dns_rr(rr, data: address)
+    end
   end
 
   defp fixup_rr(dns_rr(class: :in, type: :ptr, domain: :ipv4_arpa_address) = rr, if_info) do
-    dns_rr(rr, domain: ipv4_arpa_address(if_info))
+    [dns_rr(rr, domain: ipv4_arpa_address(if_info))]
   end
 
   defp fixup_rr(rr, _if_info) do
-    # IO.inspect(dns_rr(rr))
-    rr
+    [rr]
+  end
+
+  defp parse_in_addr_arpa(name) do
+    parts = name |> to_string() |> String.split(".") |> Enum.reverse()
+
+    case parts do
+      ["", "arpa", "in-addr" | ip_parts] ->
+        ip_parts |> Enum.join(".") |> to_charlist() |> :inet.parse_ipv4_address()
+
+      ["", "arpa", "ip6" | _ip_parts] ->
+        # See https://datatracker.ietf.org/doc/html/rfc2874
+        {:error, :implement_ipv6}
+
+      _ ->
+        {:error, :not_in_addr_arpa}
+    end
+  end
+
+  defp normalize_ip_address(address, %{ipv4_address: address}) do
+    {:ok, :ipv4_arpa_address}
+  end
+
+  defp normalize_ip_address(address, %{ipv6_addresses: list}) do
+    if address in list do
+      {:ok, :ipv6_arpa_address}
+    else
+      {:error, :unknown_address}
+    end
+  end
+
+  defp test_known_in_addr_arpa(name, if_info) do
+    with {:ok, address} <- parse_in_addr_arpa(name) do
+      normalize_ip_address(address, if_info)
+    end
   end
 
   defp ipv4_arpa_address(if_info) do
@@ -62,110 +180,4 @@ defmodule MdnsLite.Table do
 
     to_charlist(arpa_address <> ".in-addr.arpa.")
   end
-
-  defp add_a_records(records, config) do
-    for dot_local_name <- config.dot_local_names, into: records do
-      {to_dns_query(:in, :a, dot_local_name),
-       [to_dns_rr(:in, :a, dot_local_name, config.ttl, :ipv4_address)]}
-    end
-  end
-
-  defp add_ptr_records(records, %Options{} = config) do
-    # services._dns-sd._udp.local. is a special name for
-    # "Service Type Enumeration" which is supposed to find all service
-    # types on the network. Let them know about ours.
-    domain = "_services._dns-sd._udp.local"
-
-    resources =
-      Options.get_services(config)
-      |> Enum.map(fn service ->
-        to_dns_rr(:in, :ptr, domain, config.ttl, to_charlist(service.type <> ".local"))
-      end)
-
-    Map.put(records, to_dns_query(:in, :ptr, domain), resources)
-  end
-
-  defp add_ptr_records2(records, config) do
-    Options.get_services(config)
-    |> Enum.group_by(fn service -> service.type <> ".local" end)
-    |> Enum.reduce(records, &records_for_service_type(&1, &2, config))
-  end
-
-  defp records_for_service_type({domain, services}, records, config) do
-    value = Enum.flat_map(services, &service_resources(&1, domain, config))
-    Map.put(records, to_dns_query(:in, :ptr, domain), value)
-  end
-
-  defp service_resources(service, domain, config) do
-    service_instance_name = to_charlist("#{service.name}.#{service.type}.local")
-
-    first_dot_local_name = hd(config.dot_local_names)
-    target = first_dot_local_name <> "."
-    srv_data = {service.priority, service.weight, service.port, to_charlist(target)}
-
-    [
-      to_dns_rr(:in, :ptr, domain, config.ttl, service_instance_name),
-      to_dns_rr(
-        :in,
-        :txt,
-        service_instance_name,
-        config.ttl,
-        to_charlist(service.txt_payload)
-      ),
-      to_dns_rr(:in, :srv, service_instance_name, config.ttl, srv_data),
-      to_dns_rr(:in, :a, first_dot_local_name, config.ttl, :ipv4_address)
-    ]
-  end
-
-  defp add_ptr_records3(records, %Options{} = config) do
-    first_dot_local_name = hd(config.dot_local_names)
-
-    Map.put(records, to_dns_query(:in, :ptr, :ipv4_arpa_address), [
-      to_dns_rr(:in, :ptr, :ipv4_arpa_address, config.ttl, first_dot_local_name)
-    ])
-  end
-
-  defp add_srv_records(records, %Options{} = config) do
-    Options.get_services(config)
-    |> Enum.group_by(fn service -> '#{service.name}.#{service.type}.local' end)
-    |> Enum.reduce(records, &srv_records_for_service_type(&1, &2, config))
-  end
-
-  defp srv_records_for_service_type({domain, services}, records, config) do
-    Map.put(
-      records,
-      to_dns_query(:in, :srv, domain),
-      Enum.flat_map(services, &srv_service_resources(&1, domain, config))
-    )
-  end
-
-  defp srv_service_resources(service, _domain, config) do
-    service_instance_name = "#{service.name}.#{service.type}.local"
-
-    first_dot_local_name = hd(config.dot_local_names)
-    target = first_dot_local_name <> "."
-    srv_data = {service.priority, service.weight, service.port, to_charlist(target)}
-
-    [
-      to_dns_rr(:in, :srv, service_instance_name, config.ttl, srv_data),
-      to_dns_rr(:in, :a, first_dot_local_name, config.ttl, :ipv4_address)
-    ]
-  end
-
-  defp to_dns_query(class, type, domain) do
-    dns_query(class: class, type: type, domain: normalize_domain(domain))
-  end
-
-  defp to_dns_rr(class, type, domain, ttl, data) do
-    dns_rr(
-      domain: normalize_domain(domain),
-      class: class,
-      type: type,
-      ttl: ttl,
-      data: data
-    )
-  end
-
-  defp normalize_domain(d) when is_atom(d), do: d
-  defp normalize_domain(d), do: to_charlist(d)
 end
