@@ -93,11 +93,11 @@ defmodule MdnsLite.Responder do
       end)
       |> Enum.each(fn
         # Erlang doesn't know about unicast class
-        {32769, resources} ->
-          send_response(resources, dns_record, {src_ip, src_port}, state)
+        {32769, result} ->
+          send_response(result, dns_record, {src_ip, src_port}, state)
 
-        {_, resources} ->
-          send_response(resources, dns_record, mdns_destination(src_ip, src_port), state)
+        {_, result} ->
+          send_response(result, dns_record, mdns_destination(src_ip, src_port), state)
       end)
     end
 
@@ -112,16 +112,16 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Private functions
   ##############################################################################
-  defp send_response([], _dns_record, _dest, _state), do: :ok
+  defp send_response(%{answer: []}, _dns_record, _dest, _state), do: :ok
 
   defp send_response(
-         dns_resource_records,
+         result,
          dns_rec(header: dns_header(id: id)),
          {dest_address, dest_port},
          state
        ) do
     # Construct an mDNS response from the query plus answers (resource records)
-    packet = response_packet(id, dns_resource_records)
+    packet = response_packet(id, result)
 
     # _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
     # _ = Logger.debug("#{inspect(packet)}")
@@ -131,7 +131,7 @@ defmodule MdnsLite.Responder do
   end
 
   # A standard mDNS response packet
-  defp response_packet(id, answer_list),
+  defp response_packet(id, result),
     do:
       dns_rec(
         # AA (Authoritative Answer) bit MUST be true - RFC 6762 18.4
@@ -139,11 +139,11 @@ defmodule MdnsLite.Responder do
         # Query list. Must be empty according to RFC 6762 Section 6.
         qdlist: [],
         # A list of answer entries. Can be empty.
-        anlist: answer_list,
+        anlist: result.answer,
         # nslist Can be empty.
         nslist: [],
         # arlist A list of resource entries. Can be empty.
-        arlist: []
+        arlist: result.additional
       )
 
   defp mdns_destination(_src_address, @mdns_port), do: {@mdns_ipv4, @mdns_port}

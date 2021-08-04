@@ -17,8 +17,8 @@ defmodule MdnsLite.LocalResponder do
   alias MdnsLite.{TableServer, IfInfo}
   import MdnsLite.DNS
 
-  @mdns_ipv4 {127, 0, 0, 1}
-  @mdns_port 25353
+  @dns_ipv4 {127, 0, 0, 53}
+  @dns_port 53
   @sol_socket 0xFFFF
   @so_reuseport 0x0200
   @so_reuseaddr 0x0004
@@ -31,35 +31,19 @@ defmodule MdnsLite.LocalResponder do
     GenServer.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
-  @doc """
-  Send a query over mDNS
-  """
-  @spec query(DNS.dns_query()) :: {:ok, [DNS.dns_rr()]} | {:error, any()}
-  def query(q) when Record.is_record(q, :dns_query) do
-    GenServer.call(__MODULE__, {:query, q})
-  end
-
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
   @impl GenServer
   def init(_opts) do
-    if Application.get_env(:mdns_lite, :skip_udp) do
-      :ignore
-    else
-      {:ok, udp} = :gen_udp.open(@mdns_port, udp_options())
+    if Application.get_env(:mdns_lite, :dns_bridge_enabled, false) do
+      port = Application.get_env(:mdns_lite, :dns_bridge_port, @dns_port)
+      {:ok, udp} = :gen_udp.open(port, udp_options())
 
       {:ok, %{udp: udp}}
+    else
+      :ignore
     end
-  end
-
-  @impl GenServer
-  def handle_call({:query, q}, from, state) do
-    # Check our cache first
-    # send query
-    # set timeout/retry timer
-    # check whether response has come in
-    {:noreply, state}
   end
 
   @impl GenServer
@@ -70,9 +54,9 @@ defmodule MdnsLite.LocalResponder do
          # qr is the query/response flag; false (0) = query, true (1) = response
          dns_header(qr: false) <- header do
       # only respond to the first query
-      anlist = TableServer.lookup(hd(qdlist), %IfInfo{ipv4_address: {127, 0, 0, 1}})
+      result = TableServer.lookup(hd(qdlist), %IfInfo{ipv4_address: {127, 0, 0, 1}})
 
-      send_response(qdlist, anlist, dns_record, {src_ip, src_port}, state)
+      send_response(qdlist, result, dns_record, {src_ip, src_port}, state)
     end
 
     {:noreply, state}
@@ -88,50 +72,58 @@ defmodule MdnsLite.LocalResponder do
   ##############################################################################
   defp send_response(
          qdlist,
-         [],
+         %{answer: []},
          dns_rec(header: dns_header(id: id)),
          {dest_address, dest_port},
          state
        ) do
-    IO.puts("Not found")
+    # dns_query(domain: domain, class: class, type: type) = hd(qdlist)
 
-    packet =
+    # result =
+    #   case :inet_res.resolve(domain, class, type, nameservers: [{{192, 168, 7, 1}, 53}]) do
+    #     {:ok, result} ->
+    #       header = dns_rec(result, :header)
+
+    #       dns_rec(result, header: dns_header(header, id: id))
+
+    #     {:error, reason} ->
+    # Logger.error("Lookup failed because #{inspect(reason)}")
+
+    result =
       dns_rec(
-        header: dns_header(id: id, qr: true, aa: false, rcode: 5),
-        # Query list. Must be empty according to RFC 6762 Section 6.
+        header: dns_header(id: id, qr: 1, aa: 0, tc: 0, rd: true, ra: 0, pr: 0, rcode: 4),
         qdlist: qdlist,
-        # A list of answer entries. Can be empty.
         anlist: [],
-        # nslist Can be empty.
         nslist: [],
-        # arlist A list of resource entries. Can be empty.
         arlist: []
       )
 
-    dns_record = :inet_dns.encode(packet)
-    :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
+    # end
+
+    packet = :inet_dns.encode(result)
+    _ = :gen_udp.send(state.udp, dest_address, dest_port, packet)
+
+    :ok
   end
 
   defp send_response(
          qdlist,
-         anlist,
+         result,
          dns_rec(header: dns_header(id: id)),
          {dest_address, dest_port},
          state
        ) do
-    IO.puts("Found it")
-
     packet =
       dns_rec(
         header: dns_header(id: id, qr: true, aa: true),
         # Query list. Must be empty according to RFC 6762 Section 6.
         qdlist: qdlist,
         # A list of answer entries. Can be empty.
-        anlist: anlist,
+        anlist: result.answer,
         # nslist Can be empty.
         nslist: [],
         # arlist A list of resource entries. Can be empty.
-        arlist: []
+        arlist: result.additional
       )
 
     dns_record = :inet_dns.encode(packet)
@@ -142,7 +134,7 @@ defmodule MdnsLite.LocalResponder do
     [
       :binary,
       active: true,
-      ip: @mdns_ipv4,
+      ip: @dns_ipv4,
       reuseaddr: true
     ] ++ reuse_port(:os.type())
   end

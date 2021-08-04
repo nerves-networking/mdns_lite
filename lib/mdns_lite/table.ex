@@ -37,6 +37,7 @@ defmodule MdnsLite.Table do
    are not required for correctness.
   >>>
   """
+  @spec additional_records(t(), [DNS.dns_rr()], IFInfo.t()) :: [DNS.dns_rr()]
   def additional_records(table, rr, %IfInfo{} = if_info) do
     rr
     |> Enum.reduce([], &add_additional_records(&1, &2, table, if_info))
@@ -145,6 +146,7 @@ defmodule MdnsLite.Table do
 
       ["", "arpa", "ip6" | _ip_parts] ->
         # See https://datatracker.ietf.org/doc/html/rfc2874
+        # E.g., 1.8.1.3.3.5.3.A.D.F.3.1.5.6.C.0.7.E.3.0.8.0.0.0.0.7.4.0.1.0.0.2.ip6.arpa
         {:error, :implement_ipv6}
 
       _ ->

@@ -60,7 +60,8 @@ defmodule MdnsLite.Table.Builder do
   end
 
   defp service_resources(service, domain, config) do
-    service_instance_name = to_charlist("#{service.name}.#{service.type}.local")
+    name = service.name || hd(config.hosts)
+    service_instance_name = to_charlist("#{name}.#{service.type}.local")
 
     first_dot_local_name = hd(config.dot_local_names)
     target = first_dot_local_name <> "."

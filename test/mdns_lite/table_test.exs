@@ -12,7 +12,6 @@ defmodule MdnsLite.TableTest do
       |> Options.add_hosts(["nerves-21a5", "nerves"])
       |> Options.add_services([
         %{
-          name: "Web Server",
           txt_payload: ["key=value"],
           port: 80,
           priority: 0,
@@ -22,7 +21,6 @@ defmodule MdnsLite.TableTest do
           weight: 0
         },
         %{
-          name: "Secure Socket",
           txt_payload: [""],
           port: 22,
           priority: 0,
@@ -131,19 +129,19 @@ defmodule MdnsLite.TableTest do
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: 'Web Server._http._tcp.local'
+          data: 'nerves-21a5._http._tcp.local'
         )
       ],
       additional: [
         dns_rr(
-          domain: 'Web Server._http._tcp.local',
+          domain: 'nerves-21a5._http._tcp.local',
           type: :srv,
           class: :in,
           ttl: 120,
           data: {0, 0, 80, 'nerves-21a5.local.'}
         ),
         dns_rr(
-          domain: 'Web Server._http._tcp.local',
+          domain: 'nerves-21a5._http._tcp.local',
           type: :txt,
           class: :in,
           ttl: 120,
@@ -190,13 +188,13 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to an SRV request for a known service" do
-    known_service = "Web Server._http._tcp.local"
+    known_service = "nerves-21a5._http._tcp.local"
     query = dns_query(domain: to_charlist(known_service), type: :srv, class: :in)
 
     result = %{
       answer: [
         dns_rr(
-          domain: 'Web Server._http._tcp.local',
+          domain: 'nerves-21a5._http._tcp.local',
           type: :srv,
           class: :in,
           ttl: 120,

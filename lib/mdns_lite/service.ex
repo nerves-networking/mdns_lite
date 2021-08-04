@@ -1,5 +1,5 @@
 defmodule MdnsLite.Service do
-  defstruct name: "",
+  defstruct name: nil,
             txt_payload: [""],
             port: 0,
             priority: 0,
@@ -9,7 +9,7 @@ defmodule MdnsLite.Service do
             weight: 0
 
   @type t() :: %__MODULE__{
-          name: String.t(),
+          name: nil | String.t(),
           txt_payload: [String.t()],
           port: 1..65535,
           priority: 0..255,
