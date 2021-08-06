@@ -1,33 +1,35 @@
-defmodule MdnsLite.LocalResponder do
-  @moduledoc false
+defmodule MdnsLite.DNSBridge do
+  @moduledoc """
+  DNS server that responds to mDNS queries
 
-  # A GenServer that is responsible for responding to a limited number of mDNS
-  # requests (queries). A UDP port is opened on the mDNS reserved IP/port. Any
-  # UDP packets will be caught by handle_info() but only a subset of them are
-  # of interest. The module `MdnsLite.Query does the actual query parsing.
-  #
-  # This module is started and stopped dynamically by MdnsLite.ResponderSupervisor
-  #
-  # There is one of these servers for every network interface managed by
-  # MdnsLite.
+  This is a simple DNS server that can be used to resolve mDNS queries
+  so that the rest of Erlang and Elixir can seamlessly use mDNS. To use
+  this, you must enable the `:dns_bridge_enabled` option and then make the
+  first DNS server be this server's IP address and port.
+
+  This DNS server can either return an error or recursively look up a non-mDNS record
+  depending on how it's configured. Erlang's DNS resolver currently has an issue
+  with the error strategy so it can't be used.
+
+  Options:
+
+  * `:dns_bridge_enabled` - set to true to enable the bridge
+  * `:dns_bridge_ip` - IP address in tuple form for server (defaults to `{127, 0, 0, 53}`)
+  * `:dns_bridge_port` - UDP port for server (defaults to 53)
+  * `:dns_bridge_recursive` - set to true to recursively look up non-mDNS queries
+  """
 
   use GenServer
   require Logger
-  require Record
-  alias MdnsLite.{TableServer, IfInfo}
-  import MdnsLite.DNS
 
-  @dns_ipv4 {127, 0, 0, 53}
-  @dns_port 53
-  @sol_socket 0xFFFF
-  @so_reuseport 0x0200
-  @so_reuseaddr 0x0004
+  alias MdnsLite.{IfInfo, Options, TableServer}
+  import MdnsLite.DNS
 
   ##############################################################################
   #   Public interface
   ##############################################################################
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(init_args) do
+  @spec start_link(MdnsLite.Options.t()) :: GenServer.on_start()
+  def start_link(%Options{} = init_args) do
     GenServer.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
@@ -35,12 +37,16 @@ defmodule MdnsLite.LocalResponder do
   #   GenServer callbacks
   ##############################################################################
   @impl GenServer
-  def init(_opts) do
-    if Application.get_env(:mdns_lite, :dns_bridge_enabled, false) do
-      port = Application.get_env(:mdns_lite, :dns_bridge_port, @dns_port)
-      {:ok, udp} = :gen_udp.open(port, udp_options())
+  def init(opts) do
+    if opts.dns_bridge_enabled do
+      {:ok, udp} = :gen_udp.open(opts.dns_bridge_port, udp_options(opts))
 
-      {:ok, %{udp: udp}}
+      {:ok,
+       %{
+         udp: udp,
+         recursive: opts.dns_bridge_recursive,
+         our_ip_port: {opts.dns_bridge_ip, opts.dns_bridge_port}
+       }}
     else
       :ignore
     end
@@ -77,28 +83,12 @@ defmodule MdnsLite.LocalResponder do
          {dest_address, dest_port},
          state
        ) do
-    # dns_query(domain: domain, class: class, type: type) = hd(qdlist)
-
-    # result =
-    #   case :inet_res.resolve(domain, class, type, nameservers: [{{192, 168, 7, 1}, 53}]) do
-    #     {:ok, result} ->
-    #       header = dns_rec(result, :header)
-
-    #       dns_rec(result, header: dns_header(header, id: id))
-
-    #     {:error, reason} ->
-    # Logger.error("Lookup failed because #{inspect(reason)}")
-
     result =
-      dns_rec(
-        header: dns_header(id: id, qr: 1, aa: 0, tc: 0, rd: true, ra: 0, pr: 0, rcode: 4),
-        qdlist: qdlist,
-        anlist: [],
-        nslist: [],
-        arlist: []
-      )
-
-    # end
+      if state.recursive do
+        try_recursive_lookup(id, qdlist, state.our_ip_port)
+      else
+        lookup_failure(id, qdlist)
+      end
 
     packet = :inet_dns.encode(result)
     _ = :gen_udp.send(state.udp, dest_address, dest_port, packet)
@@ -130,36 +120,40 @@ defmodule MdnsLite.LocalResponder do
     :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
   end
 
-  defp udp_options() do
+  defp udp_options(opts) do
     [
       :binary,
       active: true,
-      ip: @dns_ipv4,
+      ip: opts.dns_bridge_ip,
       reuseaddr: true
-    ] ++ reuse_port(:os.type())
+    ]
   end
 
-  defp reuse_port({:unix, :linux}) do
-    case :os.version() do
-      {major, minor, _} when major > 3 or (major == 3 and minor >= 9) ->
-        get_reuse_port()
+  defp try_recursive_lookup(id, qdlist, our_ip_port) do
+    dns_query(domain: domain, class: class, type: type) = hd(qdlist)
 
-      _before_3_9 ->
-        get_reuse_address()
+    case :inet_res.resolve(domain, class, type, nameservers: nameservers(our_ip_port)) do
+      {:ok, result} ->
+        header = dns_rec(result, :header)
+
+        dns_rec(result, header: dns_header(header, id: id))
+
+      {:error, reason} ->
+        Logger.error("Recursive lookup of #{domain} failed because #{inspect(reason)}")
+
+        lookup_failure(id, qdlist)
     end
   end
 
-  defp reuse_port({:unix, os_name}) when os_name in [:darwin, :freebsd, :openbsd, :netbsd] do
-    get_reuse_port()
+  defp nameservers(our_ip_port) do
+    :inet_db.res_option(:nameservers)
+    |> List.delete(our_ip_port)
   end
 
-  defp reuse_port({:win32, _}) do
-    get_reuse_address()
+  defp lookup_failure(id, qdlist) do
+    dns_rec(
+      header: dns_header(id: id, qr: 1, aa: 0, tc: 0, rd: true, ra: 0, pr: 0, rcode: 5),
+      qdlist: qdlist
+    )
   end
-
-  defp reuse_port(_), do: []
-
-  defp get_reuse_port(), do: [{:raw, @sol_socket, @so_reuseport, <<1::native-32>>}]
-
-  defp get_reuse_address(), do: [{:raw, @sol_socket, @so_reuseaddr, <<1::native-32>>}]
 end

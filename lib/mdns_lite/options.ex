@@ -5,17 +5,27 @@ defmodule MdnsLite.Options do
 
   @default_host_name_list [:hostname]
   @default_ttl 120
+  @default_dns_ip {127, 0, 0, 53}
+  @default_dns_port 53
 
   defstruct services: MapSet.new(),
             dot_local_names: [],
             hosts: [],
-            ttl: @default_ttl
+            ttl: @default_ttl,
+            dns_bridge_enabled: false,
+            dns_bridge_ip: @default_dns_ip,
+            dns_bridge_port: @default_dns_port,
+            dns_bridge_recursive: true
 
   @type t :: %__MODULE__{
           services: MapSet.t(map()),
           dot_local_names: [String.t()],
           hosts: [charlist()],
-          ttl: pos_integer()
+          ttl: pos_integer(),
+          dns_bridge_enabled: boolean(),
+          dns_bridge_ip: :inet.address(),
+          dns_bridge_port: 1..65535,
+          dns_bridge_recursive: boolean()
         }
 
   @spec from_application_env() :: t()
@@ -23,71 +33,82 @@ defmodule MdnsLite.Options do
     hosts = Application.get_env(:mdns_lite, :host, @default_host_name_list)
     ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
     config_services = Application.get_env(:mdns_lite, :services, [])
+    dns_bridge_enabled = Application.get_env(:mdns_lite, :dns_bridge_enabled, false)
+    dns_bridge_ip = Application.get_env(:mdns_lite, :dns_bridge_ip, @default_dns_ip)
+    dns_bridge_port = Application.get_env(:mdns_lite, :dns_bridge_port, @default_dns_port)
+    dns_bridge_recursive = Application.get_env(:mdns_lite, :dns_bridge_recursive, true)
 
-    %__MODULE__{ttl: ttl}
+    %__MODULE__{
+      ttl: ttl,
+      dns_bridge_enabled: dns_bridge_enabled,
+      dns_bridge_ip: dns_bridge_ip,
+      dns_bridge_port: dns_bridge_port,
+      dns_bridge_recursive: dns_bridge_recursive
+    }
     |> add_hosts(hosts)
     |> add_services(config_services)
   end
 
   @spec defaults() :: t()
   def defaults() do
-    %__MODULE__{ttl: @default_ttl}
+    %__MODULE__{}
     |> add_hosts(@default_host_name_list)
   end
 
   @spec add_service(t(), map()) :: t()
-  def add_service(state, service) when is_map(service) do
-    add_services(state, [service])
+  def add_service(options, service) when is_map(service) do
+    add_services(options, [service])
   end
 
   @spec add_services(t(), [map()]) :: t()
-  def add_services(%__MODULE__{} = state, services) do
+  def add_services(%__MODULE__{} = options, services) do
     updated =
       services
       |> Enum.map(&Service.new/1)
-      |> Enum.reduce(state.services, &MapSet.put(&2, &1))
+      |> Enum.reduce(options.services, &MapSet.put(&2, &1))
 
-    %{state | services: updated}
+    %{options | services: updated}
   end
 
   @spec get_services(t()) :: [Service.t()]
-  def get_services(%__MODULE__{} = state) do
-    MapSet.to_list(state.services)
+  def get_services(%__MODULE__{} = options) do
+    MapSet.to_list(options.services)
   end
 
   @spec remove_service_by_name(t(), String.t()) :: t()
-  def remove_service_by_name(%__MODULE__{} = state, service_name) when is_binary(service_name) do
+  def remove_service_by_name(%__MODULE__{} = options, service_name)
+      when is_binary(service_name) do
     services_set =
-      state.services
+      options.services
       |> Enum.reject(&(&1.name == service_name))
       |> MapSet.new()
 
-    %{state | services: services_set}
+    %{options | services: services_set}
   end
 
   @spec set_host(t(), String.t() | :hostname) :: t()
-  def set_host(%__MODULE__{} = state, host) do
+  def set_host(%__MODULE__{} = options, host) do
     resolved_host = resolve_mdns_name(host)
     dot_local_name = "#{resolved_host}.local"
 
-    %{state | dot_local_names: [dot_local_name], hosts: [resolved_host]}
+    %{options | dot_local_names: [dot_local_name], hosts: [resolved_host]}
   end
 
   @spec add_host(t(), String.t() | :hostname) :: t()
-  def add_host(%__MODULE__{} = state, host) do
+  def add_host(%__MODULE__{} = options, host) do
     resolved_host = resolve_mdns_name(host)
     dot_local_name = "#{resolved_host}.local"
 
     %{
-      state
-      | dot_local_names: state.dot_local_names ++ [dot_local_name],
-        hosts: state.hosts ++ [resolved_host]
+      options
+      | dot_local_names: options.dot_local_names ++ [dot_local_name],
+        hosts: options.hosts ++ [resolved_host]
     }
   end
 
   @spec add_hosts(t(), [String.t() | :hostname]) :: t()
-  def add_hosts(%__MODULE__{} = state, hosts) do
-    Enum.reduce(hosts, state, &add_host(&2, &1))
+  def add_hosts(%__MODULE__{} = options, hosts) do
+    Enum.reduce(hosts, options, &add_host(&2, &1))
   end
 
   defp resolve_mdns_name(:hostname) do
