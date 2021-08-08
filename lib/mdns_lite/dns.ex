@@ -50,7 +50,11 @@ defmodule MdnsLite.DNS do
 
   defp ntoa(:ipv4_address), do: "<interface_ipv4>"
   defp ntoa(:ipv6_address), do: "<interface_ipv6>"
-  defp ntoa(addr), do: :inet.ntoa(addr)
+  defp ntoa(addr) when is_tuple(addr), do: :inet.ntoa(addr)
+  defp ntoa(<<a, b, c, d>>), do: :inet.ntoa({a, b, c, d})
+
+  defp ntoa(<<a::16, b::16, c::16, d::16, e::16, f::16, g::16, h::16>>),
+    do: :inet.ntoa({a, b, c, d, e, f, g, h})
 
   defp ptr_domain(:ipv4_arpa_address), do: "<interface_ipv4>.in-addr.arpa"
   defp ptr_domain(:ipv6_arpa_address), do: "<interface_ipv6>.ip6.arpa"

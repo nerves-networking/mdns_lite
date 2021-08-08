@@ -28,4 +28,13 @@ defmodule MdnsLite.Utilities do
   @spec ip_family(:inet.ip_address()) :: :inet | :inet6
   def ip_family({_, _, _, _}), do: :inet
   def ip_family({_, _, _, _, _, _, _, _}), do: :inet6
+
+  @doc """
+  Strip the flag bit off the class value
+
+  This is required since OTP doesn't know about it and will return numbers rather than the
+  the `:in` class.
+  """
+  def normalize_class(32769), do: :in
+  def normalize_class(other), do: other
 end

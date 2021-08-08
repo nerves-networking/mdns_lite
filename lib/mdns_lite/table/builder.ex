@@ -17,9 +17,8 @@ defmodule MdnsLite.Table.Builder do
     []
     |> add_a_records(config)
     |> add_ptr_records(config)
-    |> add_ptr_records2(config)
+    |> add_records_for_services(config)
     |> add_ptr_records3(config)
-    |> add_srv_records(config)
     |> Enum.uniq()
   end
 
@@ -48,7 +47,7 @@ defmodule MdnsLite.Table.Builder do
     records ++ resources
   end
 
-  defp add_ptr_records2(records, config) do
+  defp add_records_for_services(records, config) do
     Options.get_services(config)
     |> Enum.group_by(fn service -> service.type <> ".local" end)
     |> Enum.reduce(records, &records_for_service_type(&1, &2, config))
@@ -60,7 +59,8 @@ defmodule MdnsLite.Table.Builder do
   end
 
   defp service_resources(service, domain, config) do
-    name = service.name || hd(config.hosts)
+    # TODO: Add a service for each name?
+    name = hd(config.hosts)
     service_instance_name = to_charlist("#{name}.#{service.type}.local")
 
     first_dot_local_name = hd(config.dot_local_names)
@@ -87,29 +87,6 @@ defmodule MdnsLite.Table.Builder do
     [
       to_dns_rr(:in, :ptr, :ipv4_arpa_address, config.ttl, first_dot_local_name),
       to_dns_rr(:in, :ptr, :ipv6_arpa_address, config.ttl, first_dot_local_name) | records
-    ]
-  end
-
-  defp add_srv_records(records, %Options{} = config) do
-    Options.get_services(config)
-    |> Enum.group_by(fn service -> '#{service.name}.#{service.type}.local' end)
-    |> Enum.reduce(records, &srv_records_for_service_type(&1, &2, config))
-  end
-
-  defp srv_records_for_service_type({domain, services}, records, config) do
-    Enum.flat_map(services, &srv_service_resources(&1, domain, config)) ++ records
-  end
-
-  defp srv_service_resources(service, _domain, config) do
-    service_instance_name = "#{service.name}.#{service.type}.local"
-
-    first_dot_local_name = hd(config.dot_local_names)
-    target = first_dot_local_name <> "."
-    srv_data = {service.priority, service.weight, service.port, to_charlist(target)}
-
-    [
-      to_dns_rr(:in, :srv, service_instance_name, config.ttl, srv_data),
-      to_dns_rr(:in, :a, first_dot_local_name, config.ttl, :ipv4_address)
     ]
   end
 

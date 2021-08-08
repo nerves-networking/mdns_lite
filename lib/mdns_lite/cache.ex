@@ -1,6 +1,8 @@
 defmodule MdnsLite.Cache do
   import MdnsLite.DNS
 
+  alias MdnsLite.Utilities
+
   @moduledoc """
   Cache for records received over mDNS
   """
@@ -78,7 +80,7 @@ defmodule MdnsLite.Cache do
   """
   @spec insert_many(t(), timestamp(), [DNS.dns_rr()]) :: t()
   def insert_many(cache, time, records) do
-    records = records |> Enum.filter(&valid_record?/1) |> Enum.map(&cap_ttl/1)
+    records = records |> Enum.filter(&valid_record?/1) |> Enum.map(&normalize_record/1)
 
     if records != [] do
       cache
@@ -103,8 +105,8 @@ defmodule MdnsLite.Cache do
   end
 
   defp insert_or_update(
-         [dns_rr(class: c, type: t, domain: d) | rest],
-         dns_rr(class: c, type: t, domain: d) = new_rr,
+         [dns_rr(class: c, type: t, domain: d, data: x) | rest],
+         dns_rr(class: c, type: t, domain: d, data: x) = new_rr,
          result
        ) do
     [new_rr | rest] ++ result
@@ -114,13 +116,15 @@ defmodule MdnsLite.Cache do
     insert_or_update(rest, new_rr, [rr | result])
   end
 
-  defp cap_ttl(dns_rr(ttl: ttl) = record) when ttl > @max_ttl do
-    dns_rr(record, ttl: @max_ttl)
+  defp normalize_record(dns_rr(class: class, ttl: ttl) = record) do
+    dns_rr(record, ttl: normalize_ttl(ttl), class: Utilities.normalize_class(class))
   end
 
-  defp cap_ttl(record), do: record
+  defp normalize_ttl(ttl) when ttl > @max_ttl, do: @max_ttl
+  defp normalize_ttl(ttl) when ttl < 1, do: 1
+  defp normalize_ttl(ttl), do: ttl
 
-  defp valid_record?(dns_rr(class: :in, type: t)) when t in @cache_types, do: true
+  defp valid_record?(dns_rr(type: t)) when t in @cache_types, do: true
   defp valid_record?(_other), do: false
 
   defp drop_if_full(cache, count) do

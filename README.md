@@ -49,7 +49,7 @@ config :mdns_lite,
   services: [
     # service type: _http._tcp.local - used in match
     %{
-      name: "Web Server",
+      id: "My Web Server",
       protocol: "http",
       transport: "tcp",
       port: 80,
@@ -96,13 +96,14 @@ above, or at runtime:
 iex> services = [
   # service type: _http._tcp.local - used in match
   %{
-    name: "Web Server",
+    id: :my_web_server,
     protocol: "http",
     transport: "tcp",
     port: 80,
   },
   # service_type: _ssh._tcp.local - used in match
   %{
+    id: :my_ssh_service,
     protocol: "ssh",
     transport: "tcp",
     port: 22,
@@ -115,15 +116,15 @@ iex> MdnsLite.add_mds_services(services)
 ```
 
 Services can also be removed at runtime via `remove_mdns_services/1` with the
-service name to remove:
+service id to remove:
 
 ```elixir
-iex> service_names = ["Web Server", "Secure Socket"]
+iex> service_ids = [:my_web_server, :my_ssh_service]
 iex> MdnsLite.remove_mdns_services(services)
 :ok
 
 # Remove just a single service
-iex> MdnsLite.remove_mdns_services("Secure Socket")
+iex> MdnsLite.remove_mdns_services(:my_ssh_service)
 :ok
 ```
 

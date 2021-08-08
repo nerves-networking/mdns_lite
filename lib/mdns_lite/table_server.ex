@@ -25,6 +25,11 @@ defmodule MdnsLite.TableServer do
     GenServer.call(__MODULE__, {:lookup, query, if_info})
   end
 
+  @spec get_records() :: [DNS.rr()]
+  def get_records() do
+    GenServer.call(__MODULE__, :get_records)
+  end
+
   ##############################################################################
   #   GenServer callbacks
   ##############################################################################
@@ -42,6 +47,10 @@ defmodule MdnsLite.TableServer do
     new_options = fun.(state.options)
 
     {:reply, :ok, %{options: new_options, table: Table.Builder.from_options(new_options)}}
+  end
+
+  def handle_call(:get_records, _from, state) do
+    {:reply, state.table, state}
   end
 
   def handle_call({:lookup, query, if_info}, _from, state) do

@@ -47,9 +47,15 @@ defmodule MdnsLite.Responder do
     {:via, Registry, {MdnsLite.ResponderRegistry, address}}
   end
 
-  @spec get_cache(:inet.ip_address()) :: Cache.t()
-  def get_cache(address) do
-    GenServer.call(via_name(address), :get_cache)
+  @spec get_all_caches() :: [{:inet.ip_address(), Cache.t()}]
+  def get_all_caches() do
+    Registry.lookup(MdnsLite.Responders, __MODULE__)
+    |> Enum.map(fn {pid, ip_address} -> {ip_address, get_cache(pid)} end)
+  end
+
+  @spec get_cache(GenServer.server()) :: Cache.t()
+  def get_cache(server) do
+    GenServer.call(server, :get_cache)
   end
 
   @doc """
@@ -67,6 +73,7 @@ defmodule MdnsLite.Responder do
   def init(address) do
     # Join the mDNS multicast group
     state = %__MODULE__{ip: address, skip_udp: Application.get_env(:mdns_lite, :skip_udp)}
+    {:ok, _} = Registry.register(MdnsLite.Responders, __MODULE__, address)
 
     {:ok, state, {:continue, :initialization}}
   end
@@ -99,7 +106,8 @@ defmodule MdnsLite.Responder do
     {:noreply, new_state}
   end
 
-  def handle_info(_msg, state) do
+  def handle_info(msg, state) do
+    Logger.info("Responder ignoring #{inspect(msg)}")
     {:noreply, state}
   end
 

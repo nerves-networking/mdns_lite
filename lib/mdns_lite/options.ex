@@ -7,6 +7,9 @@ defmodule MdnsLite.Options do
   @default_ttl 120
   @default_dns_ip {127, 0, 0, 53}
   @default_dns_port 53
+  @default_monitor MdnsLite.VintageNetMonitor
+  @default_excluded_ifnames ["lo0", "lo", "ppp0", "wwan0"]
+  @default_ipv4_only true
 
   defstruct services: MapSet.new(),
             dot_local_names: [],
@@ -15,7 +18,10 @@ defmodule MdnsLite.Options do
             dns_bridge_enabled: false,
             dns_bridge_ip: @default_dns_ip,
             dns_bridge_port: @default_dns_port,
-            dns_bridge_recursive: true
+            dns_bridge_recursive: true,
+            if_monitor: @default_monitor,
+            excluded_ifnames: @default_excluded_ifnames,
+            ipv4_only: @default_ipv4_only
 
   @type t :: %__MODULE__{
           services: MapSet.t(map()),
@@ -25,7 +31,10 @@ defmodule MdnsLite.Options do
           dns_bridge_enabled: boolean(),
           dns_bridge_ip: :inet.address(),
           dns_bridge_port: 1..65535,
-          dns_bridge_recursive: boolean()
+          dns_bridge_recursive: boolean(),
+          if_monitor: module(),
+          excluded_ifnames: [String.t()],
+          ipv4_only: boolean()
         }
 
   @spec from_application_env() :: t()
@@ -37,13 +46,21 @@ defmodule MdnsLite.Options do
     dns_bridge_ip = Application.get_env(:mdns_lite, :dns_bridge_ip, @default_dns_ip)
     dns_bridge_port = Application.get_env(:mdns_lite, :dns_bridge_port, @default_dns_port)
     dns_bridge_recursive = Application.get_env(:mdns_lite, :dns_bridge_recursive, true)
+    if_monitor = Application.get_env(:mdns_lite, :if_monitor, @default_monitor)
+    ipv4_only = Application.get_env(:mdns_lite, :ipv4_only, @default_ipv4_only)
+
+    excluded_ifnames =
+      Application.get_env(:mdns_lite, :excluded_ifnames, @default_excluded_ifnames)
 
     %__MODULE__{
       ttl: ttl,
       dns_bridge_enabled: dns_bridge_enabled,
       dns_bridge_ip: dns_bridge_ip,
       dns_bridge_port: dns_bridge_port,
-      dns_bridge_recursive: dns_bridge_recursive
+      dns_bridge_recursive: dns_bridge_recursive,
+      if_monitor: if_monitor,
+      excluded_ifnames: excluded_ifnames,
+      ipv4_only: ipv4_only
     }
     |> add_hosts(hosts)
     |> add_services(config_services)
