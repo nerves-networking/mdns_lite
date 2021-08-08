@@ -70,16 +70,7 @@ defmodule MdnsLite.Cache do
   """
   @spec insert(t(), timestamp(), DNS.dns_rr()) :: t()
   def insert(cache, time, record) do
-    if valid_record?(record) do
-      record = cap_ttl(record)
-
-      cache
-      |> gc(time)
-      |> drop_if_full(1)
-      |> do_insert(record)
-    else
-      cache
-    end
+    insert_many(cache, time, [record])
   end
 
   @doc """

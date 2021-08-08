@@ -13,7 +13,7 @@ defmodule MdnsLite.Responder do
 
   use GenServer
   require Logger
-  alias MdnsLite.{IfInfo, TableServer}
+  alias MdnsLite.{Cache, IfInfo, TableServer}
   import MdnsLite.DNS
 
   # Reserved IANA ip address and port for mDNS
@@ -23,13 +23,17 @@ defmodule MdnsLite.Responder do
   @so_reuseport 0x0200
   @so_reuseaddr 0x0004
 
-  defmodule State do
-    @moduledoc false
-    @type t() :: struct()
-    defstruct ip: {0, 0, 0, 0},
-              udp: nil,
-              skip_udp: false
-  end
+  defstruct ip: {0, 0, 0, 0},
+            cache: Cache.new(),
+            udp: nil,
+            skip_udp: false
+
+  @type state() :: %{
+          ip: :inet.ip_address(),
+          cache: Cache.t(),
+          udp: :gen_udp.socket(),
+          skip_udp: boolean()
+        }
 
   ##############################################################################
   #   Public interface
@@ -41,6 +45,11 @@ defmodule MdnsLite.Responder do
 
   defp via_name(address) do
     {:via, Registry, {MdnsLite.ResponderRegistry, address}}
+  end
+
+  @spec get_cache(:inet.ip_address()) :: Cache.t()
+  def get_cache(address) do
+    GenServer.call(via_name(address), :get_cache)
   end
 
   @doc """
@@ -57,7 +66,7 @@ defmodule MdnsLite.Responder do
   @impl GenServer
   def init(address) do
     # Join the mDNS multicast group
-    state = %State{ip: address, skip_udp: Application.get_env(:mdns_lite, :skip_udp)}
+    state = %__MODULE__{ip: address, skip_udp: Application.get_env(:mdns_lite, :skip_udp)}
 
     {:ok, state, {:continue, :initialization}}
   end
@@ -74,37 +83,22 @@ defmodule MdnsLite.Responder do
     {:noreply, %{state | udp: udp}}
   end
 
-  @doc """
-  This handle_info() captures mDNS UDP multicast packets. Some client/service has
-  written to the mDNS multicast port. We are only interested in queries and of
-  those queries those that are germane.
-  """
   @impl GenServer
-  def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
-    # Decode the UDP packet
-    with {:ok, dns_record} <- :inet_dns.decode(packet),
-         dns_rec(header: header, qdlist: qdlist) = dns_record,
-         # qr is the query/response flag; false (0) = query, true (1) = response
-         dns_header(qr: false) <- header do
-      # There can be multiple queries in each request
-      qdlist
-      |> Enum.map(fn dns_query(class: class) = qd ->
-        {class, TableServer.lookup(qd, %IfInfo{ipv4_address: state.ip})}
-      end)
-      |> Enum.each(fn
-        # Erlang doesn't know about unicast class
-        {32769, result} ->
-          send_response(result, dns_record, {src_ip, src_port}, state)
-
-        {_, result} ->
-          send_response(result, dns_record, mdns_destination(src_ip, src_port), state)
-      end)
-    end
-
-    {:noreply, state}
+  def handle_call(:get_cache, _from, state) do
+    {:reply, state.cache, state}
   end
 
   @impl GenServer
+  def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
+    new_state =
+      case :inet_dns.decode(packet) do
+        {:ok, msg} -> handle_msg({src_ip, src_port}, msg, state)
+        _ -> state
+      end
+
+    {:noreply, new_state}
+  end
+
   def handle_info(_msg, state) do
     {:noreply, state}
   end
@@ -112,6 +106,37 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Private functions
   ##############################################################################
+  defp handle_msg(
+         src,
+         dns_rec(header: dns_header(qr: false), qdlist: qdlist) = msg,
+         state
+       ) do
+    # mDNS request message
+    qdlist
+    |> Enum.map(fn dns_query(class: class) = qd ->
+      {class, TableServer.lookup(qd, %IfInfo{ipv4_address: state.ip})}
+    end)
+    |> Enum.each(fn
+      # Erlang doesn't know about unicast class
+      {32769, result} -> send_response(result, msg, src, state)
+      {_, result} -> send_response(result, msg, mdns_destination(src), state)
+    end)
+
+    # If the request had any entries, cache them
+    update_cache(msg, state)
+  end
+
+  defp handle_msg(_src, dns_rec(header: dns_header(qr: true)) = msg, state) do
+    # A response message or update so cache whatever it contains
+    update_cache(msg, state)
+  end
+
+  defp update_cache(dns_rec(anlist: anlist, arlist: arlist), state) do
+    now = System.monotonic_time(:second)
+    new_cache = state.cache |> Cache.insert_many(now, anlist) |> Cache.insert_many(now, arlist)
+    %{state | cache: new_cache}
+  end
+
   defp send_response(%{answer: []}, _dns_record, _dest, _state), do: :ok
 
   defp send_response(
@@ -146,9 +171,9 @@ defmodule MdnsLite.Responder do
         arlist: result.additional
       )
 
-  defp mdns_destination(_src_address, @mdns_port), do: {@mdns_ipv4, @mdns_port}
+  defp mdns_destination({_src_address, @mdns_port}), do: {@mdns_ipv4, @mdns_port}
 
-  defp mdns_destination(src_address, src_port) do
+  defp mdns_destination({src_address, src_port}) do
     # Legacy Unicast Response
     # See RFC 6762 6.7
     {src_address, src_port}
