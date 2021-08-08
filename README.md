@@ -56,16 +56,12 @@ config :mdns_lite,
     },
     # service_type: _ssh._tcp.local - used in match
     %{
-      name: "Secure Socket",
       protocol: "ssh",
       transport: "tcp",
       port: 22,
     }
   ]
 ```
-
-(Note that the configuration changed from v0.2 to v0.3, eliminating a
-superfluous map.)
 
 The values of `host` and `ttl` will be used in the construction of mDNS (DNS)
 responses.
@@ -107,7 +103,6 @@ iex> services = [
   },
   # service_type: _ssh._tcp.local - used in match
   %{
-    name: "Secure Socket",
     protocol: "ssh",
     transport: "tcp",
     port: 22,

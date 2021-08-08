@@ -102,6 +102,5 @@ defmodule MdnsLite do
   end
 
   def query(q) do
-    
   end
 end
