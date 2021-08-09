@@ -22,7 +22,7 @@ defmodule MdnsLite.DNSBridge do
   use GenServer
   require Logger
 
-  alias MdnsLite.{IfInfo, Options, TableServer}
+  alias MdnsLite.Options
   import MdnsLite.DNS
 
   ##############################################################################
@@ -60,7 +60,8 @@ defmodule MdnsLite.DNSBridge do
          # qr is the query/response flag; false (0) = query, true (1) = response
          dns_header(qr: false) <- header do
       # only respond to the first query
-      result = TableServer.query(hd(qdlist), %IfInfo{ipv4_address: {127, 0, 0, 1}})
+
+      result = MdnsLite.query(hd(qdlist))
 
       send_response(qdlist, result, dns_record, {src_ip, src_port}, state)
     end
