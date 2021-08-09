@@ -40,7 +40,9 @@ defmodule MdnsLite.VintageNetMonitor do
   def handle_continue(:initialization, state) do
     address_data =
       VintageNet.match(@addresses_topic)
-      |> Stream.filter(&allowed_interface?(&1, state))
+      |> Enum.filter(fn {["interface", ifname, "addresses"], _} ->
+        allowed_interface?(ifname, state)
+      end)
       |> Enum.map(&elem(&1, 1))
       |> List.flatten()
 
