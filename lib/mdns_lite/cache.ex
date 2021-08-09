@@ -12,7 +12,7 @@ defmodule MdnsLite.Cache do
   #       records and it won't be called that often.
 
   @typedoc "Timestamp in seconds (assumed monotonic)"
-  @type timestamp() :: non_neg_integer()
+  @type timestamp() :: integer()
 
   # Don't allow records to last more than 75 minutes
   @max_ttl 75 * 60
@@ -23,7 +23,7 @@ defmodule MdnsLite.Cache do
   # Restrict how many records are cached
   @max_records 200
 
-  defstruct last_gc: 0, records: []
+  defstruct last_gc: -2_147_483_648, records: []
   @type t() :: %__MODULE__{last_gc: timestamp(), records: [DNS.dns_rr()]}
 
   @doc """
@@ -40,9 +40,11 @@ defmodule MdnsLite.Cache do
   IMPORTANT: The cache is not garbage collected, so it can return stale entries.
   Call `gc/2` first to expire old entries.
   """
-  @spec query(t(), DNS.dns_query()) :: [DNS.dns_rr()]
+  @spec query(t(), DNS.dns_query()) :: %{answer: [DNS.dns_rr()], additional: [DNS.dns_rr()]}
   def query(cache, query) do
-    MdnsLite.Table.lookup(cache.records, query, %MdnsLite.IfInfo{})
+    answer = MdnsLite.Table.query(cache.records, query, %MdnsLite.IfInfo{})
+    additional = MdnsLite.Table.additional_records(cache.records, answer, %MdnsLite.IfInfo{})
+    %{answer: answer, additional: additional}
   end
 
   @doc """
@@ -55,7 +57,9 @@ defmodule MdnsLite.Cache do
     %{cache | records: new_records, last_gc: time}
   end
 
-  def gc(cache, _time), do: cache
+  def gc(cache, _time) do
+    cache
+  end
 
   defp gc_record(record, acc, seconds_elapsed) do
     new_ttl = dns_rr(record, :ttl) - seconds_elapsed

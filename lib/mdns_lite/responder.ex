@@ -13,15 +13,12 @@ defmodule MdnsLite.Responder do
 
   use GenServer
   require Logger
-  alias MdnsLite.{Cache, IfInfo, TableServer}
+  alias MdnsLite.{Cache, IfInfo, TableServer, Utilities}
   import MdnsLite.DNS
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
   @mdns_port 5353
-  @sol_socket 0xFFFF
-  @so_reuseport 0x0200
-  @so_reuseaddr 0x0004
 
   defstruct ip: {0, 0, 0, 0},
             cache: Cache.new(),
@@ -58,6 +55,22 @@ defmodule MdnsLite.Responder do
     GenServer.call(server, :get_cache)
   end
 
+  @spec query_all(DNS.dns_query()) :: %{answer: [DNS.dns_rr()], additional: [DNS.dns_rr()]}
+  def query_all(q) do
+    Registry.lookup(MdnsLite.Responders, __MODULE__)
+    |> Enum.reduce(%{answer: [], additional: []}, fn {pid, _}, acc ->
+      MdnsLite.Table.merge_results(acc, query_cache(pid, q))
+    end)
+  end
+
+  @spec query_cache(GenServer.server(), DNS.dns_query()) :: %{
+          answer: [DNS.dns_rr()],
+          additional: [DNS.dns_rr()]
+        }
+  def query_cache(server, q) do
+    GenServer.call(server, {:query_cache, q})
+  end
+
   @doc """
   Leave the mDNS group - close the UDP port. Stop this GenServer.
   """
@@ -92,7 +105,13 @@ defmodule MdnsLite.Responder do
 
   @impl GenServer
   def handle_call(:get_cache, _from, state) do
-    {:reply, state.cache, state}
+    new_state = gc_cache(state)
+    {:reply, new_state.cache, new_state}
+  end
+
+  def handle_call({:query_cache, q}, _from, state) do
+    new_state = gc_cache(state)
+    {:reply, Cache.query(new_state.cache, q), new_state}
   end
 
   @impl GenServer
@@ -122,7 +141,7 @@ defmodule MdnsLite.Responder do
     # mDNS request message
     qdlist
     |> Enum.map(fn dns_query(class: class) = qd ->
-      {class, TableServer.lookup(qd, %IfInfo{ipv4_address: state.ip})}
+      {class, TableServer.query(qd, %IfInfo{ipv4_address: state.ip})}
     end)
     |> Enum.each(fn
       # Erlang doesn't know about unicast class
@@ -198,30 +217,10 @@ defmodule MdnsLite.Responder do
       # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
       multicast_ttl: 255,
       reuseaddr: true
-    ] ++ reuse_port(:os.type())
+    ] ++ Utilities.reuse_port_option()
   end
 
-  defp reuse_port({:unix, :linux}) do
-    case :os.version() do
-      {major, minor, _} when major > 3 or (major == 3 and minor >= 9) ->
-        get_reuse_port()
-
-      _before_3_9 ->
-        get_reuse_address()
-    end
+  defp gc_cache(state) do
+    %{state | cache: Cache.gc(state.cache, System.monotonic_time(:second))}
   end
-
-  defp reuse_port({:unix, os_name}) when os_name in [:darwin, :freebsd, :openbsd, :netbsd] do
-    get_reuse_port()
-  end
-
-  defp reuse_port({:win32, _}) do
-    get_reuse_address()
-  end
-
-  defp reuse_port(_), do: []
-
-  defp get_reuse_port(), do: [{:raw, @sol_socket, @so_reuseport, <<1::native-32>>}]
-
-  defp get_reuse_address(), do: [{:raw, @sol_socket, @so_reuseaddr, <<1::native-32>>}]
 end

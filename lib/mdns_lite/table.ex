@@ -14,8 +14,8 @@ defmodule MdnsLite.Table do
   # the qtype is "ANY" (255) or the rrtype is "CNAME" (5), and the record
   # rrclass must match the question qclass unless the qclass is "ANY"
   # (255).
-  @spec lookup(t(), DNS.dns_query(), IfInfo.t()) :: [DNS.dns_rr()]
-  def lookup(table, query, %IfInfo{} = if_info) do
+  @spec query(t(), DNS.dns_query(), IfInfo.t()) :: [DNS.dns_rr()]
+  def query(table, query, %IfInfo{} = if_info) do
     query
     |> normalize_query(if_info)
     |> run_query(table)
@@ -44,6 +44,12 @@ defmodule MdnsLite.Table do
     |> Enum.uniq()
   end
 
+  @spec merge_results(map(), map()) :: map()
+  def merge_results(%{answer: answer1, additional: add1}, %{answer: answer2, additional: add2}) do
+    # TODO: compare uniqueness based on the domain, type, class, and data only.
+    %{answer: Enum.uniq(answer1 ++ answer2), additional: Enum.uniq(add1 ++ add2)}
+  end
+
   # RFC 6763 12.3 No additional records for text records
   defp add_additional_records(dns_rr(type: :text), acc, _table, _if_info) do
     acc
@@ -60,8 +66,8 @@ defmodule MdnsLite.Table do
     hostname = List.delete_at(domain, -1)
 
     acc ++
-      lookup(table, dns_query(class: :in, type: :a, domain: hostname), if_info) ++
-      lookup(table, dns_query(class: :in, type: :aaaa, domain: hostname), if_info)
+      query(table, dns_query(class: :in, type: :a, domain: hostname), if_info) ++
+      query(table, dns_query(class: :in, type: :aaaa, domain: hostname), if_info)
   end
 
   # RFC 6763 12.1
@@ -74,8 +80,8 @@ defmodule MdnsLite.Table do
          table,
          if_info
        ) do
-    srv_records = lookup(table, dns_query(class: :in, type: :srv, domain: domain), if_info)
-    txt_records = lookup(table, dns_query(class: :in, type: :txt, domain: domain), if_info)
+    srv_records = query(table, dns_query(class: :in, type: :srv, domain: domain), if_info)
+    txt_records = query(table, dns_query(class: :in, type: :txt, domain: domain), if_info)
     a_records = additional_records(table, srv_records, if_info)
 
     acc ++ srv_records ++ txt_records ++ a_records

@@ -92,12 +92,11 @@ defmodule MdnsLite.Options do
     MapSet.to_list(options.services)
   end
 
-  @spec remove_service_by_name(t(), String.t()) :: t()
-  def remove_service_by_name(%__MODULE__{} = options, service_name)
-      when is_binary(service_name) do
+  @spec remove_service_by_id(t(), any()) :: t()
+  def remove_service_by_id(%__MODULE__{} = options, service_id) do
     services_set =
       options.services
-      |> Enum.reject(&(&1.name == service_name))
+      |> Enum.reject(&(&1.id == service_id))
       |> MapSet.new()
 
     %{options | services: services_set}

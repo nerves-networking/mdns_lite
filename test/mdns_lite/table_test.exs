@@ -37,7 +37,7 @@ defmodule MdnsLite.TableTest do
   def do_query(query) do
     table = test_table()
     if_info = %MdnsLite.IfInfo{ipv4_address: {192, 168, 9, 57}}
-    answer_rr = Table.lookup(table, query, if_info)
+    answer_rr = Table.query(table, query, if_info)
     additional_rr = Table.additional_records(table, answer_rr, if_info)
     %{answer: answer_rr, additional: additional_rr}
   end

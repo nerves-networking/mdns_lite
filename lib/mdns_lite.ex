@@ -98,9 +98,33 @@ defmodule MdnsLite do
   """
   @spec gethostbyname(String.t()) :: {:ok, :inet.ip()} | {:error, any()}
   def gethostbyname(hostname) do
-    dns_query(class: :in, type: :a, domain: to_charlist(hostname))
+    q = dns_query(class: :in, type: :a, domain: to_charlist(hostname))
+
+    case query(q) do
+      %{answer: [first | _]} ->
+        ip = first |> dns_rr(:data) |> to_addr()
+        {:ok, ip}
+
+      %{answer: []} ->
+        {:error, :nxdomain}
+    end
   end
 
-  def query(q) do
+  defp to_addr(addr) when is_tuple(addr), do: addr
+  defp to_addr(<<a, b, c, d>>), do: {a, b, c, d}
+
+  defp to_addr(<<a::16, b::16, c::16, d::16, e::16, f::16, g::16, h::16>>),
+    do: {a, b, c, d, e, f, g, h}
+
+  @spec query(DNS.dns_query()) :: %{answer: [DNS.dns_rr()], additional: [DNS.dns_rr()]}
+  def query(dns_query() = q) do
+    with %{answer: []} <-
+           MdnsLite.TableServer.query(q, %MdnsLite.IfInfo{ipv4_address: {127, 0, 0, 1}}),
+         %{answer: []} <- MdnsLite.Responder.query_all(q),
+         :ok <- MdnsLite.Sender.send(q) do
+      # Wait for updates
+      Process.sleep(500)
+      MdnsLite.Responder.query_all(q)
+    end
   end
 end

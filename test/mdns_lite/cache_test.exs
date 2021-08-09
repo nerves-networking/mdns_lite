@@ -28,9 +28,8 @@ defmodule MdnsLite.CacheTest do
       |> Cache.insert(0, @test_a_record)
       |> Cache.insert(0, @test_aaaa_record)
 
-    assert Cache.query(cache, dns_query(class: :in, type: :a, domain: 'nerves-1234.local')) == [
-             @test_a_record
-           ]
+    assert Cache.query(cache, dns_query(class: :in, type: :a, domain: 'nerves-1234.local')) ==
+             %{answer: [@test_a_record], additional: []}
   end
 
   test "expires old records" do

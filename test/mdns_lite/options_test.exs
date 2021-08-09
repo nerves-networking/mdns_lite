@@ -45,7 +45,7 @@ defmodule MdnsLite.OptionsTest do
 
     options =
       Options.add_service(options, %{
-        name: "SSH Remote Login Protocol",
+        id: "SSH Remote Login Protocol",
         protocol: "ssh",
         transport: "tcp",
         port: 22
@@ -53,7 +53,7 @@ defmodule MdnsLite.OptionsTest do
 
     assert Options.get_services(options) == [
              %MdnsLite.Service{
-               name: "SSH Remote Login Protocol",
+               id: "SSH Remote Login Protocol",
                port: 22,
                priority: 0,
                protocol: "ssh",
@@ -64,7 +64,7 @@ defmodule MdnsLite.OptionsTest do
              }
            ]
 
-    options = Options.remove_service_by_name(options, "SSH Remote Login Protocol")
+    options = Options.remove_service_by_id(options, "SSH Remote Login Protocol")
     assert Options.get_services(options) == []
   end
 

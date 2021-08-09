@@ -20,9 +20,9 @@ defmodule MdnsLite.TableServer do
     GenServer.call(__MODULE__, :options)
   end
 
-  @spec lookup(DNS.query(), IfInfo.t()) :: %{answer: [DNS.rr()], additional: [DNS.rr()]}
-  def lookup(query, if_info) do
-    GenServer.call(__MODULE__, {:lookup, query, if_info})
+  @spec query(DNS.query(), IfInfo.t()) :: %{answer: [DNS.rr()], additional: [DNS.rr()]}
+  def query(query, if_info) do
+    GenServer.call(__MODULE__, {:query, query, if_info})
   end
 
   @spec get_records() :: [DNS.rr()]
@@ -53,8 +53,8 @@ defmodule MdnsLite.TableServer do
     {:reply, state.table, state}
   end
 
-  def handle_call({:lookup, query, if_info}, _from, state) do
-    rr_list = Table.lookup(state.table, query, if_info)
+  def handle_call({:query, query, if_info}, _from, state) do
+    rr_list = Table.query(state.table, query, if_info)
     additional = Table.additional_records(state.table, rr_list, if_info)
 
     {:reply, %{answer: rr_list, additional: additional}, state}
