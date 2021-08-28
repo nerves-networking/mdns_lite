@@ -6,7 +6,7 @@ defmodule MdnsLite.TableServer do
   @moduledoc false
 
   @spec start_link(Options.t()) :: GenServer.on_start()
-  def start_link(opts) when is_struct(opts, Options) do
+  def start_link(%Options{} = opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
