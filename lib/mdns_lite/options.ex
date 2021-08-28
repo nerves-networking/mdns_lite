@@ -29,7 +29,7 @@ defmodule MdnsLite.Options do
           hosts: [charlist()],
           ttl: pos_integer(),
           dns_bridge_enabled: boolean(),
-          dns_bridge_ip: :inet.address(),
+          dns_bridge_ip: :inet.ip_address(),
           dns_bridge_port: 1..65535,
           dns_bridge_recursive: boolean(),
           if_monitor: module(),

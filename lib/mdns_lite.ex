@@ -96,7 +96,7 @@ defmodule MdnsLite do
   The hostname should be a .local name since the query only goes out via mDNS.
   On success, an IP address is returned.
   """
-  @spec gethostbyname(String.t()) :: {:ok, :inet.ip()} | {:error, any()}
+  @spec gethostbyname(String.t()) :: {:ok, :inet.ip_address()} | {:error, any()}
   def gethostbyname(hostname) do
     q = dns_query(class: :in, type: :a, domain: to_charlist(hostname))
 
