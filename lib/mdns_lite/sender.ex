@@ -1,7 +1,7 @@
 defmodule MdnsLite.Sender do
   import MdnsLite.DNS
 
-  alias MdnsLite.Utilities
+  alias MdnsLite.{DNS, Utilities}
 
   @mdns_ipv4 {224, 0, 0, 251}
   @mdns_port 5353

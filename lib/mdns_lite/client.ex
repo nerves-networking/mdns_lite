@@ -2,13 +2,7 @@ defmodule MdnsLite.Client do
   @moduledoc false
 
   import MdnsLite.DNS
-
-  # Reserved IANA ip address and port for mDNS
-  @mdns_ipv4 {224, 0, 0, 251}
-  @mdns_port 5353
-  @sol_socket 0xFFFF
-  @so_reuseport 0x0200
-  @so_reuseaddr 0x0004
+  alias MdnsLite.DNS
 
   @doc """
   Helper for creating an A-record query

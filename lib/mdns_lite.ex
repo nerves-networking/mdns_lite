@@ -1,5 +1,6 @@
 defmodule MdnsLite do
   import MdnsLite.DNS
+  alias MdnsLite.DNS
 
   @moduledoc """
   A simple implementation of an mDNS (multicast DNS (Domain Name Server))
@@ -36,7 +37,10 @@ defmodule MdnsLite do
   :ok
   ```
   """
-  defdelegate set_host(host), to: MdnsLite.Configuration
+  @spec set_host(:hostname | String.t()) :: :ok
+  def set_host(_host) do
+    :ok
+  end
 
   @doc """
   Add services for mdns_lite to advertise
@@ -70,7 +74,10 @@ defmodule MdnsLite do
   :ok
   ```
   """
-  defdelegate add_mdns_services(services), to: MdnsLite.Configuration
+  @spec add_mdns_services(map()) :: :ok
+  def add_mdns_services(_services) do
+    :ok
+  end
 
   @doc """
   Remove services
@@ -79,7 +86,7 @@ defmodule MdnsLite do
   service id to remove:
 
   ```elixir
-  iex> service_names = [:my_web_server, :my_ssh]
+  iex> service_ids = [:my_web_server, :my_ssh]
   iex> MdnsLite.remove_mdns_services(services)
   :ok
 
@@ -88,7 +95,10 @@ defmodule MdnsLite do
   :ok
   ```
   """
-  defdelegate remove_mdns_services(service_names), to: MdnsLite.Configuration
+  @spec remove_mdns_services([atom()]) :: :ok
+  def remove_mdns_services(_id_list) do
+    :ok
+  end
 
   @doc """
   Lookup a hostname using mDNS

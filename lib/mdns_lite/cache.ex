@@ -1,7 +1,7 @@
 defmodule MdnsLite.Cache do
   import MdnsLite.DNS
 
-  alias MdnsLite.Utilities
+  alias MdnsLite.{DNS, Utilities}
 
   @moduledoc """
   Cache for records received over mDNS

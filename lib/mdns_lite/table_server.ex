@@ -20,12 +20,15 @@ defmodule MdnsLite.TableServer do
     GenServer.call(__MODULE__, :options)
   end
 
-  @spec query(DNS.query(), IfInfo.t()) :: %{answer: [DNS.rr()], additional: [DNS.rr()]}
+  @spec query(DNS.dns_query(), IfInfo.t()) :: %{
+          answer: [DNS.dns_rr()],
+          additional: [DNS.dns_rr()]
+        }
   def query(query, if_info) do
     GenServer.call(__MODULE__, {:query, query, if_info})
   end
 
-  @spec get_records() :: [DNS.rr()]
+  @spec get_records() :: [DNS.dns_rr()]
   def get_records() do
     GenServer.call(__MODULE__, :get_records)
   end

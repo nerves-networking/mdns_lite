@@ -1,8 +1,11 @@
 defmodule MdnsLite.Table do
   import MdnsLite.DNS
-  alias MdnsLite.{IfInfo, Utilities}
+  alias MdnsLite.{DNS, IfInfo, Utilities}
 
-  @type t :: [DNS.dns_rr()]
+  @type t() :: [DNS.dns_rr()]
+
+  # TODO: make this more consistent
+  @type tmp_results() :: %{additional: [DNS.dns_rr()], answer: [DNS.dns_rr()]}
 
   @moduledoc false
 
@@ -37,14 +40,14 @@ defmodule MdnsLite.Table do
    are not required for correctness.
   >>>
   """
-  @spec additional_records(t(), [DNS.dns_rr()], IFInfo.t()) :: [DNS.dns_rr()]
+  @spec additional_records(t(), [DNS.dns_rr()], IfInfo.t()) :: [DNS.dns_rr()]
   def additional_records(table, rr, %IfInfo{} = if_info) do
     rr
     |> Enum.reduce([], &add_additional_records(&1, &2, table, if_info))
     |> Enum.uniq()
   end
 
-  @spec merge_results(map(), map()) :: map()
+  @spec merge_results(tmp_results(), tmp_results()) :: tmp_results()
   def merge_results(%{answer: answer1, additional: add1}, %{answer: answer2, additional: add2}) do
     # TODO: compare uniqueness based on the domain, type, class, and data only.
     %{answer: Enum.uniq(answer1 ++ answer2), additional: Enum.uniq(add1 ++ add2)}
@@ -90,18 +93,6 @@ defmodule MdnsLite.Table do
   # RFC 6763 12.4 No additional records for other types
   defp add_additional_records(_record, acc, _table, _if_info) do
     acc
-  end
-
-  defp run_query(dns_query(class: :any, type: :any, domain: domain), table) do
-    Enum.filter(table, fn dns_rr(domain: d) -> d == domain end)
-  end
-
-  defp run_query(dns_query(class: class, type: :any, domain: domain), table) do
-    Enum.filter(table, fn dns_rr(class: c, domain: d) -> c == class and d == domain end)
-  end
-
-  defp run_query(dns_query(class: :any, type: type, domain: domain), table) do
-    Enum.filter(table, fn dns_rr(type: t, domain: d) -> t == type and d == domain end)
   end
 
   defp run_query(dns_query(class: class, type: type, domain: domain), table) do

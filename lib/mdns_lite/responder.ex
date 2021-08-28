@@ -13,7 +13,7 @@ defmodule MdnsLite.Responder do
 
   use GenServer
   require Logger
-  alias MdnsLite.{Cache, IfInfo, TableServer, Utilities}
+  alias MdnsLite.{Cache, DNS, IfInfo, TableServer, Utilities}
   import MdnsLite.DNS
 
   # Reserved IANA ip address and port for mDNS

@@ -11,7 +11,7 @@ defmodule MdnsLite.Utilities do
   * `ifaddrs` - the return value from `:inet.getifaddrs/0`
   """
   @spec ifaddrs_to_ip_list(
-          [{ifname :: charlist(), ifopts :: :inet.getifaddrs_ifopts()}],
+          [{ifname :: charlist(), ifopts :: keyword()}],
           ifname :: String.t()
         ) :: [:inet.ip_address()]
   def ifaddrs_to_ip_list(ifaddrs, ifname) do
@@ -39,6 +39,7 @@ defmodule MdnsLite.Utilities do
   This is required since OTP doesn't know about it and will return numbers rather than the
   the `:in` class.
   """
+  @spec normalize_class(:in | 0..65535) :: :in | 0..65535
   def normalize_class(32769), do: :in
   def normalize_class(other), do: other
 

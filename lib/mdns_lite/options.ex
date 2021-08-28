@@ -26,7 +26,7 @@ defmodule MdnsLite.Options do
   @type t :: %__MODULE__{
           services: MapSet.t(map()),
           dot_local_names: [String.t()],
-          hosts: [charlist()],
+          hosts: [String.t()],
           ttl: pos_integer(),
           dns_bridge_enabled: boolean(),
           dns_bridge_ip: :inet.ip_address(),
@@ -129,7 +129,7 @@ defmodule MdnsLite.Options do
 
   defp resolve_mdns_name(:hostname) do
     {:ok, hostname} = :inet.gethostname()
-    hostname |> to_string
+    to_string(hostname)
   end
 
   defp resolve_mdns_name(mdns_name) when is_binary(mdns_name), do: mdns_name
