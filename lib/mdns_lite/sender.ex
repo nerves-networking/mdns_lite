@@ -1,4 +1,6 @@
 defmodule MdnsLite.Sender do
+  @moduledoc false
+
   import MdnsLite.DNS
 
   alias MdnsLite.{DNS, Utilities}

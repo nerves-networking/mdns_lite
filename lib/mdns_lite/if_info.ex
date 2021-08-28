@@ -1,4 +1,6 @@
 defmodule MdnsLite.IfInfo do
+  @moduledoc false
+
   # TODO: Delete module
   defstruct ipv4_address: nil, ipv6_addresses: []
 

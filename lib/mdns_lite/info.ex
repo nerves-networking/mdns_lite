@@ -1,5 +1,7 @@
 defmodule MdnsLite.Info do
-  alias MdnsLite.{TableServer, Responder}
+  @moduledoc false
+
+  alias MdnsLite.{Responder, TableServer}
 
   @doc """
   Dump the records that mDNSLite advertises

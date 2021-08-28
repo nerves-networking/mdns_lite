@@ -1,4 +1,6 @@
 defmodule MdnsLite.Service do
+  @moduledoc false
+
   defstruct id: nil,
             txt_payload: [""],
             port: 0,
