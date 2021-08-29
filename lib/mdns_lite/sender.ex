@@ -8,7 +8,7 @@ defmodule MdnsLite.Sender do
   @mdns_ipv4 {224, 0, 0, 251}
   @mdns_port 5353
 
-  @spec send(DNS.dns_query()) :: :ok
+  @spec send(DNS.dns_query()) :: :ok | {:error, atom()}
   def send(query) do
     message = dns_rec(header: dns_header(id: 0, qr: false, aa: false), qdlist: [query])
     data = :inet_dns.encode(message)

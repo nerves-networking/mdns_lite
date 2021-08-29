@@ -1,5 +1,6 @@
 defmodule MdnsLite do
   import MdnsLite.DNS
+  require Logger
   alias MdnsLite.{DNS, Options, TableServer}
 
   @typedoc """
@@ -154,11 +155,27 @@ defmodule MdnsLite do
   def query(dns_query() = q) do
     with %{answer: []} <-
            MdnsLite.TableServer.query(q, %MdnsLite.IfInfo{ipv4_address: {127, 0, 0, 1}}),
-         %{answer: []} <- MdnsLite.Responder.query_all(q),
-         :ok <- MdnsLite.Sender.send(q) do
-      # Wait for updates
-      Process.sleep(500)
-      MdnsLite.Responder.query_all(q)
+         %{answer: []} <- MdnsLite.Responder.query_all(q) do
+      # Nothing in the cache so make an mDNS request
+      send_query(q)
     end
   end
+
+  defp send_query(q, retries \\ 3)
+
+  defp send_query(q, retries) when retries > 0 do
+    case MdnsLite.Sender.send(q) do
+      :ok ->
+        # Wait for updates
+        Process.sleep(500)
+        MdnsLite.Responder.query_all(q)
+
+      {:error, reason} ->
+        Logger.warn("mdns_lite: failed to send mDNS request: #{inspect(reason)}")
+        Process.sleep(100)
+        send_query(q, retries - 1)
+    end
+  end
+
+  defp send_query(_q, 0), do: %{answer: []}
 end
