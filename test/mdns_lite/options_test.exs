@@ -89,6 +89,16 @@ defmodule MdnsLite.OptionsTest do
       assert log =~ "deprecated"
     end
 
+    test "unspecified id is filled in" do
+      {:ok, normalized} =
+        Options.normalize_service(%{
+          port: 22,
+          type: "_ssh._tcp"
+        })
+
+      assert normalized.id == :unspecified
+    end
+
     test "port required" do
       assert Options.normalize_service(%{id: :id, type: "_ssh._tcp"}) ==
                {:error, "Specify a port"}

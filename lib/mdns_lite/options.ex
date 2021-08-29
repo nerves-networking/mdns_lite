@@ -195,9 +195,7 @@ defmodule MdnsLite.Options do
     {:ok, name}
   end
 
-  defp normalize_id(_) do
-    {:error, "Each service needs an :id"}
-  end
+  defp normalize_id(_), do: {:ok, :unspecified}
 
   defp normalize_type(%{type: type}) when is_binary(type) and byte_size(type) > 0 do
     {:ok, type}

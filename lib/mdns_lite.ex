@@ -15,7 +15,8 @@ defmodule MdnsLite do
 
   Keys include:
 
-  * `:id` - an atom for referring to this service (required)
+  * `:id` - an atom for referring to this service (only required if you want to
+    reference the service at runtime)
   * `:port` - the TCP/UDP port number for the service (required)
   * `:transport` - the transport protocol. E.g., `"tcp"` (specify this and
     `:protocol`, or `:type`) * `:protocol` - the application protocol. E.g.,
