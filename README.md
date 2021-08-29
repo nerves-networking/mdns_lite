@@ -142,6 +142,38 @@ def deps do
 end
 ```
 
+## DNS Bridge
+
+`MdnsLite` can start a DNS server to respond to `.local` queries. This enables
+code that has no knowledge of mDNS to resolve mDNS queries. For example,
+Erlang/OTP's built-in DNS resolver doesn't know about mDNS. It's used to resolve
+hosts for Erlang distribution and pretty much any code using `:gen_tcp` and
+`:gen_udp`. `MdnsLite`'s DNS bridge feature makes `.local` hostname lookups work
+for all of this. No code modifications required.
+
+Note that this feature is useful on Nerves devices. Erlang/OTP can use the
+system name resolver on desktop Linux and MacOS. The system name resolver should
+already be hooked up to an mDNS resolver there.
+
+To set this up, you'll need to enable the DNS bridge on `MdnsLite` and then set
+up the DNS resolver to use it first. Here are the options for the application
+environment:
+
+```elixir
+config :mdns_lite,
+  dns_bridge_enabled: true,
+  dns_bridge_recursive: true
+
+config :vintage_net,
+  additional_name_servers: [{127, 0, 0, 53}]
+```
+
+There is currently an issue on Nerves and Linux that you may hit if the
+`:mdns_lite` application is not running. The Erlang DNS resolver calls `connect`
+to the IP address of the DNS server and then calls `connect` again to the next
+one. The second `connect` call fails when the first one is a `127.0.0.x`
+address. See [Issue 5092](https://github.com/erlang/otp/issues/5092).
+
 ## Usage
 
 `MdnsLite` is an Elixir/Erlang application; it will start up automatically when
