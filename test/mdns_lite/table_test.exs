@@ -12,6 +12,7 @@ defmodule MdnsLite.TableTest do
       |> Options.add_hosts(["nerves-21a5", "nerves"])
       |> Options.add_services([
         %{
+          id: :http_service,
           txt_payload: ["key=value"],
           port: 80,
           priority: 0,
@@ -21,6 +22,7 @@ defmodule MdnsLite.TableTest do
           weight: 0
         },
         %{
+          id: :ssh_service,
           txt_payload: [""],
           port: 22,
           priority: 0,
@@ -171,14 +173,14 @@ defmodule MdnsLite.TableTest do
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: '_ssh._tcp.local'
+          data: '_http._tcp.local'
         ),
         dns_rr(
           domain: '_services._dns-sd._udp.local',
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: '_http._tcp.local'
+          data: '_ssh._tcp.local'
         )
       ],
       additional: []

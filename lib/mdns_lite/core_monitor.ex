@@ -1,7 +1,18 @@
 defmodule MdnsLite.CoreMonitor do
-  @moduledoc false
+  @moduledoc """
+  Core logic for network monitors
 
-  @typedoc false
+  This module contains most of the logic needed for writing a network monitor.
+  It's only intended to be called from `MdnsLite.InetMonitor` and
+  `MdnsLite.VintageNetMonitor`.
+  """
+
+  @typedoc """
+  Monitor options
+
+  * `:excluded_ifnames` - a list of network interface names to ignore
+  * `:ipv4_only` - set to `true` to ignore all IPv6 addresses
+  """
   @type option() ::
           {:excluded_ifnames, [String.t()]}
           | {:ipv4_only, boolean()}

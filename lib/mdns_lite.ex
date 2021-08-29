@@ -1,6 +1,47 @@
 defmodule MdnsLite do
   import MdnsLite.DNS
-  alias MdnsLite.DNS
+  alias MdnsLite.{DNS, Options, TableServer}
+
+  @typedoc """
+  A user-specified ID for referring to a service
+
+  Atoms are recommended, but binaries are still supported since they were used
+  in the past.
+  """
+  @type service_id() :: atom() | binary()
+
+  @typedoc """
+  mDNS service description
+
+  Keys include:
+
+  * `:id` - an atom for referring to this service (required)
+  * `:port` - the TCP/UDP port number for the service (required)
+  * `:transport` - the transport protocol. E.g., `"tcp"` (specify this and
+    `:protocol`, or `:type`) * `:protocol` - the application protocol. E.g.,
+    `"ssh"` (specify this and `:transport`, or `:type`)
+  * `:type` - the transport/protocol to advertize. E.g., `"_ssh._tcp"` (only
+    needed if `:protocol` and `:transport` aren't specified) * `:weight` - the
+    service weight. Defaults to `0`. (optional)
+  * `:priority` - the service priority. Defaults to `0`. (optional)
+  * `:txt_payload` - a list of strings to advertise
+
+  Example:
+
+  ```
+  %{id: :my_ssh, port: 22, protocol: "ssh", transport: "tcp"}
+  ```
+  """
+  @type service() :: %{
+          :id => service_id(),
+          :port => 1..65535,
+          optional(:txt_payload) => [String.t()],
+          optional(:priority) => 0..255,
+          optional(:protocol) => String.t(),
+          optional(:transport) => String.t(),
+          optional(:type) => String.t(),
+          optional(:weight) => 0..255
+        }
 
   @moduledoc """
   A simple implementation of an mDNS (multicast DNS (Domain Name Server))
@@ -38,66 +79,48 @@ defmodule MdnsLite do
   ```
   """
   @spec set_host(:hostname | String.t()) :: :ok
-  def set_host(_host) do
-    :ok
+  def set_host(host) do
+    TableServer.update_options(&Options.set_host(&1, host))
   end
 
   @doc """
-  Add services for mdns_lite to advertise
+  Start advertising a service
 
-  The `services` section lists the services that the host offers, such as
-  providing an HTTP server. You must supply the `protocol`, `transport` and
-  `port` values for each service. You may also specify `weight` and/or `host`.
-  They each default to a zero value. Please consult the RFC for an explanation
-  of these values. Services can be configured in `config.exs` as shown above,
-  or at runtime:
+  Services can be added at compile-time via the `:services` key in the `mdns_lite`
+  application environment or they can be added at runtime using this function.
+  See the `service` type for information on what's needed.
+
+  Example:
 
   ```elixir
-  iex> services = [
-    # service type: _http._tcp.local - used in match
-    %{
+  iex> service = %{
       id: :my_web_server,
       protocol: "http",
       transport: "tcp",
-      port: 80,
-    },
-    # service_type: _ssh._tcp.local - used in match
-    %{
-      id: :my_ssh,
-      protocol: "ssh",
-      transport: "tcp",
-      port: 22,
+      port: 80
     }
-  ]
-
-  iex> MdnsLite.add_mdns_services(services)
+  iex> MdnsLite.add_mdns_service(service)
   :ok
   ```
   """
-  @spec add_mdns_services(map()) :: :ok
-  def add_mdns_services(_services) do
-    :ok
+  @spec add_mdns_service(service()) :: :ok
+  def add_mdns_service(service) do
+    TableServer.update_options(&Options.add_service(&1, service))
   end
 
   @doc """
-  Remove services
+  Stop advertising a service
 
-  Services can also be removed at runtime via `remove_mdns_services/1` with the
-  service id to remove:
+  Example:
 
   ```elixir
-  iex> service_ids = [:my_web_server, :my_ssh]
-  iex> MdnsLite.remove_mdns_services(services)
-  :ok
-
-  # Remove just a single service
-  iex> MdnsLite.remove_mdns_services(:my_ssh)
+  iex> MdnsLite.remove_mdns_service(:my_ssh)
   :ok
   ```
   """
-  @spec remove_mdns_services([atom()]) :: :ok
-  def remove_mdns_services(_id_list) do
-    :ok
+  @spec remove_mdns_service(service_id()) :: :ok
+  def remove_mdns_service(id) do
+    TableServer.update_options(&Options.remove_service_by_id(&1, id))
   end
 
   @doc """

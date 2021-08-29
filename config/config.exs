@@ -20,14 +20,14 @@ config :mdns_lite,
   # value separated by a '='.
   services: [
     %{
-      id: "My Web Server",
+      id: :web_server,
       protocol: "http",
       transport: "tcp",
       port: 80,
       txt_payload: ["key=value"]
     },
     %{
-      id: "Secure Socket",
+      id: :ssh_daemon,
       protocol: "ssh",
       transport: "tcp",
       port: 22

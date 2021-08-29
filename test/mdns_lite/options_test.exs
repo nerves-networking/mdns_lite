@@ -3,30 +3,6 @@ defmodule MdnsLite.OptionsTest do
 
   alias MdnsLite.Options
 
-  # setup do
-  #   # Make sure we're starting with known state every time
-  #   :sys.replace_state(Options, fn s -> %{s | mdns_services: MapSet.new()} end)
-
-  #   %{
-  #     result: %{
-  #       name: "SSH Remote Login Protocol",
-  #       txt_payload: [""],
-  #       port: 22,
-  #       priority: 0,
-  #       protocol: "ssh",
-  #       transport: "tcp",
-  #       type: "_ssh._tcp",
-  #       weight: 0
-  #     },
-  #     service: %{
-  #       name: "SSH Remote Login Protocol",
-  #       protocol: "ssh",
-  #       transport: "tcp",
-  #       port: 22
-  #     }
-  #   }
-  # end
-
   test "default options" do
     {:ok, hostname} = :inet.gethostname()
 
@@ -45,26 +21,24 @@ defmodule MdnsLite.OptionsTest do
 
     options =
       Options.add_service(options, %{
-        id: "SSH Remote Login Protocol",
+        id: :ssh_service,
         protocol: "ssh",
         transport: "tcp",
         port: 22
       })
 
     assert Options.get_services(options) == [
-             %MdnsLite.Service{
-               id: "SSH Remote Login Protocol",
+             %{
+               id: :ssh_service,
                port: 22,
                priority: 0,
-               protocol: "ssh",
-               transport: "tcp",
-               txt_payload: [""],
+               txt_payload: [],
                type: "_ssh._tcp",
                weight: 0
              }
            ]
 
-    options = Options.remove_service_by_id(options, "SSH Remote Login Protocol")
+    options = Options.remove_service_by_id(options, :ssh_service)
     assert Options.get_services(options) == []
   end
 
@@ -94,5 +68,42 @@ defmodule MdnsLite.OptionsTest do
     options = Options.defaults()
 
     assert_raise RuntimeError, fn -> Options.set_host(options, :wat) end
+  end
+
+  import ExUnit.CaptureLog
+
+  describe "service normalization" do
+    test "converts names to ids with warning" do
+      log =
+        capture_log(fn ->
+          {:ok, normalized} =
+            Options.normalize_service(%{
+              name: "name",
+              port: 22,
+              type: "_ssh._tcp"
+            })
+
+          assert normalized.id == "name"
+        end)
+
+      assert log =~ "deprecated"
+    end
+
+    test "port required" do
+      assert Options.normalize_service(%{id: :id, type: "_ssh._tcp"}) ==
+               {:error, "Specify a port"}
+    end
+
+    test "converts protocol and transport to a type" do
+      {:ok, normalized} =
+        Options.normalize_service(%{id: :id, port: 22, protocol: "ssh", transport: "tcp"})
+
+      assert normalized.type == "_ssh._tcp"
+    end
+
+    test "type or protocol/transport required" do
+      assert Options.normalize_service(%{id: :id, port: 22}) ==
+               {:error, "Specify either 1. :protocol and :transport or 2. :type"}
+    end
   end
 end

@@ -1,7 +1,63 @@
 defmodule MdnsLite.Options do
-  @moduledoc false
+  @moduledoc """
+  MdnsLite options
 
-  alias MdnsLite.Service
+  MdnsLite is usually configured in a project's application environment
+  (`config.exs`) as follows:
+
+  ```elixir
+  config :mdns_lite,
+    host: [:hostname, "nerves"],
+    ttl: 120,
+
+    services: [
+      %{
+        id: :web_server,
+        protocol: "http",
+        transport: "tcp",
+        port: 80,
+        txt_payload: ["key=value"]
+      },
+      %{
+        id: :ssh_daemon,
+        protocol: "ssh",
+        transport: "tcp",
+        port: 22
+      }
+    ]
+  ```
+
+  The configurable keys are:
+
+  * `:host` - A list of hostnames to respond to. Normally this would be set to
+    `:hostname` and `mdns_lite` will advertise the actual hostname with `.local`
+    appended.
+  * `:ttl` - The default mDNS record time-to-live. Usually the default of 120
+    seconds is fine.
+  * `:excluded_ifnames` - A list of network interfaces names to ignore. By
+    default, `mdns_lite` will ignore loopback and cellular network interfaces.
+  * `:ipv4_only` - Set to `true` to only respond on IPv4 interfaces. Since IPv6
+    isn't fully supported yet, this is the default. Note that it's still
+    possible to get AAAA records when using IPv4.
+  * `:if_monitor` - Set to `MdnsLite.VintageNetMonitor` when using Nerves or
+    `MdnsLite.InetMonitor` elsewhere.  The default is
+    `MdnsLite.VintageNetMonitor`.
+  * `:dns_bridge_enabled` - Set to `true` to start a DNS server running that
+    will bridge DNS to mDNS.
+  * `:dns_bridge_ip` - The IP address for the DNS server. Defaults to
+    127.0.0.53.
+  * `:dns_bridge_port` - The UDP port for the DNS server. Defaults to 53.
+  * `:dns_bridge_recursive` - If a regular DNS request comes on the DNS bridge,
+    forward it to a DNS server rather than returning an error. This is the
+    default since there's an issue on Linux and Nerves that prevents Erlang's
+    DNS resolver from checking the next one.
+  * `:services` - A list of services to advertise. See `MdnsLite.service` for
+    details.
+
+  Some options are modifiable at runtime. Functions for modifying these are in
+  the `MdnsLite` module.
+  """
+  require Logger
 
   @default_host_name_list [:hostname]
   @default_ttl 120
@@ -37,11 +93,17 @@ defmodule MdnsLite.Options do
           ipv4_only: boolean()
         }
 
+  @doc """
+  Load options from application environment
+
+  This function processes the application environment to remove invalid
+  options rather than crashing. Log messages will be generated.
+  """
   @spec from_application_env() :: t()
   def from_application_env() do
     hosts = Application.get_env(:mdns_lite, :host, @default_host_name_list)
     ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
-    config_services = Application.get_env(:mdns_lite, :services, [])
+    config_services = Application.get_env(:mdns_lite, :services, []) |> filter_invalid_services()
     dns_bridge_enabled = Application.get_env(:mdns_lite, :dns_bridge_enabled, false)
     dns_bridge_ip = Application.get_env(:mdns_lite, :dns_bridge_ip, @default_dns_ip)
     dns_bridge_port = Application.get_env(:mdns_lite, :dns_bridge_port, @default_dns_port)
@@ -66,33 +128,101 @@ defmodule MdnsLite.Options do
     |> add_services(config_services)
   end
 
+  @doc """
+  Return default options
+  """
   @spec defaults() :: t()
   def defaults() do
     %__MODULE__{}
     |> add_hosts(@default_host_name_list)
   end
 
-  @spec add_service(t(), map()) :: t()
-  def add_service(options, service) when is_map(service) do
-    add_services(options, [service])
+  @doc false
+  @spec add_service(t(), MdnsLite.service()) :: t()
+  def add_service(options, service) do
+    {:ok, normalized_service} = normalize_service(service)
+    %{options | services: MapSet.put(options.services, normalized_service)}
   end
 
-  @spec add_services(t(), [map()]) :: t()
+  @doc false
+  @spec add_services(t(), [MdnsLite.service()]) :: t()
   def add_services(%__MODULE__{} = options, services) do
-    updated =
-      services
-      |> Enum.map(&Service.new/1)
-      |> Enum.reduce(options.services, &MapSet.put(&2, &1))
-
-    %{options | services: updated}
+    Enum.reduce(services, options, fn service, options -> add_service(options, service) end)
   end
 
-  @spec get_services(t()) :: [Service.t()]
+  @doc false
+  @spec filter_invalid_services([MdnsLite.service()]) :: [MdnsLite.service()]
+  def filter_invalid_services(services) do
+    Enum.flat_map(services, fn service ->
+      case normalize_service(service) do
+        {:ok, normalized_service} ->
+          [normalized_service]
+
+        {:error, reason} ->
+          Logger.warn("mdns_lite: ignoring service (#{inspect(service)}): #{reason}")
+          []
+      end
+    end)
+  end
+
+  @doc """
+  Normalize a service description
+
+  All service descriptions are normalized before use. Call this function if
+  you're unsure how the service description will be transformed for use.
+  """
+  @spec normalize_service(MdnsLite.service()) :: {:ok, MdnsLite.service()} | {:error, String.t()}
+  def normalize_service(service) do
+    with {:ok, id} <- normalize_id(service),
+         {:ok, port} <- normalize_port(service),
+         {:ok, type} <- normalize_type(service) do
+      {:ok,
+       %{
+         id: id,
+         port: port,
+         type: type,
+         txt_payload: Map.get(service, :txt_payload, []),
+         priority: Map.get(service, :priority, 0),
+         weight: Map.get(service, :weight, 0)
+       }}
+    end
+  end
+
+  defp normalize_id(%{id: id}), do: {:ok, id}
+
+  defp normalize_id(%{name: name}) do
+    Logger.warn("mdns_lite: names are deprecated now. Specify an :id that's an atom")
+    {:ok, name}
+  end
+
+  defp normalize_id(_) do
+    {:error, "Each service needs an :id"}
+  end
+
+  defp normalize_type(%{type: type}) when is_binary(type) and byte_size(type) > 0 do
+    {:ok, type}
+  end
+
+  defp normalize_type(%{protocol: protocol, transport: transport} = service)
+       when is_binary(protocol) and is_binary(transport) do
+    {:ok, "_#{service.protocol}._#{service.transport}"}
+  end
+
+  defp normalize_type(_other) do
+    {:error, "Specify either 1. :protocol and :transport or 2. :type"}
+  end
+
+  defp normalize_port(%{port: port}) when port >= 0 and port <= 65535, do: {:ok, port}
+  defp normalize_port(_), do: {:error, "Specify a port"}
+
+  @doc false
+  @spec get_services(t()) :: [MdnsLite.service()]
   def get_services(%__MODULE__{} = options) do
     MapSet.to_list(options.services)
   end
 
-  @spec remove_service_by_id(t(), any()) :: t()
+  @doc false
+  @spec remove_service_by_id(t(), MdnsLite.service_id()) :: t()
   def remove_service_by_id(%__MODULE__{} = options, service_id) do
     services_set =
       options.services
@@ -102,6 +232,7 @@ defmodule MdnsLite.Options do
     %{options | services: services_set}
   end
 
+  @doc false
   @spec set_host(t(), String.t() | :hostname) :: t()
   def set_host(%__MODULE__{} = options, host) do
     resolved_host = resolve_mdns_name(host)
@@ -110,6 +241,7 @@ defmodule MdnsLite.Options do
     %{options | dot_local_names: [dot_local_name], hosts: [resolved_host]}
   end
 
+  @doc false
   @spec add_host(t(), String.t() | :hostname) :: t()
   def add_host(%__MODULE__{} = options, host) do
     resolved_host = resolve_mdns_name(host)
@@ -122,6 +254,7 @@ defmodule MdnsLite.Options do
     }
   end
 
+  @doc false
   @spec add_hosts(t(), [String.t() | :hostname]) :: t()
   def add_hosts(%__MODULE__{} = options, hosts) do
     Enum.reduce(hosts, options, &add_host(&2, &1))

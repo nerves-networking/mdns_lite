@@ -1,6 +1,11 @@
 defmodule MdnsLite.VintageNetMonitor do
+  @moduledoc """
+  Network monitor that using VintageNet
+
+  Use this network monitor to detect new network interfaces and their
+  IP addresses when using Nerves. It is the default.
+  """
   use GenServer
-  @moduledoc false
 
   alias MdnsLite.CoreMonitor
 

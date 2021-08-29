@@ -1,7 +1,5 @@
 defmodule MdnsLite.Table.Builder do
-  @moduledoc """
-  Utilities for creating the mDNS record table
-  """
+  @moduledoc false
 
   import MdnsLite.DNS
 

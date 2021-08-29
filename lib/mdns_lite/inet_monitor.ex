@@ -1,4 +1,15 @@
 defmodule MdnsLite.InetMonitor do
+  @moduledoc """
+  Network monitor that uses Erlang's :inet functions
+
+  Use this network monitor to detect new network interfaces and their
+  IP addresses when not using Nerves. It regularly polls the system
+  for changes so it's not as fast at starting mDNS responders as
+  the `MdnsLite.VintageNetMonitor` is. However, it works everywhere.
+
+  See `MdnsLite.Options` for how to set your `config.exs` to use it.
+  """
+
   use GenServer
 
   require Logger
@@ -7,18 +18,9 @@ defmodule MdnsLite.InetMonitor do
 
   @scan_interval 10000
 
-  @moduledoc false
-
   # Watch :inet.getifaddrs/0 for IP address changes and update the active responders.
 
-  @doc """
-  Start watching for changes on the specified network interfaces.
-
-  Parameters
-
-    * `:excluded_ifnames` - the list of interface names not to watch
-    * `:ipv4_only` - limit notifications to IPv4 addresses
-  """
+  @doc false
   @spec start_link([CoreMonitor.option()]) :: GenServer.on_start()
   def start_link(init_args) do
     GenServer.start_link(__MODULE__, init_args, name: __MODULE__)

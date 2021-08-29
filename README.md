@@ -49,13 +49,14 @@ config :mdns_lite,
   services: [
     # service type: _http._tcp.local - used in match
     %{
-      id: "My Web Server",
+      id: :web_service,
       protocol: "http",
       transport: "tcp",
       port: 80,
     },
     # service_type: _ssh._tcp.local - used in match
     %{
+      id: :ssh_daemon,
       protocol: "ssh",
       transport: "tcp",
       port: 22,
