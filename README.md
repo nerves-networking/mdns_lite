@@ -4,7 +4,7 @@
 [![CircleCI](https://circleci.com/gh/nerves-networking/mdns_lite.svg?style=svg)](https://circleci.com/gh/nerves-networking/mdns_lite)
 
 MdnsLite is a simple, limited, no frills implementation of an
-[mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (multicast Domain Name
+[mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (Multicast Domain Name
 System) server. It operates like a DNS server, the difference being that it uses
 multicast instead of unicast and is meant to be the DNS server for the _.local_
 domain. MdnsLite also provides for the advertising (discovery) of services
@@ -68,7 +68,7 @@ The values of `host` and `ttl` will be used in the construction of mDNS (DNS)
 responses.
 
 `host` can have the value of  `:hostname` in which case the value will be
-replaced with the value of `:inet.gethostname()`, otherwise you can provide a
+replaced with the value of `:inet.gethostname/0`, otherwise you can provide a
 string value. You can specify an alias hostname in which case `host` will be
 `["hostname", "alias-example"]`. The second value must be a string. When you use
 an alias, an "A" query can be made to  `alias-example.local` as well as to
@@ -94,38 +94,28 @@ value separated by a `=`. Services can be configured in `config.exs` as shown
 above, or at runtime:
 
 ```elixir
-iex> services = [
-  # service type: _http._tcp.local - used in match
-  %{
+iex> MdnsLite.add_mdns_service(%{
     id: :my_web_server,
     protocol: "http",
     transport: "tcp",
     port: 80,
-  },
-  # service_type: _ssh._tcp.local - used in match
-  %{
+  })
+:ok
+iex> MdnsLite.add_mdns_service(%{
     id: :my_ssh_service,
     protocol: "ssh",
     transport: "tcp",
     port: 22,
     txt_payload: ["key=value"],
-  }
-]
-
-iex> MdnsLite.add_mds_services(services)
+  })
 :ok
 ```
 
-Services can also be removed at runtime via `remove_mdns_services/1` with the
+Services can also be removed at runtime via `remove_mdns_service/1` with the
 service id to remove:
 
 ```elixir
-iex> service_ids = [:my_web_server, :my_ssh_service]
-iex> MdnsLite.remove_mdns_services(services)
-:ok
-
-# Remove just a single service
-iex> MdnsLite.remove_mdns_services(:my_ssh_service)
+iex> MdnsLite.remove_mdns_service(:my_web_server)
 :ok
 ```
 
