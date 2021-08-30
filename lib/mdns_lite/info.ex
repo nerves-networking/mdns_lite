@@ -19,11 +19,13 @@ defmodule MdnsLite.Info do
   @spec dump_caches() :: :ok
   def dump_caches() do
     Responder.get_all_caches()
-    |> Enum.map(fn {ip, cache} ->
+    |> Enum.map(fn %{ifname: ifname, ip: ip, cache: cache} ->
       [
-        "Responder: ",
+        "Responder (",
         :inet.ntoa(ip),
-        "\n",
+        "%",
+        ifname,
+        "):\n",
         format_rr(cache.records, "  ", "\n")
       ]
     end)

@@ -10,14 +10,14 @@ defmodule MdnsLite.ResponderSupervisor do
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
-  @spec start_child(:inet.ip_address()) :: DynamicSupervisor.on_start_child()
-  def start_child(address) do
-    DynamicSupervisor.start_child(__MODULE__, {Responder, address})
+  @spec start_child(String.t(), :inet.ip_address()) :: DynamicSupervisor.on_start_child()
+  def start_child(ifname, address) do
+    DynamicSupervisor.start_child(__MODULE__, {Responder, {ifname, address}})
   end
 
-  @spec stop_child(:inet.ip_address()) :: :ok
-  def stop_child(address) do
-    Responder.stop_server(address)
+  @spec stop_child(String.t(), :inet.ip_address()) :: :ok
+  def stop_child(ifname, address) do
+    Responder.stop_server(ifname, address)
   end
 
   @impl DynamicSupervisor

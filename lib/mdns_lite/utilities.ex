@@ -1,10 +1,6 @@
 defmodule MdnsLite.Utilities do
   @moduledoc false
 
-  @sol_socket 0xFFFF
-  @so_reuseport 0x0200
-  @so_reuseaddr 0x0004
-
   @doc """
   Return a network interface's IP addresses
 
@@ -42,36 +38,4 @@ defmodule MdnsLite.Utilities do
   @spec normalize_class(:in | 0..65535) :: :in | 0..65535
   def normalize_class(32769), do: :in
   def normalize_class(other), do: other
-
-  @doc """
-  Get the reuse port option for :gen_udp
-  """
-  @spec reuse_port_option() :: [{:raw, 65535, 4 | 512, <<_::32>>}]
-  def reuse_port_option() do
-    reuse_port(:os.type())
-  end
-
-  defp reuse_port({:unix, :linux}) do
-    case :os.version() do
-      {major, minor, _} when major > 3 or (major == 3 and minor >= 9) ->
-        get_reuse_port()
-
-      _before_3_9 ->
-        get_reuse_address()
-    end
-  end
-
-  defp reuse_port({:unix, os_name}) when os_name in [:darwin, :freebsd, :openbsd, :netbsd] do
-    get_reuse_port()
-  end
-
-  defp reuse_port({:win32, _}) do
-    get_reuse_address()
-  end
-
-  defp reuse_port(_), do: []
-
-  defp get_reuse_port(), do: [{:raw, @sol_socket, @so_reuseport, <<1::native-32>>}]
-
-  defp get_reuse_address(), do: [{:raw, @sol_socket, @so_reuseaddr, <<1::native-32>>}]
 end

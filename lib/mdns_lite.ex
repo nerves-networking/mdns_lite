@@ -155,27 +155,16 @@ defmodule MdnsLite do
   def query(dns_query() = q) do
     with %{answer: []} <-
            MdnsLite.TableServer.query(q, %MdnsLite.IfInfo{ipv4_address: {127, 0, 0, 1}}),
-         %{answer: []} <- MdnsLite.Responder.query_all(q) do
+         %{answer: []} <- MdnsLite.Responder.query_all_caches(q) do
       # Nothing in the cache so make an mDNS request
       send_query(q)
     end
   end
 
-  defp send_query(q, retries \\ 3)
-
-  defp send_query(q, retries) when retries > 0 do
-    case MdnsLite.Sender.send(q) do
-      :ok ->
-        # Wait for updates
-        Process.sleep(500)
-        MdnsLite.Responder.query_all(q)
-
-      {:error, reason} ->
-        Logger.warn("mdns_lite: failed to send mDNS request: #{inspect(reason)}")
-        Process.sleep(100)
-        send_query(q, retries - 1)
-    end
+  defp send_query(q) do
+    MdnsLite.Responder.multicast_all(q)
+    # Wait for updates
+    Process.sleep(500)
+    MdnsLite.Responder.query_all_caches(q)
   end
-
-  defp send_query(_q, 0), do: %{answer: []}
 end

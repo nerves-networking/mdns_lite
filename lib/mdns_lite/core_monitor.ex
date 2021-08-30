@@ -51,8 +51,8 @@ defmodule MdnsLite.CoreMonitor do
 
       new_todo =
         state.todo ++
-          Enum.map(to_remove, &{MdnsLite.ResponderSupervisor, :stop_child, [&1]}) ++
-          Enum.map(to_add, &{MdnsLite.ResponderSupervisor, :start_child, [&1]})
+          Enum.map(to_remove, &{MdnsLite.ResponderSupervisor, :stop_child, [ifname, &1]}) ++
+          Enum.map(to_add, &{MdnsLite.ResponderSupervisor, :start_child, [ifname, &1]})
 
       %{state | todo: new_todo, ip_list: Map.put(state.ip_list, ifname, new_list)}
     end

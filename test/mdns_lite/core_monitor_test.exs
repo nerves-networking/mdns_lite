@@ -11,9 +11,9 @@ defmodule MdnsLite.CoreMonitorTest do
 
     # IPv4 filtering is on by default
     assert state.todo == [
-             {MdnsLite.ResponderSupervisor, :start_child, [{1, 2, 3, 4}]},
-             {MdnsLite.ResponderSupervisor, :start_child, [{10, 11, 12, 13}]},
-             {MdnsLite.ResponderSupervisor, :start_child, [{14, 15, 16, 17}]}
+             {MdnsLite.ResponderSupervisor, :start_child, ["eth0", {1, 2, 3, 4}]},
+             {MdnsLite.ResponderSupervisor, :start_child, ["wlan0", {10, 11, 12, 13}]},
+             {MdnsLite.ResponderSupervisor, :start_child, ["wlan0", {14, 15, 16, 17}]}
            ]
   end
 
@@ -24,9 +24,9 @@ defmodule MdnsLite.CoreMonitorTest do
       |> CoreMonitor.set_ip_list("eth0", [{5, 6, 7, 8}])
 
     assert state.todo == [
-             {MdnsLite.ResponderSupervisor, :start_child, [{1, 2, 3, 4}]},
-             {MdnsLite.ResponderSupervisor, :start_child, [{5, 6, 7, 8}]},
-             {MdnsLite.ResponderSupervisor, :stop_child, [{1, 2, 3, 4}]}
+             {MdnsLite.ResponderSupervisor, :start_child, ["eth0", {1, 2, 3, 4}]},
+             {MdnsLite.ResponderSupervisor, :start_child, ["eth0", {5, 6, 7, 8}]},
+             {MdnsLite.ResponderSupervisor, :stop_child, ["eth0", {1, 2, 3, 4}]}
            ]
   end
 
@@ -53,7 +53,7 @@ defmodule MdnsLite.CoreMonitorTest do
 
     # IPv4 filtering is on by default
     assert state.todo == [
-             {MdnsLite.ResponderSupervisor, :start_child, [{1, 2, 3, 4}]}
+             {MdnsLite.ResponderSupervisor, :start_child, ["eth0", {1, 2, 3, 4}]}
            ]
   end
 
@@ -64,8 +64,8 @@ defmodule MdnsLite.CoreMonitorTest do
 
     # IPv4 filtering is on by default
     assert state.todo == [
-             {MdnsLite.ResponderSupervisor, :start_child, [{1, 2, 3, 4}]},
-             {MdnsLite.ResponderSupervisor, :start_child, [{1, 2, 3, 4, 5, 6, 7, 8}]}
+             {MdnsLite.ResponderSupervisor, :start_child, ["eth0", {1, 2, 3, 4}]},
+             {MdnsLite.ResponderSupervisor, :start_child, ["eth0", {1, 2, 3, 4, 5, 6, 7, 8}]}
            ]
   end
 end
