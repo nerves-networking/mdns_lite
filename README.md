@@ -174,6 +174,49 @@ to the IP address of the DNS server and then calls `connect` again to the next
 one. The second `connect` call fails when the first one is a `127.0.0.x`
 address. See [Issue 5092](https://github.com/erlang/otp/issues/5092).
 
+## Debugging
+
+`MdnsLite` maintains a table of records that it advertises and a cache per
+network interface. The table of records that it advertises is based solely off
+its configuration. Review it by running:
+
+```elixir
+iex> MdnsLite.Info.dump_records
+<interface_ipv4>.in-addr.arpa: type PTR, class IN, ttl 120, nerves-2e6d.local
+<interface_ipv6>.ip6.arpa: type PTR, class IN, ttl 120, nerves-2e6d.local
+_epmd._tcp.local: type PTR, class IN, ttl 120, nerves-2e6d._epmd._tcp.local
+_services._dns-sd._udp.local: type PTR, class IN, ttl 120, _epmd._tcp.local
+_services._dns-sd._udp.local: type PTR, class IN, ttl 120, _sftp-ssh._tcp.local
+_services._dns-sd._udp.local: type PTR, class IN, ttl 120, _ssh._tcp.local
+_sftp-ssh._tcp.local: type PTR, class IN, ttl 120, nerves-2e6d._sftp-ssh._tcp.local
+_ssh._tcp.local: type PTR, class IN, ttl 120, nerves-2e6d._ssh._tcp.local
+nerves-2e6d._epmd._tcp.local: type SRV, class IN, ttl 120, priority 0, weight 0, port 4369, nerves-2e6d.local.
+nerves-2e6d._epmd._tcp.local: type TXT, class IN, ttl 120,
+nerves-2e6d._sftp-ssh._tcp.local: type SRV, class IN, ttl 120, priority 0, weight 0, port 22, nerves-2e6d.local.
+nerves-2e6d._sftp-ssh._tcp.local: type TXT, class IN, ttl 120,
+nerves-2e6d._ssh._tcp.local: type SRV, class IN, ttl 120, priority 0, weight 0, port 22, nerves-2e6d.local.
+nerves-2e6d._ssh._tcp.local: type TXT, class IN, ttl 120,
+nerves-2e6d.local: type A, class IN, ttl 120, addr <interface_ipv4>
+nerves-2e6d.local: type AAAA, class IN, ttl 120, addr <interface_ipv6>
+```
+
+Note that some addresses have not been filled in. They depend on which network
+interface receives the query. The idea is that if a computer is looking for you
+on the Ethernet interface, you should give records with that Ethernet's
+interface rather than, say, the IP address of the WiFi interface.
+
+`MdnsLite`'s cache is filled with records that it sees advertised. It's
+basically the same, but can be quite large depending on the mDNS activity on a
+link. It looks like this:
+
+```elixir
+iex> MdnsLite.Info.dump_caches
+Responder: 172.31.112.97
+  ...
+Responder: 192.168.1.58
+  ...
+```
+
 ## Usage
 
 `MdnsLite` is an Elixir/Erlang application; it will start up automatically when
