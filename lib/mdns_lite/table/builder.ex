@@ -8,7 +8,6 @@ defmodule MdnsLite.Table.Builder do
   @doc """
   Create a table based on the user options
   """
-
   @spec from_options(Options.t()) :: MdnsLite.Table.t()
   def from_options(%Options{} = config) do
     # TODO: This could be seriously simplified...

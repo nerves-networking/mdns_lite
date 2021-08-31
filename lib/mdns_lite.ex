@@ -1,4 +1,19 @@
 defmodule MdnsLite do
+  @moduledoc """
+  MdnsLite is a simple, limited, no frills mDNS implementation
+
+  Advertising hostnames and services is generally done using the application
+  config.  See `MdnsLite.Options` for documentation.
+
+  To change the advertised hostnames or services at runtime, see `set_host/1`,
+  `add_mdns_service/1` and `remove_mdns_service/1`.
+
+  MdnsLite's mDNS record tables and caches can be inspected using
+  `MdnsLite.Info` if you're having trouble.
+
+  Finally, check out the MdnsLite `README.md` for more information.
+  """
+
   import MdnsLite.DNS
   require Logger
   alias MdnsLite.{DNS, Options, TableServer}
@@ -44,25 +59,6 @@ defmodule MdnsLite do
           optional(:type) => String.t(),
           optional(:weight) => 0..255
         }
-
-  @moduledoc """
-  A simple implementation of an mDNS (multicast DNS (Domain Name Server))
-  server.  mDNS uses multicast UDP rather than TCP. Its primary use is to
-  provide DNS support for the `local` domain. `MdnsLite` listens on a
-  well-known ip address/port. If a request arrives that it recognizes, it
-  constructs the appropriate DNS response.
-
-  `MdnsLite` responds to a limited number of DNS requests; they are all handled
-  in the `MdnsLite.Query` module. Of particular note is the SRV request. The
-  response will be a list of known services and how to contact them (domain and
-  port) as described in the configuration file.
-
-  This module is initialized, at runtime, with host information and service
-  descriptions found in the `config.exs` file.  The descriptions will be used
-  by `MdnsLite` to construct a response to a query.
-
-  Please refer to the `README.md` for further information.
-  """
 
   @doc """
   Set the list of host names
@@ -151,6 +147,7 @@ defmodule MdnsLite do
   defp to_addr(<<a::16, b::16, c::16, d::16, e::16, f::16, g::16, h::16>>),
     do: {a, b, c, d, e, f, g, h}
 
+  @doc false
   @spec query(DNS.dns_query()) :: %{answer: [DNS.dns_rr()], additional: [DNS.dns_rr()]}
   def query(dns_query() = q) do
     with %{answer: []} <-

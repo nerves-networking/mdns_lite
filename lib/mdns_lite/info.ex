@@ -1,5 +1,9 @@
 defmodule MdnsLite.Info do
-  @moduledoc false
+  @moduledoc """
+  Inspect internal MdnsLite state
+
+  Functions in this module are intended for debugging mDNS issues.
+  """
 
   alias MdnsLite.{Responder, TableServer}
 
