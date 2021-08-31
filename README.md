@@ -128,17 +128,22 @@ environment:
 ```elixir
 config :mdns_lite,
   dns_bridge_enabled: true,
+  dns_bridge_ip: {127, 0, 0, 53},
+  dns_bridge_port: 53,
   dns_bridge_recursive: true
 
 config :vintage_net,
   additional_name_servers: [{127, 0, 0, 53}]
 ```
 
-There is currently an issue on Nerves and Linux that you may hit if the
-`:mdns_lite` application is not running. The Erlang DNS resolver calls `connect`
-to the IP address of the DNS server and then calls `connect` again to the next
-one. The second `connect` call fails when the first one is a `127.0.0.x`
-address. See [Issue 5092](https://github.com/erlang/otp/issues/5092).
+The choice of running the DNS bridge on 127.0.0.53:53 is mostly arbitrary. This
+is the default.
+
+There is an issue on Nerves and Linux that you may hit if the `:mdns_lite`
+application is not running. The Erlang DNS resolver calls `connect` to the IP
+address of the DNS server and then calls `connect` again to the next one. The
+second `connect` call fails when the first one is a `127.0.0.x` address. See
+[Issue 5092](https://github.com/erlang/otp/issues/5092).
 
 ## Debugging
 
