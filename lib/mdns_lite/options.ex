@@ -32,8 +32,9 @@ defmodule MdnsLite.Options do
   * `:host` - A list of hostnames to respond to. Normally this would be set to
     `:hostname` and `mdns_lite` will advertise the actual hostname with `.local`
     appended.
-  * `:ttl` - The default mDNS record time-to-live. Usually the default of 120
-    seconds is fine.
+  * `:ttl` - The default mDNS record time-to-live. The default of 120
+    seconds is probably fine for most use. See [RFC 6762 - Multicast
+    DNS](https://tools.ietf.org/html/rfc6762) for considerations.
   * `:excluded_ifnames` - A list of network interfaces names to ignore. By
     default, `mdns_lite` will ignore loopback and cellular network interfaces.
   * `:ipv4_only` - Set to `true` to only respond on IPv4 interfaces. Since IPv6
@@ -57,6 +58,7 @@ defmodule MdnsLite.Options do
   Some options are modifiable at runtime. Functions for modifying these are in
   the `MdnsLite` module.
   """
+
   require Logger
 
   @default_host_name_list [:hostname]
@@ -79,6 +81,7 @@ defmodule MdnsLite.Options do
             excluded_ifnames: @default_excluded_ifnames,
             ipv4_only: @default_ipv4_only
 
+  @typedoc false
   @type t :: %__MODULE__{
           services: MapSet.t(map()),
           dot_local_names: [String.t()],
@@ -93,12 +96,7 @@ defmodule MdnsLite.Options do
           ipv4_only: boolean()
         }
 
-  @doc """
-  Load options from application environment
-
-  This function processes the application environment to remove invalid
-  options rather than crashing. Log messages will be generated.
-  """
+  @doc false
   @spec from_application_env() :: t()
   def from_application_env() do
     hosts = Application.get_env(:mdns_lite, :host, @default_host_name_list)
@@ -128,9 +126,7 @@ defmodule MdnsLite.Options do
     |> add_services(config_services)
   end
 
-  @doc """
-  Return default options
-  """
+  @doc false
   @spec defaults() :: t()
   def defaults() do
     %__MODULE__{}

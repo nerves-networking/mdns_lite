@@ -11,7 +11,7 @@ defmodule MdnsLite.DNSBridge do
   depending on how it's configured. Erlang's DNS resolver currently has an issue
   with the error strategy so it can't be used.
 
-  Options:
+  Configure this using the following application environment options:
 
   * `:dns_bridge_enabled` - set to true to enable the bridge
   * `:dns_bridge_ip` - IP address in tuple form for server (defaults to `{127, 0, 0, 53}`)
@@ -25,9 +25,7 @@ defmodule MdnsLite.DNSBridge do
   alias MdnsLite.Options
   import MdnsLite.DNS
 
-  ##############################################################################
-  #   Public interface
-  ##############################################################################
+  @doc false
   @spec start_link(MdnsLite.Options.t()) :: GenServer.on_start()
   def start_link(%Options{} = init_args) do
     GenServer.start_link(__MODULE__, init_args, name: __MODULE__)

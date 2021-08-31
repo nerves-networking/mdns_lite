@@ -5,36 +5,31 @@
 
 MdnsLite is a simple, limited, no frills implementation of an
 [mDNS](https://en.wikipedia.org/wiki/Multicast_DNS) (Multicast Domain Name
-System) server. It operates like a DNS server, the difference being that it uses
-multicast instead of unicast and is meant to be the DNS server for the _.local_
-domain. MdnsLite also provides for the advertising (discovery) of services
-offered by the host system.  Examples of services are an HTTP or an SSH server.
-Read about configuring services in the Configuration section below.
+System) client and server. It operates like DNS, but uses multicast instead of
+unicast so that any computer on a LAN can help resolve names. In particular, it
+resolves hostnames that end in `.local` and provides a way to advertise and
+discovery service.
 
-MdnsLite employs a network interface monitor that can dynamically adjust to
-network changes, e.g., assignment of a new IP address to a host. MdnsLite
-uses [`VintageNet`](https://github.com/nerves-networking/vintage_net) for this.
+MdnsLite is intended for environments like on Nerves devices that do not already
+have an `mDNS` service. If you're running on desktop Linux or on MacOS, you
+already have `mDNS` support and do not need MdnsLite.
 
-MdnsLite recognizes the following [query
-types](https://en.wikipedia.org/wiki/List_of_DNS_record_types):
+Features of MdnsLite:
 
-* A - Find the IPv4 address of a hostname.
-* PTR - Given an IPv4 address, find its hostname - reverse lookup. If, however,
-  it receives a request domain of "_services._dns-sd._udp.local", MdnsLite will
-  respond with a list of every service available (and is specified in the
-  configuration) on the host.
-* SRV - Service Locator
+* Advertise `<hostname>.local` and aliases for ease of finding devices
+* Static (application config) and dynamic service registration
+* Support for multi-homed devices. For example, mDNS responses sent on a network
+  interface have the expected IP addresses for that interface.
+* DNS bridging so that Erlang's built-in DNS resolver can look up `.local` names
+  via mDNS.
+* Caching of results and advertisements seen on the network
+* Integration with
+  [VintageNet](https://github.com/nerves-networking/vintage_net) and Erlang's
+  `:inet` application for network interface monitoring
+* Easy inspection of mDNS record tables to help debug service discovery issues
 
-If you want to know the details of the various DNS/mDNS record types and their
-fields, a good source is
-[zytrax.com/books/dns](http://www.zytrax.com/books/dns).
-
-There are at least a couple of other Elixir/Erlang implementations of mDNS servers:
-
-1. [Rosetta Home mdns](https://github.com/rosetta-home/mdns) (Elixir)
-2. [Shortishly mdns](https://github.com/shortishly/mdns) (Erlang)
-
-These implementations provided valuable guidance in the building of MdnsLite.
+MdnsLite is included in [NervesPack](https://hex.pm/packages/nerves_pack) so you
+might already have it!
 
 ## Configuration
 
@@ -42,19 +37,17 @@ A typical configuration in the `config.exs` file looks like:
 
 ```elixir
 config :mdns_lite,
-  # Use these values to construct the DNS resource record responses
-  # to a DNS query.
+  # Advertise `hostname.local` on the LAN
   host: :hostname,
-  ttl: 120,
   services: [
-    # service type: _http._tcp.local - used in match
+    # Advertise an HTTP server running on port 80
     %{
       id: :web_service,
       protocol: "http",
       transport: "tcp",
       port: 80,
     },
-    # service_type: _ssh._tcp.local - used in match
+    # Advertise an SSH daemon on port 22
     %{
       id: :ssh_daemon,
       protocol: "ssh",
@@ -64,34 +57,29 @@ config :mdns_lite,
   ]
 ```
 
-The values of `host` and `ttl` will be used in the construction of mDNS (DNS)
-responses.
+The `services` section lists the services that the host offers, such as
+providing an HTTP server. Specifying a `protocol`, `transport` and `port` is
+usually the easiest way. The `protocol` and `transport` get combined to form the
+service type that's actually advertised on the network. For example, a "tcp"
+transport and "ssh" protocol will end up as `"_ssh._tcp"` in the advertisement.
+If you need something custom, specify `:type` directly. Optional fields include
+`:id`, `:weight`, `:priority`, and `:txt_payload`. An `:id` is needed to remove
+the service advertisement at runtime. A `:txt_payload` is a list of
+`"<key>=<value>"` string that will be advertised in a TXT DNS record
+corresponding to the service.
 
-`host` can have the value of  `:hostname` in which case the value will be
-replaced with the value of `:inet.gethostname/0`, otherwise you can provide a
-string value. You can specify an alias hostname in which case `host` will be
-`["hostname", "alias-example"]`. The second value must be a string. When you use
-an alias, an "A" query can be made to  `alias-example.local` as well as to
-`hostname.local`. This can also be configured at runtime via
-`MdnsLite.set_host/1`:
+See [`MdnsLite.Options`](https://hexdocs.pm/mdns_lite/MdnsLite.Options.html) for
+information about all application environment options.
+
+It's possible to change the advertised hostnames and services at runtime. For
+example, to change the list of advertised hostnames, run:
 
 ```elixir
 iex> MdnsLite.set_host([:hostname, "nerves"])
 :ok
 ```
 
-`ttl` refers to a Time To Live value in seconds. [RFC 6762 - Multicast
-DNS](https://tools.ietf.org/html/rfc6762) - recommends a default value of 120
-seconds.
-
-The `services` section lists the services that the host offers, such as
-providing an HTTP server. You must supply the `protocol`, `transport` and `port`
-values for each service. You may also specify `weight` and/or `host`.  They each
-default to a zero value. Please consult the RFC for an explanation of these
-values. You can also specify `txt_payload` which is used to define the data in
-a TXT DNS resource record, it should be a list of strings containing a key and
-value separated by a `=`. Services can be configured in `config.exs` as shown
-above, or at runtime:
+Here's how to add and remove a service at runtime:
 
 ```elixir
 iex> MdnsLite.add_mdns_service(%{
@@ -101,38 +89,26 @@ iex> MdnsLite.add_mdns_service(%{
     port: 80,
   })
 :ok
-iex> MdnsLite.add_mdns_service(%{
-    id: :my_ssh_service,
-    protocol: "ssh",
-    transport: "tcp",
-    port: 22,
-    txt_payload: ["key=value"],
-  })
-:ok
-```
-
-Services can also be removed at runtime via `remove_mdns_service/1` with the
-service id to remove:
-
-```elixir
 iex> MdnsLite.remove_mdns_service(:my_web_server)
 :ok
 ```
 
-## Installation
+## Client
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `mdns_lite` to your list of dependencies in `mix.exs`:
+`MdnsLite.gethostbyname/1` uses mDNS to resolve hostnames. Here's an example:
 
 ```elixir
-def deps do
-  [
-    {:mdns_lite, "~> 0.6"}
-  ]
-end
+iex> MdnsLite.gethostbyname("my-laptop.local")
+{:ok, {172, 31, 112, 98}}
 ```
 
-## DNS Bridge
+If you just want mDNS to "just work" with Erlang, you'll need to enable
+MdnsLite's DNS Bridge feature and configure Erlang's DNS resolver to use it. See
+the DNS Bridge section for details.
+
+Service discovery docs TBD...
+
+## DNS Bridge configuration
 
 `MdnsLite` can start a DNS server to respond to `.local` queries. This enables
 code that has no knowledge of mDNS to resolve mDNS queries. For example,
@@ -207,42 +183,21 @@ Responder: 192.168.1.58
   ...
 ```
 
-## Usage
-
-`MdnsLite` is an Elixir/Erlang application; it will start up automatically when
-its enclosing application starts.
-
-When MdnsLite is running, it can be tested using the linux `dig` utility:
-
-```sh
-$ dig @224.0.0.251 -p 5353 -t A nerves-7fcb.local
-...
-nerves-7fcb.local. 120  IN  A 192.168.0.106
-...
-$ dig @224.0.0.251 -p 5353 -x 192.168.0.106
-...
-106.0.168.192.in-addr.arpa. 120 IN  PTR nerves-7fcb.local.
-...
-$ dig @nerves-7fcb.local -p 5353 -t PTR _ssh._tcp.local
-...
-_ssh._tcp.local.  120 IN  PTR nerves-7fcb._ssh._tcp.local.
-nerves-7fcb._ssh._tcp.local. 120 IN TXT "key=value"
-nerves-7fcb._ssh._tcp.local. 120 IN SRV 0 0 22 nerves-7fcb.local.
-nerves-7fcb.local.  120 IN  A 192.168.0.106
-...
-$ dig @224.0.0.251 -p 5353 -t SRV nerves-7fcb._ssh._tcp.local
-...
-nerves-7fcb._ssh._tcp.local. 120 IN SRV 0 0 22 nerves-7fcb.local.
-nerves-7fcb.local.  120 IN  A 192.168.0.106
-...
-```
-
-Although `dig` is a lookup utility for DNS, it can be used to query `MdnsLite`.
-You can use the reserved ip address (`224.0.0.251`) and port(`5353`) and query
-the local domain. Or you can use the local hostname, e.g., `nerves-7fcb.local`
-of the host that is providing the mDNS responses along with port `5353`.
-
 ## In memory
 
 [Peter Marks](https://github.com/pcmarks/) wrote and maintained the original
 version of `mdns_lite`.
+
+## License
+
+Copyright (C) 2019-21 SmartRent
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
