@@ -25,7 +25,7 @@ defmodule MdnsLite.MixProject do
   end
 
   defp description do
-    "A simple, limited, no frills implementation of an mDNS server"
+    "A simple, no frills mDNS implementation in Elixir"
   end
 
   defp package do
@@ -35,19 +35,13 @@ defmodule MdnsLite.MixProject do
     }
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: extra_applications(Mix.env()),
+      extra_applications: [:logger],
       mod: {MdnsLite.Application, []}
     ]
   end
 
-  # Ensure :vintage_net is started when running tests
-  def extra_applications(:test), do: [:vintage_net | extra_applications(:default)]
-  def extra_applications(_), do: [:logger]
-
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
@@ -59,8 +53,7 @@ defmodule MdnsLite.MixProject do
 
   defp dialyzer() do
     [
-      flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
-      plt_add_apps: [:vintage_net]
+      flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs]
     ]
   end
 
