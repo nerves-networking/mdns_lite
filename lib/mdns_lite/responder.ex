@@ -154,12 +154,14 @@ defmodule MdnsLite.Responder do
     data = :inet_dns.encode(message)
     dest = %{family: :inet, port: @mdns_port, addr: @mdns_ipv4}
 
-    case :socket.sendto(state.udp, data, dest) do
-      {:error, reason} ->
-        Logger.warn("mdns_lite multicast send failed: #{inspect(reason)}")
+    if state.udp do
+      case :socket.sendto(state.udp, data, dest) do
+        {:error, reason} ->
+          Logger.warn("mdns_lite multicast send failed: #{inspect(reason)}")
 
-      :ok ->
-        :ok
+        :ok ->
+          :ok
+      end
     end
 
     {:noreply, state}
