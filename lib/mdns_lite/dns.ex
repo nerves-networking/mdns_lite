@@ -29,7 +29,9 @@ defmodule MdnsLite.DNS do
   end
 
   def pretty(dns_rr(domain: domain, type: :txt, class: :in, ttl: ttl, data: data)) do
-    "#{domain}: type TXT, class IN, ttl #{ttl}, #{Enum.join(data, ", ")}"
+    formatted_data = if data == [], do: "", else: ", #{Enum.join(data, ", ")}"
+
+    "#{domain}: type TXT, class IN, ttl #{ttl}" <> formatted_data
   end
 
   def pretty(
