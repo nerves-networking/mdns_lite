@@ -38,7 +38,7 @@ A typical configuration in the `config.exs` file looks like:
 ```elixir
 config :mdns_lite,
   # Advertise `hostname.local` on the LAN
-  host: :hostname,
+  hosts: [:hostname],
   services: [
     # Advertise an HTTP server running on port 80
     %{

@@ -10,7 +10,7 @@ config :mdns_lite,
   # value of :inet.gethostname() or a string and hostname2 is a string value.
   # Example: [:hostname, "nerves"]
 
-  host: [:hostname, "nerves"],
+  hosts: [:hostname, "nerves"],
   ttl: 120,
 
   # A list of this host's services. NB: There are two other mDNS values: weight

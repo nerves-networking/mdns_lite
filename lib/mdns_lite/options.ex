@@ -7,7 +7,7 @@ defmodule MdnsLite.Options do
 
   ```elixir
   config :mdns_lite,
-    host: [:hostname, "nerves"],
+    hosts: [:hostname, "nerves"],
     ttl: 120,
 
     services: [
@@ -29,7 +29,7 @@ defmodule MdnsLite.Options do
 
   The configurable keys are:
 
-  * `:host` - A list of hostnames to respond to. Normally this would be set to
+  * `:hosts` - A list of hostnames to respond to. Normally this would be set to
     `:hostname` and `mdns_lite` will advertise the actual hostname with `.local`
     appended.
   * `:ttl` - The default mDNS record time-to-live. The default of 120
@@ -99,7 +99,11 @@ defmodule MdnsLite.Options do
   @doc false
   @spec from_application_env() :: t()
   def from_application_env() do
-    hosts = Application.get_env(:mdns_lite, :host, @default_host_name_list)
+    # This used to be called :host, but now it's :hosts
+    hosts =
+      Application.get_env(:mdns_lite, :hosts) || Application.get_env(:mdns_lite, :host) ||
+        @default_host_name_list
+
     ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
     config_services = Application.get_env(:mdns_lite, :services, []) |> filter_invalid_services()
     dns_bridge_enabled = Application.get_env(:mdns_lite, :dns_bridge_enabled, false)
