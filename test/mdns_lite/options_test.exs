@@ -47,7 +47,7 @@ defmodule MdnsLite.OptionsTest do
 
     options =
       Options.defaults()
-      |> Options.set_host(host)
+      |> Options.set_hosts([host])
 
     assert options.hosts == [host]
   end
@@ -58,7 +58,7 @@ defmodule MdnsLite.OptionsTest do
 
     options =
       Options.defaults()
-      |> Options.set_host(host)
+      |> Options.set_hosts([host])
       |> Options.add_host(host_alias)
 
     assert options.hosts == [host, host_alias]
@@ -67,7 +67,7 @@ defmodule MdnsLite.OptionsTest do
   test "fails with invalid host" do
     options = Options.defaults()
 
-    assert_raise RuntimeError, fn -> Options.set_host(options, :wat) end
+    assert_raise RuntimeError, fn -> Options.set_hosts(options, [:wat]) end
   end
 
   import ExUnit.CaptureLog

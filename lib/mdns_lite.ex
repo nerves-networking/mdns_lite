@@ -66,22 +66,25 @@ defmodule MdnsLite do
   @doc """
   Set the list of host names
 
-  `host` can have the value of  `:hostname` in which case the value will be
-  replaced with the value of `:inet.gethostname()`, otherwise you can provide a
-  string value. You can specify an alias hostname in which case `host` will be
-  `["hostname", "alias-example"]`. The second value must be a string. When you
-  use an alias, an "A" query can be made to  `alias-example.local` as well as
-  to `hostname.local`. This can also be configured at runtime via
-  `MdnsLite.set_host/1`:
+  This replaces the list of hostnames that MdnsLite will respond to. The first
+  hostname in the list is special. Service advertisements will use it. The
+  remainder are aliases.
+
+  Hostnames should not have the ".local" extension. MdnsLite will add it.
+
+  To specify the hostname returned by `:inet.gethostname/0`, use `:hostname`.
+
+  To make MdnsLite respond to queries for "<hostname>.local" and
+  "nerves.local", run this:
 
   ```elixir
-  iex> MdnsLite.set_host([:hostname, "nerves"])
+  iex> MdnsLite.set_hosts([:hostname, "nerves"])
   :ok
   ```
   """
-  @spec set_host(:hostname | String.t()) :: :ok
-  def set_host(host) do
-    TableServer.update_options(&Options.set_host(&1, host))
+  @spec set_hosts([:hostname | String.t()]) :: :ok
+  def set_hosts(hosts) do
+    TableServer.update_options(&Options.set_hosts(&1, hosts))
   end
 
   @doc """

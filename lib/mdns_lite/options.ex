@@ -227,12 +227,10 @@ defmodule MdnsLite.Options do
   end
 
   @doc false
-  @spec set_host(t(), String.t() | :hostname) :: t()
-  def set_host(%__MODULE__{} = options, host) do
-    resolved_host = resolve_mdns_name(host)
-    dot_local_name = "#{resolved_host}.local"
-
-    %{options | dot_local_names: [dot_local_name], hosts: [resolved_host]}
+  @spec set_hosts(t(), [String.t() | :hostname]) :: t()
+  def set_hosts(%__MODULE__{} = options, hosts) do
+    %{options | dot_local_names: [], hosts: []}
+    |> add_hosts(hosts)
   end
 
   @doc false
