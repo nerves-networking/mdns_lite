@@ -38,8 +38,8 @@ defmodule MdnsLite do
     `:protocol`, or `:type`) * `:protocol` - the application protocol. E.g.,
     `"ssh"` (specify this and `:transport`, or `:type`)
   * `:type` - the transport/protocol to advertize. E.g., `"_ssh._tcp"` (only
-    needed if `:protocol` and `:transport` aren't specified) * `:weight` - the
-    service weight. Defaults to `0`. (optional)
+    needed if `:protocol` and `:transport` aren't specified)
+  * `:weight` - the service weight. Defaults to `0`. (optional)
   * `:priority` - the service priority. Defaults to `0`. (optional)
   * `:txt_payload` - a list of strings to advertise
 
