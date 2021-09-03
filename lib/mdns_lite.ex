@@ -60,6 +60,9 @@ defmodule MdnsLite do
           optional(:weight) => 0..255
         }
 
+  @local_if_info %MdnsLite.IfInfo{ipv4_address: {127, 0, 0, 1}}
+  @default_timeout 500
+
   @doc """
   Set the list of host names
 
@@ -128,10 +131,10 @@ defmodule MdnsLite do
   On success, an IP address is returned.
   """
   @spec gethostbyname(String.t()) :: {:ok, :inet.ip_address()} | {:error, any()}
-  def gethostbyname(hostname) do
+  def gethostbyname(hostname, timeout \\ @default_timeout) do
     q = dns_query(class: :in, type: :a, domain: to_charlist(hostname))
 
-    case query(q) do
+    case query(q, timeout) do
       %{answer: [first | _]} ->
         ip = first |> dns_rr(:data) |> to_addr()
         {:ok, ip}
@@ -148,20 +151,20 @@ defmodule MdnsLite do
     do: {a, b, c, d, e, f, g, h}
 
   @doc false
-  @spec query(DNS.dns_query()) :: %{answer: [DNS.dns_rr()], additional: [DNS.dns_rr()]}
-  def query(dns_query() = q) do
-    with %{answer: []} <-
-           MdnsLite.TableServer.query(q, %MdnsLite.IfInfo{ipv4_address: {127, 0, 0, 1}}),
+  @spec query(DNS.dns_query(), non_neg_integer()) :: %{
+          answer: [DNS.dns_rr()],
+          additional: [DNS.dns_rr()]
+        }
+  def query(dns_query() = q, timeout \\ @default_timeout) do
+    # 1. Try our configured records
+    # 2. Try the caches
+    # 3. Send the query
+    # 4. Wait for response to collect and return the matchers
+    with %{answer: []} <- MdnsLite.TableServer.query(q, @local_if_info),
          %{answer: []} <- MdnsLite.Responder.query_all_caches(q) do
-      # Nothing in the cache so make an mDNS request
-      send_query(q)
+      MdnsLite.Responder.multicast_all(q)
+      Process.sleep(timeout)
+      MdnsLite.Responder.query_all_caches(q)
     end
-  end
-
-  defp send_query(q) do
-    MdnsLite.Responder.multicast_all(q)
-    # Wait for updates
-    Process.sleep(500)
-    MdnsLite.Responder.query_all_caches(q)
   end
 end
