@@ -97,24 +97,20 @@ defmodule MdnsLite.Options do
         }
 
   @doc false
-  @spec from_application_env() :: t()
-  def from_application_env() do
-    # This used to be called :host, but now it's :hosts
-    hosts =
-      Application.get_env(:mdns_lite, :hosts) || Application.get_env(:mdns_lite, :host) ||
-        @default_host_name_list
+  @spec new(Enumerable.t()) :: t()
+  def new(enumerable \\ %{}) do
+    opts = Map.new(enumerable)
 
-    ttl = Application.get_env(:mdns_lite, :ttl, @default_ttl)
-    config_services = Application.get_env(:mdns_lite, :services, []) |> filter_invalid_services()
-    dns_bridge_enabled = Application.get_env(:mdns_lite, :dns_bridge_enabled, false)
-    dns_bridge_ip = Application.get_env(:mdns_lite, :dns_bridge_ip, @default_dns_ip)
-    dns_bridge_port = Application.get_env(:mdns_lite, :dns_bridge_port, @default_dns_port)
-    dns_bridge_recursive = Application.get_env(:mdns_lite, :dns_bridge_recursive, true)
-    if_monitor = Application.get_env(:mdns_lite, :if_monitor, @default_monitor)
-    ipv4_only = Application.get_env(:mdns_lite, :ipv4_only, @default_ipv4_only)
-
-    excluded_ifnames =
-      Application.get_env(:mdns_lite, :excluded_ifnames, @default_excluded_ifnames)
+    hosts = get_host_option(opts)
+    ttl = Map.get(opts, :ttl, @default_ttl)
+    config_services = Map.get(opts, :services, []) |> filter_invalid_services()
+    dns_bridge_enabled = Map.get(opts, :dns_bridge_enabled, false)
+    dns_bridge_ip = Map.get(opts, :dns_bridge_ip, @default_dns_ip)
+    dns_bridge_port = Map.get(opts, :dns_bridge_port, @default_dns_port)
+    dns_bridge_recursive = Map.get(opts, :dns_bridge_recursive, true)
+    if_monitor = Map.get(opts, :if_monitor, @default_monitor)
+    ipv4_only = Map.get(opts, :ipv4_only, @default_ipv4_only)
+    excluded_ifnames = Map.get(opts, :excluded_ifnames, @default_excluded_ifnames)
 
     %__MODULE__{
       ttl: ttl,
@@ -130,12 +126,15 @@ defmodule MdnsLite.Options do
     |> add_services(config_services)
   end
 
-  @doc false
-  @spec defaults() :: t()
-  def defaults() do
-    %__MODULE__{}
-    |> add_hosts(@default_host_name_list)
+  # This used to be called :host, but now it's :hosts. It's a list, but be
+  # nice and wrap rather than crash.
+  defp get_host_option(%{host: host}) do
+    Logger.warn("mdns_lite: the :host app environment option is deprecated. Change to :hosts")
+    List.wrap(host)
   end
+
+  defp get_host_option(%{hosts: hosts}), do: List.wrap(hosts)
+  defp get_host_option(_), do: @default_host_name_list
 
   @doc false
   @spec add_service(t(), MdnsLite.service()) :: t()

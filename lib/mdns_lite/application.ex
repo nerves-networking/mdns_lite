@@ -5,7 +5,7 @@ defmodule MdnsLite.Application do
 
   @impl Application
   def start(_type, _args) do
-    config = MdnsLite.Options.from_application_env()
+    config = Application.get_all_env(:mdns_lite) |> MdnsLite.Options.new()
 
     children = [
       {MdnsLite.TableServer, config},

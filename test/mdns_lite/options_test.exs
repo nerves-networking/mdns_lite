@@ -1,12 +1,14 @@
 defmodule MdnsLite.OptionsTest do
   use ExUnit.Case, async: false
 
+  import ExUnit.CaptureLog
+
   alias MdnsLite.Options
 
   test "default options" do
     {:ok, hostname} = :inet.gethostname()
 
-    assert Options.defaults() == %Options{
+    assert Options.new() == %Options{
              dot_local_names: ["#{hostname}.local"],
              hosts: ["#{hostname}"],
              services: MapSet.new(),
@@ -14,8 +16,29 @@ defmodule MdnsLite.OptionsTest do
            }
   end
 
+  test "warns on host key" do
+    log =
+      capture_log(fn ->
+        opts = Options.new(host: "old_way")
+        assert opts.hosts == ["old_way"]
+      end)
+
+    assert log =~ "deprecated"
+  end
+
+  test "wraps non-list hosts" do
+    opts = Options.new(hosts: "not_list")
+    assert opts.hosts == ["not_list"]
+  end
+
+  test "hosts lists work" do
+    opts = Options.new(hosts: [:hostname, "alias"])
+    {:ok, hostname} = :inet.gethostname()
+    assert opts.hosts == [to_string(hostname), "alias"]
+  end
+
   test "add and remove a single mdns service" do
-    options = Options.defaults()
+    options = Options.new()
 
     assert Options.get_services(options) == []
 
@@ -46,7 +69,7 @@ defmodule MdnsLite.OptionsTest do
     host = "howdy"
 
     options =
-      Options.defaults()
+      Options.new()
       |> Options.set_hosts([host])
 
     assert options.hosts == [host]
@@ -57,7 +80,7 @@ defmodule MdnsLite.OptionsTest do
     host_alias = "partner"
 
     options =
-      Options.defaults()
+      Options.new()
       |> Options.set_hosts([host])
       |> Options.add_host(host_alias)
 
@@ -65,12 +88,10 @@ defmodule MdnsLite.OptionsTest do
   end
 
   test "fails with invalid host" do
-    options = Options.defaults()
+    options = Options.new()
 
     assert_raise RuntimeError, fn -> Options.set_hosts(options, [:wat]) end
   end
-
-  import ExUnit.CaptureLog
 
   describe "service normalization" do
     test "converts names to ids with warning" do
