@@ -137,9 +137,7 @@ defmodule MdnsLite.DNSBridge do
 
         dns_rec(result, header: dns_header(header, id: id))
 
-      {:error, reason} ->
-        Logger.error("Recursive lookup of #{domain} failed because #{inspect(reason)}")
-
+      {:error, _reason} ->
         lookup_failure(id, qdlist)
     end
   end
