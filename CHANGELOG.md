@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v0.8.0
+
+This release is a major update to MdnsLite to support making queries in
+addition to responding to queries. The runtime API is not backwards compatible.
+If you're only using the application environment to configure MdnsLite, you
+should be ok.
+
+* New features
+  * Make mDNS requests
+  * Add a DNS bridge for Erlang's DNS resolver. This enables Erlang
+    distribution and `:gen_tcp` users to be passed `.local` hostnames. See docs
+    for how to configure
+  * mDNS record caching
+  * mDNS record inspection - both for ones MdnsLite advertises and for ones in
+    the caches
+  * AAAA record support - Proper IPv6 support is still not available
+
+* Bug fixes
+  * MdnsLite now uses `:socket` to send and receive mDNS messages. This fixes
+    several issues where multicast packets were being mixed up between network
+    interfaces.
+
 ## v0.7.0
 
 * Breaking change
