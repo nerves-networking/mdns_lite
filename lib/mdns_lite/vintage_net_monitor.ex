@@ -47,6 +47,11 @@ defmodule MdnsLite.VintageNetMonitor do
     set_vn_address(state, ifname, addresses)
   end
 
+  defp set_vn_address(state, ifname, nil) do
+    # nil gets passed when the network interface goes away.
+    set_vn_address(state, ifname, [])
+  end
+
   defp set_vn_address(state, ifname, addresses) do
     ip_list = Enum.map(addresses, fn %{address: ip} -> ip end)
     CoreMonitor.set_ip_list(state, ifname, ip_list)
