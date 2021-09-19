@@ -1,4 +1,11 @@
-# CHANGELOG
+# Changelog
+
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## v0.8.1 - 2021-09-19
+
+* Fixed
+  * Fix interface monitor crash when a network interface gets removed.
 
 ## v0.8.0
 
