@@ -122,16 +122,15 @@ defmodule MdnsLite.Responder do
     {:ok, udp} = :socket.open(:inet, :dgram, :udp)
 
     :ok = bindtodevice(udp, state.ifname)
-    :ok = :socket.setopt(udp, {:socket, :reuseport}, true)
-    :ok = :socket.setopt(udp, {:socket, :reuseaddr}, true)
-    :ok = :socket.setopt(udp, {:ip, :multicast_loop}, false)
+    :ok = :socket.setopt(udp, :socket, :reuseport, true)
+    :ok = :socket.setopt(udp, :socket, :reuseaddr, true)
+    :ok = :socket.setopt(udp, :ip, :multicast_loop, false)
     # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
-    :ok = :socket.setopt(udp, {:ip, :multicast_ttl}, 255)
-    :ok = :socket.setopt(udp, {:ip, :multicast_if}, state.ip)
+    :ok = :socket.setopt(udp, :ip, :multicast_ttl, 255)
+    :ok = :socket.setopt(udp, :ip, :multicast_if, state.ip)
     :ok = :socket.bind(udp, %{family: :inet, port: @mdns_port})
 
-    :ok =
-      :socket.setopt(udp, {:ip, :add_membership}, %{multiaddr: @mdns_ipv4, interface: state.ip})
+    :ok = :socket.setopt(udp, :ip, :add_membership, %{multiaddr: @mdns_ipv4, interface: state.ip})
 
     new_state = %{state | udp: udp} |> process_receives()
     {:noreply, new_state}
@@ -283,7 +282,7 @@ defmodule MdnsLite.Responder do
   defp bindtodevice(socket, ifname) do
     case :os.type() do
       {:unix, :linux} ->
-        :socket.setopt(socket, {:socket, :bindtodevice}, String.to_charlist(ifname))
+        :socket.setopt(socket, :socket, :bindtodevice, String.to_charlist(ifname))
 
       {:unix, :darwin} ->
         # TODO!
