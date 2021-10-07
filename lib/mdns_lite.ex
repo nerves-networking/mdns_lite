@@ -96,9 +96,9 @@ defmodule MdnsLite do
   @doc """
   Updates the advertised instance name for service records
 
-  To specify the hostname returned by `:inet.gethostname/0`, use `:hostname`.
+  To specify the first hostname specified in `hosts`, use `:unspecified`
   """
-  @spec set_instance_name(:hostname | String.t()) :: :ok
+  @spec set_instance_name(instance_name()) :: :ok
   def set_instance_name(instance_name) do
     TableServer.update_options(&Options.set_instance_name(&1, instance_name))
   end
