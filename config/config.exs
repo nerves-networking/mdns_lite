@@ -15,9 +15,9 @@ config :mdns_lite,
 
   # instance_name is a user friendly name that will be used as the name for this
   # device's advertised service(s). Per RFC6763 Appendix C, this should describe
-  # the user-facing purpose or description of the device, and should not be 
-  # considered a unique identifier. For example, 'Nerves Device' and 'MatCo 
-  # Laser Printer Model CRM-114' are good choices here.  If instance_name is not 
+  # the user-facing purpose or description of the device, and should not be
+  # considered a unique identifier. For example, 'Nerves Device' and 'MatCo
+  # Laser Printer Model CRM-114' are good choices here.  If instance_name is not
   # defined it defaults to the first entry in the `hosts` list above
   #
   # instance_name: "mDNS Lite Device",

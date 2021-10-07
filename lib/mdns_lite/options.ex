@@ -40,9 +40,9 @@ defmodule MdnsLite.Options do
     DNS](https://tools.ietf.org/html/rfc6762) for considerations.
   * `instance_name` - A user friendly name that will be used as the name for this
     device's advertised service(s). Per RFC6763 Appendix C, this should describe
-     the user-facing purpose or description of the device, and should not be 
-     considered a unique identifier. For example, 'Nerves Device' and 'MatCo 
-     Laser Printer Model CRM-114' are good choices here.  If instance_name is not 
+     the user-facing purpose or description of the device, and should not be
+     considered a unique identifier. For example, 'Nerves Device' and 'MatCo
+     Laser Printer Model CRM-114' are good choices here.  If instance_name is not
      defined it defaults to the first entry in the `hosts` list
   * `:excluded_ifnames` - A list of network interfaces names to ignore. By
     default, `mdns_lite` will ignore loopback and cellular network interfaces.
