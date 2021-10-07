@@ -20,7 +20,7 @@ config :mdns_lite,
   # Laser Printer Model CRM-114' are good choices here.  If instance_name is not 
   # defined it defaults to the first entry in the `hosts` list above
   #
-  #instance_name: "mDNS Lite Device",
+  # instance_name: "mDNS Lite Device",
 
   # A list of this host's services. NB: There are two other mDNS values: weight
   # and priority that both default to zero unless included in the service below.

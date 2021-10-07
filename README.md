@@ -65,8 +65,8 @@ usually the easiest way. The `protocol` and `transport` get combined to form the
 service type that's actually advertised on the network. For example, a "tcp"
 transport and "ssh" protocol will end up as `"_ssh._tcp"` in the advertisement.
 If you need something custom, specify `:type` directly. Optional fields include
-`:id`, `:weight`, `:priority`, `:instance_name` and `:txt_payload`. An `:id` is 
-needed to remove the service advertisement at runtime. If not specified, 
+`:id`, `:weight`, `:priority`, `:instance_name` and `:txt_payload`. An `:id` is
+needed to remove the service advertisement at runtime. If not specified,
 `:instance_name` is inherited from the top-level config.  A `:txt_payload` is a
 list of `"<key>=<value>"` string that will be advertised in a TXT DNS record
 corresponding to the service.
@@ -153,7 +153,11 @@ There is an issue on Nerves and Linux that you may hit if the `:mdns_lite`
 application is not running. The Erlang DNS resolver calls `connect` to the IP
 address of the DNS server and then calls `connect` again to the next one. The
 second `connect` call fails when the first one is a `127.0.0.x` address. See
-[Issue 5092](https://github.com/erlang/otp/issues/5092).
+[Issue 5092](https://github.com/erlang/otp/issues/5092). Setting
+`dns_bridge_recursive: true` works around this issue.
+
+Update: Issue 5092 has been fixed in Erlang/OTP 24.1 and you can safely use
+`dns_bridge_recursive: false` in that version or later.
 
 ## Debugging
 
