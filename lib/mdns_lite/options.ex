@@ -10,6 +10,8 @@ defmodule MdnsLite.Options do
     hosts: [:hostname, "nerves"],
     ttl: 120,
 
+    instance_name: "mDNS Lite Device",
+
     services: [
       %{
         id: :web_server,
@@ -20,6 +22,7 @@ defmodule MdnsLite.Options do
       },
       %{
         id: :ssh_daemon,
+        instance_name: "More particular mDNS Lite Device"
         protocol: "ssh",
         transport: "tcp",
         port: 22
@@ -35,6 +38,12 @@ defmodule MdnsLite.Options do
   * `:ttl` - The default mDNS record time-to-live. The default of 120
     seconds is probably fine for most use. See [RFC 6762 - Multicast
     DNS](https://tools.ietf.org/html/rfc6762) for considerations.
+  * `instance_name` - A user friendly name that will be used as the name for this
+    device's advertised service(s). Per RFC6763 Appendix C, this should describe
+     the user-facing purpose or description of the device, and should not be 
+     considered a unique identifier. For example, 'Nerves Device' and 'MatCo 
+     Laser Printer Model CRM-114' are good choices here.  If instance_name is not 
+     defined it defaults to the first entry in the `hosts` list
   * `:excluded_ifnames` - A list of network interfaces names to ignore. By
     default, `mdns_lite` will ignore loopback and cellular network interfaces.
   * `:ipv4_only` - Set to `true` to only respond on IPv4 interfaces. Since IPv6
@@ -73,6 +82,7 @@ defmodule MdnsLite.Options do
             dot_local_names: [],
             hosts: [],
             ttl: @default_ttl,
+            instance_name: :unspecified,
             dns_bridge_enabled: false,
             dns_bridge_ip: @default_dns_ip,
             dns_bridge_port: @default_dns_port,
@@ -87,6 +97,7 @@ defmodule MdnsLite.Options do
           dot_local_names: [String.t()],
           hosts: [String.t()],
           ttl: pos_integer(),
+          instance_name: MdnsLite.instance_name(),
           dns_bridge_enabled: boolean(),
           dns_bridge_ip: :inet.ip_address(),
           dns_bridge_port: 1..65535,
@@ -103,6 +114,7 @@ defmodule MdnsLite.Options do
 
     hosts = get_host_option(opts)
     ttl = Map.get(opts, :ttl, @default_ttl)
+    instance_name = Map.get(opts, :instance_name, :unspecified)
     config_services = Map.get(opts, :services, []) |> filter_invalid_services()
     dns_bridge_enabled = Map.get(opts, :dns_bridge_enabled, false)
     dns_bridge_ip = Map.get(opts, :dns_bridge_ip, @default_dns_ip)
@@ -114,6 +126,7 @@ defmodule MdnsLite.Options do
 
     %__MODULE__{
       ttl: ttl,
+      instance_name: instance_name,
       dns_bridge_enabled: dns_bridge_enabled,
       dns_bridge_ip: dns_bridge_ip,
       dns_bridge_port: dns_bridge_port,
@@ -135,6 +148,12 @@ defmodule MdnsLite.Options do
 
   defp get_host_option(%{hosts: hosts}), do: List.wrap(hosts)
   defp get_host_option(_), do: @default_host_name_list
+
+  @doc false
+  @spec set_instance_name(t(), String.t()) :: t()
+  def set_instance_name(options, instance_name) do
+    %{options | instance_name: instance_name}
+  end
 
   @doc false
   @spec add_service(t(), MdnsLite.service()) :: t()
@@ -173,11 +192,13 @@ defmodule MdnsLite.Options do
   @spec normalize_service(MdnsLite.service()) :: {:ok, MdnsLite.service()} | {:error, String.t()}
   def normalize_service(service) do
     with {:ok, id} <- normalize_id(service),
+         {:ok, instance_name} <- normalize_instance_name(service),
          {:ok, port} <- normalize_port(service),
          {:ok, type} <- normalize_type(service) do
       {:ok,
        %{
          id: id,
+         instance_name: instance_name,
          port: port,
          type: type,
          txt_payload: Map.get(service, :txt_payload, []),
@@ -195,6 +216,9 @@ defmodule MdnsLite.Options do
   end
 
   defp normalize_id(_), do: {:ok, :unspecified}
+
+  defp normalize_instance_name(%{instance_name: instance_name}), do: {:ok, instance_name}
+  defp normalize_instance_name(_), do: {:ok, :unspecified}
 
   defp normalize_type(%{type: type}) when is_binary(type) and byte_size(type) > 0 do
     {:ok, type}

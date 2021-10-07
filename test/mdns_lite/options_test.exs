@@ -12,7 +12,8 @@ defmodule MdnsLite.OptionsTest do
              dot_local_names: ["#{hostname}.local"],
              hosts: ["#{hostname}"],
              services: MapSet.new(),
-             ttl: 120
+             ttl: 120,
+             instance_name: :unspecified
            }
   end
 
@@ -45,6 +46,7 @@ defmodule MdnsLite.OptionsTest do
     options =
       Options.add_service(options, %{
         id: :ssh_service,
+        instance_name: "banana",
         protocol: "ssh",
         transport: "tcp",
         port: 22
@@ -53,6 +55,7 @@ defmodule MdnsLite.OptionsTest do
     assert Options.get_services(options) == [
              %{
                id: :ssh_service,
+               instance_name: "banana",
                port: 22,
                priority: 0,
                txt_payload: [],
@@ -73,6 +76,16 @@ defmodule MdnsLite.OptionsTest do
       |> Options.set_hosts([host])
 
     assert options.hosts == [host]
+  end
+
+  test "can set instance name" do
+    instance_name = "My Device"
+
+    options =
+      Options.new()
+      |> Options.set_instance_name(instance_name)
+
+    assert options.instance_name == instance_name
   end
 
   test "can add hosts" do
