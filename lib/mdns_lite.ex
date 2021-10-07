@@ -27,6 +27,11 @@ defmodule MdnsLite do
   @type service_id() :: atom() | binary()
 
   @typedoc """
+  A user-visible name for a service advertisement
+  """
+  @type instance_name() :: String.t() | :unspecified
+
+  @typedoc """
   mDNS service description
 
   Keys include:
@@ -51,6 +56,7 @@ defmodule MdnsLite do
   """
   @type service() :: %{
           :id => service_id(),
+          :instance_name => instance_name(),
           :port => 1..65535,
           optional(:txt_payload) => [String.t()],
           optional(:priority) => 0..255,
@@ -85,6 +91,16 @@ defmodule MdnsLite do
   @spec set_hosts([:hostname | String.t()]) :: :ok
   def set_hosts(hosts) do
     TableServer.update_options(&Options.set_hosts(&1, hosts))
+  end
+
+  @doc """
+  Updates the advertised instance name for service records
+
+  To specify the hostname returned by `:inet.gethostname/0`, use `:hostname`.
+  """
+  @spec set_instance_name(:hostname | String.t()) :: :ok
+  def set_instance_name(instance_name) do
+    TableServer.update_options(&Options.set_instance_name(&1, instance_name))
   end
 
   @doc """

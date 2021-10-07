@@ -56,9 +56,21 @@ defmodule MdnsLite.Table.Builder do
   end
 
   defp service_resources(service, domain, config) do
-    # TODO: Add a service for each name?
-    name = hd(config.hosts)
-    service_instance_name = to_charlist("#{name}.#{service.type}.local")
+    service_instance_name =
+      case service.instance_name do
+        :unspecified ->
+          case config.instance_name do
+            :unspecified ->
+              name = hd(config.hosts)
+              to_charlist("#{name}.#{service.type}.local")
+
+            host_instance_name ->
+              to_charlist("#{host_instance_name}.#{service.type}.local")
+          end
+
+        service_instance_name ->
+          to_charlist("#{service_instance_name}.#{service.type}.local")
+      end
 
     first_dot_local_name = hd(config.dot_local_names)
     target = first_dot_local_name <> "."

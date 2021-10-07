@@ -39,6 +39,8 @@ A typical configuration in the `config.exs` file looks like:
 config :mdns_lite,
   # Advertise `hostname.local` on the LAN
   hosts: [:hostname],
+  # If instance_name is not defined it defaults to the first hostname
+  instance_name: "Awesome Device",
   services: [
     # Advertise an HTTP server running on port 80
     %{
@@ -63,19 +65,27 @@ usually the easiest way. The `protocol` and `transport` get combined to form the
 service type that's actually advertised on the network. For example, a "tcp"
 transport and "ssh" protocol will end up as `"_ssh._tcp"` in the advertisement.
 If you need something custom, specify `:type` directly. Optional fields include
-`:id`, `:weight`, `:priority`, and `:txt_payload`. An `:id` is needed to remove
-the service advertisement at runtime. A `:txt_payload` is a list of
-`"<key>=<value>"` string that will be advertised in a TXT DNS record
+`:id`, `:weight`, `:priority`, `:instance_name` and `:txt_payload`. An `:id` is 
+needed to remove the service advertisement at runtime. If not specified, 
+`:instance_name` is inherited from the top-level config.  A `:txt_payload` is a
+list of `"<key>=<value>"` string that will be advertised in a TXT DNS record
 corresponding to the service.
 
 See [`MdnsLite.Options`](https://hexdocs.pm/mdns_lite/MdnsLite.Options.html) for
 information about all application environment options.
 
-It's possible to change the advertised hostnames and services at runtime. For
-example, to change the list of advertised hostnames, run:
+It's possible to change the advertised hostnames, instance names and services at
+runtime. For example, to change the list of advertised hostnames, run:
 
 ```elixir
 iex> MdnsLite.set_host([:hostname, "nerves"])
+:ok
+```
+
+To change the advertised instance name:
+
+```elixir
+iex> MdnsLite.set_instance_name("My Other Awesome Device")
 :ok
 ```
 
