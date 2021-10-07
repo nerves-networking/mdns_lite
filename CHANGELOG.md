@@ -2,6 +2,16 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.3 - 2021-10-07
+
+* Fixed
+  * Added configuration and runtime support for setting the instance name. This
+    was incorrectly removed in v0.8.0. By default, MdnsLite will advertise
+    itself using the hostname. This works, but looks unfriendly in the service
+    discovery results. Setting the instance name lets you advertise with a nice
+    human readible name. Thanks to Mat Trudel for both catching this regression
+    and fixing it.
+
 ## v0.8.2 - 2021-09-23
 
 * Fixed
