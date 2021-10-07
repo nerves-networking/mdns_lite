@@ -150,7 +150,7 @@ defmodule MdnsLite.Options do
   defp get_host_option(_), do: @default_host_name_list
 
   @doc false
-  @spec set_instance_name(t(), String.t()) :: t()
+  @spec set_instance_name(t(), MdnsLite.instance_name()) :: t()
   def set_instance_name(options, instance_name) do
     %{options | instance_name: instance_name}
   end
