@@ -18,6 +18,12 @@ defmodule MdnsLite.VintageNetMonitor do
 
   @impl GenServer
   def init(opts) do
+    # VintageNet is an optional dependency. Optional dependencies aren't
+    # guaranteed to be started in order. See
+    # https://github.com/elixir-lang/elixir/issues/10433. To work around this,
+    # try to start it.
+    _ = Application.ensure_all_started(:vintage_net)
+
     VintageNet.subscribe(@addresses_topic)
 
     {:ok, CoreMonitor.init(opts), {:continue, :initialization}}
