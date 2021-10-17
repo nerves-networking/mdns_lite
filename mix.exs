@@ -47,13 +47,14 @@ defmodule MdnsLite.MixProject do
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:credo, "~> 1.2", only: :test, runtime: false},
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
-      {:vintage_net, "~> 0.7"}
+      {:vintage_net, "~> 0.7", optional: true}
     ]
   end
 
   defp dialyzer() do
     [
-      flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs]
+      flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+      plt_add_apps: [:vintage_net]
     ]
   end
 
