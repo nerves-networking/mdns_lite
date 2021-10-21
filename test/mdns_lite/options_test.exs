@@ -8,12 +8,18 @@ defmodule MdnsLite.OptionsTest do
   test "default options" do
     {:ok, hostname} = :inet.gethostname()
 
+    expected_if_monitor =
+      if Version.match?(System.version(), "~> 1.11"),
+        do: MdnsLite.VintageNetMonitor,
+        else: MdnsLite.InetMonitor
+
     assert Options.new() == %Options{
              dot_local_names: ["#{hostname}.local"],
              hosts: ["#{hostname}"],
              services: MapSet.new(),
              ttl: 120,
-             instance_name: :unspecified
+             instance_name: :unspecified,
+             if_monitor: expected_if_monitor
            }
   end
 

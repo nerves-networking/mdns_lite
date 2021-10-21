@@ -74,7 +74,6 @@ defmodule MdnsLite.Options do
   @default_ttl 120
   @default_dns_ip {127, 0, 0, 53}
   @default_dns_port 53
-  @default_monitor MdnsLite.VintageNetMonitor
   @default_excluded_ifnames ["lo0", "lo", "ppp0", "wwan0"]
   @default_ipv4_only true
 
@@ -87,7 +86,7 @@ defmodule MdnsLite.Options do
             dns_bridge_ip: @default_dns_ip,
             dns_bridge_port: @default_dns_port,
             dns_bridge_recursive: true,
-            if_monitor: @default_monitor,
+            if_monitor: nil,
             excluded_ifnames: @default_excluded_ifnames,
             ipv4_only: @default_ipv4_only
 
@@ -120,7 +119,7 @@ defmodule MdnsLite.Options do
     dns_bridge_ip = Map.get(opts, :dns_bridge_ip, @default_dns_ip)
     dns_bridge_port = Map.get(opts, :dns_bridge_port, @default_dns_port)
     dns_bridge_recursive = Map.get(opts, :dns_bridge_recursive, true)
-    if_monitor = Map.get(opts, :if_monitor, @default_monitor)
+    if_monitor = Map.get(opts, :if_monitor, default_if_monitor())
     ipv4_only = Map.get(opts, :ipv4_only, @default_ipv4_only)
     excluded_ifnames = Map.get(opts, :excluded_ifnames, @default_excluded_ifnames)
 
@@ -137,6 +136,19 @@ defmodule MdnsLite.Options do
     }
     |> add_hosts(hosts)
     |> add_services(config_services)
+  end
+
+  defp default_if_monitor() do
+    if has_vintage_net?() do
+      MdnsLite.VintageNetMonitor
+    else
+      MdnsLite.InetMonitor
+    end
+  end
+
+  defp has_vintage_net?() do
+    Application.loaded_applications()
+    |> Enum.find_value(fn {app, _, _} -> app == :vintage_net end)
   end
 
   # This used to be called :host, but now it's :hosts. It's a list, but be
