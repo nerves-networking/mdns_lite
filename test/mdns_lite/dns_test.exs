@@ -1,7 +1,165 @@
 defmodule MdnsLite.DNSTest do
   use ExUnit.Case
 
+  alias MdnsLite.DNS
   import MdnsLite.DNS
+
+  test "encoding and decoding the Elgato packet" do
+    encoded =
+      <<0, 0, 132, 0, 0, 0, 0, 1, 0, 0, 0, 6, 4, 95, 101, 108, 103, 4, 95, 116, 99, 112, 5, 108,
+        111, 99, 97, 108, 0, 0, 12, 0, 1, 0, 0, 17, 148, 0, 24, 21, 69, 108, 103, 97, 116, 111,
+        32, 75, 101, 121, 32, 76, 105, 103, 104, 116, 32, 57, 57, 51, 66, 192, 12, 21, 101, 108,
+        103, 97, 116, 111, 45, 107, 101, 121, 45, 108, 105, 103, 104, 116, 45, 57, 57, 51, 98,
+        192, 22, 0, 1, 128, 1, 0, 0, 0, 120, 0, 4, 192, 168, 3, 39, 192, 63, 0, 28, 128, 1, 0, 0,
+        0, 120, 0, 16, 254, 128, 0, 0, 0, 0, 0, 0, 62, 106, 157, 255, 254, 20, 213, 105, 192, 39,
+        0, 33, 128, 1, 0, 0, 0, 120, 0, 8, 0, 0, 0, 0, 35, 163, 192, 63, 192, 39, 0, 16, 128, 1,
+        0, 0, 17, 148, 0, 74, 9, 109, 102, 61, 69, 108, 103, 97, 116, 111, 5, 100, 116, 61, 53,
+        51, 20, 105, 100, 61, 51, 67, 58, 54, 65, 58, 57, 68, 58, 49, 52, 58, 68, 53, 58, 54, 57,
+        29, 109, 100, 61, 69, 108, 103, 97, 116, 111, 32, 75, 101, 121, 32, 76, 105, 103, 104,
+        116, 32, 50, 48, 71, 65, 75, 57, 57, 48, 49, 6, 112, 118, 61, 49, 46, 48, 192, 63, 0, 47,
+        128, 1, 0, 0, 0, 120, 0, 8, 192, 63, 0, 4, 64, 0, 0, 8, 192, 39, 0, 47, 128, 1, 0, 0, 0,
+        120, 0, 9, 192, 39, 0, 5, 0, 0, 128, 0, 64>>
+
+    decoded =
+      dns_rec(
+        header:
+          dns_header(
+            id: 0,
+            qr: true,
+            opcode: :query,
+            aa: true,
+            tc: false,
+            rd: false,
+            ra: false,
+            pr: false,
+            rcode: 0
+          ),
+        anlist: [
+          dns_rr(
+            domain: '_elg._tcp.local',
+            type: :ptr,
+            class: :in,
+            ttl: 4500,
+            data: 'Elgato Key Light 993B._elg._tcp.local'
+          )
+        ],
+        arlist: [
+          dns_rr(
+            domain: 'elgato-key-light-993b.local',
+            type: :a,
+            class: :in,
+            ttl: 120,
+            data: {192, 168, 3, 39},
+            func: true
+          ),
+          dns_rr(
+            domain: 'elgato-key-light-993b.local',
+            type: :aaaa,
+            class: :in,
+            ttl: 120,
+            data: {65152, 0, 0, 0, 15978, 40447, 65044, 54633},
+            func: true
+          ),
+          dns_rr(
+            domain: 'Elgato Key Light 993B._elg._tcp.local',
+            type: :srv,
+            class: :in,
+            ttl: 120,
+            data: {0, 0, 9123, 'elgato-key-light-993b.local'},
+            func: true
+          ),
+          dns_rr(
+            domain: 'Elgato Key Light 993B._elg._tcp.local',
+            type: :txt,
+            class: :in,
+            ttl: 4500,
+            data: [
+              'mf=Elgato',
+              'dt=53',
+              'id=3C:6A:9D:14:D5:69',
+              'md=Elgato Key Light 20GAK9901',
+              'pv=1.0'
+            ],
+            func: true
+          ),
+          dns_rr(
+            domain: 'elgato-key-light-993b.local',
+            type: 47,
+            class: :in,
+            ttl: 120,
+            data: <<192, 63, 0, 4, 64, 0, 0, 8>>,
+            func: true
+          ),
+          dns_rr(
+            domain: 'Elgato Key Light 993B._elg._tcp.local',
+            type: 47,
+            class: :in,
+            ttl: 120,
+            data: <<192, 39, 0, 5, 0, 0, 128, 0, 64>>,
+            func: true
+          )
+        ]
+      )
+
+    assert {:ok, decoded} == DNS.decode(encoded)
+    assert encoded == DNS.encode(decoded)
+  end
+
+  test "encoding and decoding a query" do
+    encoded =
+      <<0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11, 110, 101, 114, 118, 101, 115, 45, 49, 50, 51, 52,
+        5, 108, 111, 99, 97, 108, 0, 0, 1, 0, 1>>
+
+    decoded =
+      dns_rec(
+        header:
+          dns_header(
+            id: 0,
+            qr: false,
+            opcode: :query,
+            aa: false,
+            tc: false,
+            rd: false,
+            ra: false,
+            pr: false,
+            rcode: 0
+          ),
+        qdlist: [
+          dns_query(class: :in, type: :a, domain: 'nerves-1234.local', unicast_response: false)
+        ]
+      )
+
+    assert {:ok, decoded} == DNS.decode(encoded)
+    assert encoded == DNS.encode(decoded)
+  end
+
+  test "encoding and decoding the unicast_response flag" do
+    encoded =
+      <<0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11, 110, 101, 114, 118, 101, 115, 45, 49, 50, 51, 52,
+        5, 108, 111, 99, 97, 108, 0, 0, 1, 128, 1>>
+
+    decoded =
+      dns_rec(
+        header:
+          dns_header(
+            id: 0,
+            qr: false,
+            opcode: :query,
+            aa: false,
+            tc: false,
+            rd: false,
+            ra: false,
+            pr: false,
+            rcode: 0
+          ),
+        qdlist: [
+          dns_query(class: :in, type: :a, domain: 'nerves-1234.local', unicast_response: true)
+        ]
+      )
+
+    assert {:ok, decoded} == DNS.decode(encoded)
+    assert encoded == DNS.encode(decoded)
+  end
 
   describe "pretty/1 for rr" do
     test "a" do

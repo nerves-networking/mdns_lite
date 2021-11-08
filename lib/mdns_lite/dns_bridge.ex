@@ -22,7 +22,7 @@ defmodule MdnsLite.DNSBridge do
   use GenServer
   require Logger
 
-  alias MdnsLite.Options
+  alias MdnsLite.{DNS, Options}
   import MdnsLite.DNS
 
   @doc false
@@ -53,7 +53,7 @@ defmodule MdnsLite.DNSBridge do
   @impl GenServer
   def handle_info({:udp, _socket, src_ip, src_port, packet}, state) do
     # Decode the UDP packet
-    with {:ok, dns_record} <- :inet_dns.decode(packet),
+    with {:ok, dns_record} <- DNS.decode(packet),
          dns_rec(header: header, qdlist: qdlist) = dns_record,
          # qr is the query/response flag; false (0) = query, true (1) = response
          dns_header(qr: false) <- header do
@@ -89,7 +89,7 @@ defmodule MdnsLite.DNSBridge do
         lookup_failure(id, qdlist)
       end
 
-    packet = :inet_dns.encode(result)
+    packet = DNS.encode(result)
     _ = :gen_udp.send(state.udp, dest_address, dest_port, packet)
 
     :ok
@@ -115,7 +115,7 @@ defmodule MdnsLite.DNSBridge do
         arlist: result.additional
       )
 
-    dns_record = :inet_dns.encode(packet)
+    dns_record = DNS.encode(packet)
     :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
   end
 

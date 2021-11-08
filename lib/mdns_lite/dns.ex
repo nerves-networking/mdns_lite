@@ -4,17 +4,37 @@ defmodule MdnsLite.DNS do
   """
   import Record, only: [defrecord: 2]
 
-  @inet_dns "kernel/src/inet_dns.hrl"
+  @inet_dns "src/mdns_lite_inet_dns.hrl"
 
-  defrecord :dns_rec, Record.extract(:dns_rec, from_lib: @inet_dns)
-  defrecord :dns_header, Record.extract(:dns_header, from_lib: @inet_dns)
-  defrecord :dns_query, Record.extract(:dns_query, from_lib: @inet_dns)
-  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: @inet_dns)
+  defrecord :dns_rec, Record.extract(:dns_rec, from: @inet_dns)
+  defrecord :dns_header, Record.extract(:dns_header, from: @inet_dns)
+  defrecord :dns_query, Record.extract(:dns_query, from: @inet_dns)
+  defrecord :dns_rr, Record.extract(:dns_rr, from: @inet_dns)
 
   @type dns_query :: record(:dns_query, [])
   @type dns_rr :: record(:dns_rr, [])
   @type dns_rec :: record(:dns_rec, [])
 
+  @doc """
+  Encode a DNS record
+  """
+  @spec encode(dns_rec()) :: binary()
+  def encode(rec) do
+    # Use the new version of :inet_dns that supports RFC 6762
+    :mdns_lite_inet_dns.encode(rec)
+  end
+
+  @doc """
+  Decode a packet that contains a DNS message
+  """
+  @spec decode(binary()) :: {:ok, dns_rec()} | {:error, any()}
+  def decode(packet) do
+    :mdns_lite_inet_dns.decode(packet)
+  end
+
+  @doc """
+  Format a DNS record as a nice string for the user
+  """
   @spec pretty(dns_rr()) :: String.t()
   def pretty(dns_rr(domain: domain, type: :a, class: :in, ttl: ttl, data: data)) do
     "#{domain}: type A, class IN, ttl #{ttl}, addr #{ntoa(data)}"

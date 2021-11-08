@@ -34,13 +34,10 @@ defmodule MdnsLite.Client do
       # arlist A list of resource entries. Can be empty.
       arlist: []
     )
-    |> :inet_dns.encode()
+    |> DNS.encode()
   end
 
-  defp request_unicast(dns_query(class: class) = query, value) do
-    dns_query(query, class: set_unicast_bit(class, value))
+  defp request_unicast(query, value) do
+    dns_query(query, unicast_response: !!value)
   end
-
-  defp set_unicast_bit(:in, true), do: 0x8001
-  defp set_unicast_bit(class, _not_true), do: class
 end

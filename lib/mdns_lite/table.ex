@@ -1,6 +1,6 @@
 defmodule MdnsLite.Table do
   import MdnsLite.DNS
-  alias MdnsLite.{DNS, IfInfo, Utilities}
+  alias MdnsLite.{DNS, IfInfo}
 
   @type t() :: [DNS.dns_rr()]
 
@@ -101,15 +101,15 @@ defmodule MdnsLite.Table do
     end)
   end
 
-  defp normalize_query(dns_query(class: class, type: :ptr, domain: domain) = q, if_info) do
+  defp normalize_query(dns_query(class: :in, type: :ptr, domain: domain) = q, if_info) do
     case test_known_in_addr_arpa(domain, if_info) do
-      {:ok, value} -> dns_query(class: :in, type: :ptr, domain: value)
-      _ -> dns_query(q, class: Utilities.normalize_class(class))
+      {:ok, value} -> dns_query(q, domain: value)
+      _ -> q
     end
   end
 
-  defp normalize_query(dns_query(domain: domain, type: type, class: class), _if_info) do
-    dns_query(domain: domain, type: type, class: Utilities.normalize_class(class))
+  defp normalize_query(query, _if_info) do
+    query
   end
 
   # TODO: Fate sharing - send IPv6 records when sending IPv4 ones and vice versa

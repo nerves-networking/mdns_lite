@@ -1,7 +1,6 @@
 defmodule MdnsLite.Cache do
+  alias MdnsLite.DNS
   import MdnsLite.DNS
-
-  alias MdnsLite.{DNS, Utilities}
 
   @moduledoc """
   Cache for records received over mDNS
@@ -120,8 +119,8 @@ defmodule MdnsLite.Cache do
     insert_or_update(rest, new_rr, [rr | result])
   end
 
-  defp normalize_record(dns_rr(class: class, ttl: ttl) = record) do
-    dns_rr(record, ttl: normalize_ttl(ttl), class: Utilities.normalize_class(class))
+  defp normalize_record(dns_rr(ttl: ttl) = record) do
+    dns_rr(record, ttl: normalize_ttl(ttl))
   end
 
   defp normalize_ttl(ttl) when ttl > @max_ttl, do: @max_ttl

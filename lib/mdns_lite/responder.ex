@@ -150,7 +150,7 @@ defmodule MdnsLite.Responder do
   @impl GenServer
   def handle_cast({:multicast, q}, state) do
     message = dns_rec(header: dns_header(id: 0, qr: false, aa: false), qdlist: [q])
-    data = :inet_dns.encode(message)
+    data = DNS.encode(message)
     dest = %{family: :inet, port: @mdns_port, addr: @mdns_ipv4}
 
     if state.udp do
@@ -195,7 +195,7 @@ defmodule MdnsLite.Responder do
   end
 
   defp process_packet(state, source, data) do
-    case :inet_dns.decode(data) do
+    case DNS.decode(data) do
       {:ok, msg} -> process_dns(state, source, msg)
       _ -> state
     end
@@ -207,15 +207,7 @@ defmodule MdnsLite.Responder do
          dns_rec(header: dns_header(qr: false), qdlist: qdlist) = msg
        ) do
     # mDNS request message
-    qdlist
-    |> Enum.map(fn dns_query(class: class) = qd ->
-      {class, TableServer.query(qd, %IfInfo{ipv4_address: state.ip})}
-    end)
-    |> Enum.each(fn
-      # Erlang doesn't know about unicast class
-      {32769, result} -> send_response(result, msg, source, state)
-      {_, result} -> send_response(result, msg, mdns_destination(source), state)
-    end)
+    Enum.each(qdlist, &run_query(&1, msg, source, state))
 
     # If the request had any entries, cache them
     update_cache(msg, state)
@@ -232,6 +224,16 @@ defmodule MdnsLite.Responder do
     %{state | cache: new_cache}
   end
 
+  defp run_query(dns_query(unicast_response: unicast) = qd, msg, source, state) do
+    result = TableServer.query(qd, %IfInfo{ipv4_address: state.ip})
+
+    if unicast do
+      send_response(result, msg, source, state)
+    else
+      send_response(result, msg, mdns_destination(source), state)
+    end
+  end
+
   defp send_response(%{answer: []}, _dns_record, _dest, _state), do: :ok
 
   defp send_response(
@@ -246,8 +248,9 @@ defmodule MdnsLite.Responder do
     # _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
     # _ = Logger.debug("#{inspect(packet)}")
 
-    data = :inet_dns.encode(packet)
-    :socket.sendto(state.udp, data, dest)
+    data = DNS.encode(packet)
+    _ = :socket.sendto(state.udp, data, dest)
+    :ok
   end
 
   # A standard mDNS response packet

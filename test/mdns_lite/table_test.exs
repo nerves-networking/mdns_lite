@@ -74,7 +74,7 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to a unicast A request" do
-    query = dns_query(domain: 'nerves-21a5.local', type: :a, class: 32769)
+    query = dns_query(domain: 'nerves-21a5.local', type: :a, class: :in, unicast_response: true)
 
     result = %{
       answer: [
@@ -93,7 +93,7 @@ defmodule MdnsLite.TableTest do
   end
 
   test "ignores A request for someone else" do
-    query = dns_query(domain: 'someone-else.local', type: :a, class: 32769)
+    query = dns_query(domain: 'someone-else.local', type: :a, class: :in, unicast_response: true)
 
     assert do_query(query) == %{answer: [], additional: []}
   end
