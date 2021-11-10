@@ -54,6 +54,7 @@ defmodule MdnsLite.MixProject do
   defp dialyzer() do
     [
       flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+      ignore_warnings: ".dialyzer_ignore.exs",
       plt_add_apps: [:vintage_net]
     ]
   end
