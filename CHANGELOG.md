@@ -2,6 +2,20 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.4 - 2021-11-13
+
+* New feature
+  * VintageNet is an optional dependency now. This makes it possible to use
+    MdnsLite outside of Nerves much more easily.
+
+* Fixed
+  * Use the new DNS encoder/decoder from OTP 24.1.5. This fixes a regression
+    with OTP 24.1.2 where the DNS encoder and decoder was updated to be more
+    correct in how it handled the DNS class. mDNS repurposes the high bit of the
+    DNS class. Previously we had gotten lucky. OTP 24.1.5 adds support for the
+    bit. To make sure that MdnsLite can work on other OTP versions, the new
+    OTP code has been vendored and included with MdnsLite.
+
 ## v0.8.3 - 2021-10-07
 
 * Fixed
