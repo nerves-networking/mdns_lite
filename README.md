@@ -78,7 +78,7 @@ It's possible to change the advertised hostnames, instance names and services at
 runtime. For example, to change the list of advertised hostnames, run:
 
 ```elixir
-iex> MdnsLite.set_host([:hostname, "nerves"])
+iex> MdnsLite.set_hosts([:hostname, "nerves"])
 :ok
 ```
 
