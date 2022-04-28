@@ -15,8 +15,8 @@ defmodule MdnsLite do
   """
 
   import MdnsLite.DNS
-  require Logger
   alias MdnsLite.{DNS, Options, TableServer}
+  require Logger
 
   @typedoc """
   A user-specified ID for referring to a service
@@ -149,7 +149,8 @@ defmodule MdnsLite do
   The hostname should be a .local name since the query only goes out via mDNS.
   On success, an IP address is returned.
   """
-  @spec gethostbyname(String.t()) :: {:ok, :inet.ip_address()} | {:error, any()}
+  @spec gethostbyname(String.t(), non_neg_integer()) ::
+          {:ok, :inet.ip_address()} | {:error, any()}
   def gethostbyname(hostname, timeout \\ @default_timeout) do
     q = dns_query(class: :in, type: :a, domain: to_charlist(hostname))
 

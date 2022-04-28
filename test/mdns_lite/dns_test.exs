@@ -1,8 +1,8 @@
 defmodule MdnsLite.DNSTest do
   use ExUnit.Case
 
-  alias MdnsLite.DNS
   import MdnsLite.DNS
+  alias MdnsLite.DNS
 
   test "encoding and decoding the Elgato packet" do
     encoded =

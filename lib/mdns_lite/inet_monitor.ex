@@ -12,9 +12,8 @@ defmodule MdnsLite.InetMonitor do
 
   use GenServer
 
-  require Logger
-
   alias MdnsLite.CoreMonitor
+  require Logger
 
   @scan_interval 10000
 

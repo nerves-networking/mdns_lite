@@ -1,8 +1,8 @@
 defmodule MdnsLite.TableTest do
   use ExUnit.Case
 
-  alias MdnsLite.{Options, Table}
   import MdnsLite.DNS
+  alias MdnsLite.{Options, Table}
 
   doctest MdnsLite.Table
 
@@ -33,7 +33,7 @@ defmodule MdnsLite.TableTest do
     ])
   end
 
-  def do_query(query, config \\ test_config()) do
+  defp do_query(query, config \\ test_config()) do
     table = Table.Builder.from_options(config)
     if_info = %MdnsLite.IfInfo{ipv4_address: {192, 168, 9, 57}}
     answer_rr = Table.query(table, query, if_info)

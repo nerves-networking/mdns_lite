@@ -12,9 +12,9 @@ defmodule MdnsLite.Responder do
   # MdnsLite.
 
   use GenServer
-  require Logger
-  alias MdnsLite.{Cache, DNS, IfInfo, TableServer}
   import MdnsLite.DNS
+  alias MdnsLite.{Cache, DNS, IfInfo, TableServer}
+  require Logger
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}

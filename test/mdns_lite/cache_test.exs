@@ -1,9 +1,8 @@
 defmodule MdnsLite.CacheTest do
   use ExUnit.Case
 
-  alias MdnsLite.Cache
-
   import MdnsLite.DNS
+  alias MdnsLite.Cache
 
   doctest Cache
 

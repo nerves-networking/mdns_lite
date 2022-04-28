@@ -20,10 +20,10 @@ defmodule MdnsLite.DNSBridge do
   """
 
   use GenServer
-  require Logger
 
-  alias MdnsLite.{DNS, Options}
   import MdnsLite.DNS
+  alias MdnsLite.{DNS, Options}
+  require Logger
 
   @doc false
   @spec start_link(MdnsLite.Options.t()) :: GenServer.on_start()

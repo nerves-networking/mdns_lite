@@ -1,9 +1,8 @@
 defmodule MdnsLite.TableServer do
+  @moduledoc false
   use GenServer
 
   alias MdnsLite.{DNS, IfInfo, Options, Table}
-
-  @moduledoc false
 
   @spec start_link(Options.t()) :: GenServer.on_start()
   def start_link(%Options{} = opts) do

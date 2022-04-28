@@ -1,7 +1,6 @@
 defmodule MdnsLite.ResponderSupervisor do
-  use DynamicSupervisor
-
   @moduledoc false
+  use DynamicSupervisor
 
   alias MdnsLite.Responder
 

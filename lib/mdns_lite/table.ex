@@ -1,4 +1,5 @@
 defmodule MdnsLite.Table do
+  @moduledoc false
   import MdnsLite.DNS
   alias MdnsLite.{DNS, IfInfo}
 
@@ -6,8 +7,6 @@ defmodule MdnsLite.Table do
 
   # TODO: make this more consistent
   @type tmp_results() :: %{additional: [DNS.dns_rr()], answer: [DNS.dns_rr()]}
-
-  @moduledoc false
 
   # RFC6762 Section 6: Responding
   #

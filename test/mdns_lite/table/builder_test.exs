@@ -1,9 +1,9 @@
 defmodule MdnsLite.Table.BuilderTest do
   use ExUnit.Case
 
+  import MdnsLite.DNS
   alias MdnsLite.Options
   alias MdnsLite.Table.Builder
-  import MdnsLite.DNS
 
   doctest MdnsLite.Table.Builder
 
