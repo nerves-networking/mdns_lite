@@ -242,8 +242,8 @@ defmodule MdnsLite.Responder do
     # Construct an mDNS response from the query plus answers (resource records)
     packet = response_packet(id, result)
 
-    # _ = Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
-    # _ = Logger.debug("#{inspect(packet)}")
+    # Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
+    # Logger.debug("#{inspect(packet)}")
 
     data = DNS.encode(packet)
     _ = :socket.sendto(state.udp, data, dest)
