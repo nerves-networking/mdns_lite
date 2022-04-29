@@ -2,6 +2,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.5 - 2022-04-28
+
+* Fixed
+  * If a network interface changes IP addresses, there would be a flurry of
+    crashes when it was no longer possible to bind to the interface. This stops
+    behavior and shuts down the responder for the interface.
+
 ## v0.8.4 - 2021-11-13
 
 * New feature
