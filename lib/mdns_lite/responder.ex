@@ -20,18 +20,12 @@ defmodule MdnsLite.Responder do
   @mdns_ipv4 {224, 0, 0, 251}
   @mdns_port 5353
 
-  defstruct ifname: nil,
-            ip: {0, 0, 0, 0},
-            cache: Cache.new(),
-            udp: nil,
-            select_handle: nil,
-            skip_udp: false
-
   @type state() :: %{
           ifname: String.t(),
           ip: :inet.ip_address(),
           cache: Cache.t(),
           udp: :socket.socket(),
+          select_handle: :socket.select_handle(),
           skip_udp: boolean()
         }
 
@@ -101,9 +95,12 @@ defmodule MdnsLite.Responder do
   @impl GenServer
   def init({ifname, address}) do
     # Join the mDNS multicast group
-    state = %__MODULE__{
+    state = %{
       ifname: ifname,
       ip: address,
+      cache: Cache.new(),
+      udp: nil,
+      select_handle: nil,
       skip_udp: Application.get_env(:mdns_lite, :skip_udp)
     }
 
