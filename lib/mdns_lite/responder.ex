@@ -11,7 +11,8 @@ defmodule MdnsLite.Responder do
   # There is one of these servers for every network interface managed by
   # MdnsLite.
 
-  use GenServer
+  use GenServer, restart: :transient
+
   import MdnsLite.DNS
   alias MdnsLite.{Cache, DNS, IfInfo, TableServer}
   require Logger
@@ -116,21 +117,27 @@ defmodule MdnsLite.Responder do
   end
 
   def handle_continue(:initialization, state) do
-    {:ok, udp} = :socket.open(:inet, :dgram, :udp)
+    with {:ok, udp} <- :socket.open(:inet, :dgram, :udp),
+         :ok <- bindtodevice(udp, state.ifname),
+         :ok <- :socket.setopt(udp, :socket, :reuseport, true),
+         :ok <- :socket.setopt(udp, :socket, :reuseaddr, true),
+         :ok <- :socket.setopt(udp, :ip, :multicast_loop, false),
+         # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
+         :ok <- :socket.setopt(udp, :ip, :multicast_ttl, 255),
+         :ok <- :socket.setopt(udp, :ip, :multicast_if, state.ip),
+         :ok <- :socket.bind(udp, %{family: :inet, port: @mdns_port}),
+         :ok <-
+           :socket.setopt(udp, :ip, :add_membership, %{multiaddr: @mdns_ipv4, interface: state.ip}) do
+      new_state = %{state | udp: udp} |> process_receives()
+      {:noreply, new_state}
+    else
+      {:error, reason} ->
+        Logger.error("mdns_lite #{state.ifname}/#{inspect(state.ip)} failed: #{inspect(reason)}")
 
-    :ok = bindtodevice(udp, state.ifname)
-    :ok = :socket.setopt(udp, :socket, :reuseport, true)
-    :ok = :socket.setopt(udp, :socket, :reuseaddr, true)
-    :ok = :socket.setopt(udp, :ip, :multicast_loop, false)
-    # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
-    :ok = :socket.setopt(udp, :ip, :multicast_ttl, 255)
-    :ok = :socket.setopt(udp, :ip, :multicast_if, state.ip)
-    :ok = :socket.bind(udp, %{family: :inet, port: @mdns_port})
-
-    :ok = :socket.setopt(udp, :ip, :add_membership, %{multiaddr: @mdns_ipv4, interface: state.ip})
-
-    new_state = %{state | udp: udp} |> process_receives()
-    {:noreply, new_state}
+        # Not being able to setup the socket is fatal since it means that the
+        # interface went away or its IP address changed.
+        {:stop, :normal, state}
+    end
   end
 
   @impl GenServer
