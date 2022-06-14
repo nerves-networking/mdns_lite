@@ -98,13 +98,13 @@ defmodule MdnsLite.DNSBridge do
   defp send_response(
          qdlist,
          result,
-         dns_rec(header: dns_header(id: id)),
+         dns_rec(header: dns_header(id: id, opcode: opcode, rd: rd)),
          {dest_address, dest_port},
          state
        ) do
     packet =
       dns_rec(
-        header: dns_header(id: id, qr: true, aa: true),
+        header: dns_header(id: id, qr: true, opcode: opcode, aa: true, rd: rd, rcode: 0),
         # Query list. Must be empty according to RFC 6762 Section 6.
         qdlist: qdlist,
         # A list of answer entries. Can be empty.
