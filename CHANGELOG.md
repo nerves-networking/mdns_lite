@@ -2,6 +2,11 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.6 - 2022-06-14
+
+* Fixed
+  * Fixed an issue that caused the DNS bridge to stop working with OTP 25.
+
 ## v0.8.5 - 2022-04-28
 
 * Fixed
