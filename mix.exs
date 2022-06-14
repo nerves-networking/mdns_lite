@@ -8,7 +8,7 @@ defmodule MdnsLite.MixProject do
     [
       app: :mdns_lite,
       version: @version,
-      elixir: "~> 1.9",
+      elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       docs: docs(),
       description: description(),
@@ -53,7 +53,7 @@ defmodule MdnsLite.MixProject do
 
   defp dialyzer() do
     [
-      flags: [:unmatched_returns, :error_handling, :race_conditions, :underspecs],
+      flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling, :underspecs],
       ignore_warnings: ".dialyzer_ignore.exs",
       plt_add_apps: [:vintage_net]
     ]
