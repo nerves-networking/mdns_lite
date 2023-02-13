@@ -2,6 +2,11 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.7 - 2023-02-12
+
+* Fixed
+  * Fix Elixir 1.15 deprecation warnings
+
 ## v0.8.6 - 2022-06-14
 
 * Fixed
