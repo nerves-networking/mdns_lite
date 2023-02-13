@@ -154,7 +154,7 @@ defmodule MdnsLite.Options do
   # This used to be called :host, but now it's :hosts. It's a list, but be
   # nice and wrap rather than crash.
   defp get_host_option(%{host: host}) do
-    Logger.warn("mdns_lite: the :host app environment option is deprecated. Change to :hosts")
+    Logger.warning("mdns_lite: the :host app environment option is deprecated. Change to :hosts")
     List.wrap(host)
   end
 
@@ -189,7 +189,7 @@ defmodule MdnsLite.Options do
           [normalized_service]
 
         {:error, reason} ->
-          Logger.warn("mdns_lite: ignoring service (#{inspect(service)}): #{reason}")
+          Logger.warning("mdns_lite: ignoring service (#{inspect(service)}): #{reason}")
           []
       end
     end)
@@ -223,7 +223,7 @@ defmodule MdnsLite.Options do
   defp normalize_id(%{id: id}), do: {:ok, id}
 
   defp normalize_id(%{name: name}) do
-    Logger.warn("mdns_lite: names are deprecated now. Specify an :id that's an atom")
+    Logger.warning("mdns_lite: names are deprecated now. Specify an :id that's an atom")
     {:ok, name}
   end
 

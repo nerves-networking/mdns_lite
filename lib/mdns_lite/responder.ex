@@ -160,7 +160,7 @@ defmodule MdnsLite.Responder do
     if state.udp do
       case :socket.sendto(state.udp, data, dest) do
         {:error, reason} ->
-          Logger.warn("mdns_lite multicast send failed: #{inspect(reason)}")
+          Logger.warning("mdns_lite multicast send failed: #{inspect(reason)}")
 
         :ok ->
           :ok
