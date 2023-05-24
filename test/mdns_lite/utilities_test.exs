@@ -7,7 +7,7 @@ defmodule MdnsLite.UtilitiesTest do
 
   defp test_ifaddrs() do
     [
-      {'lo0',
+      {~c"lo0",
        [
          flags: [:up, :loopback, :running, :multicast],
          addr: {127, 0, 0, 1},
@@ -17,12 +17,12 @@ defmodule MdnsLite.UtilitiesTest do
          addr: {65152, 0, 0, 0, 0, 0, 0, 1},
          netmask: {65535, 65535, 65535, 65535, 0, 0, 0, 0}
        ]},
-      {'gif0', [flags: [:pointtopoint, :multicast]]},
-      {'stf0', [flags: []]},
-      {'XHC0', [flags: []]},
-      {'XHC1', [flags: []]},
-      {'XHC20', [flags: []]},
-      {'en0',
+      {~c"gif0", [flags: [:pointtopoint, :multicast]]},
+      {~c"stf0", [flags: []]},
+      {~c"XHC0", [flags: []]},
+      {~c"XHC1", [flags: []]},
+      {~c"XHC20", [flags: []]},
+      {~c"en0",
        [
          flags: [:up, :broadcast, :running, :multicast],
          addr: {65152, 0, 0, 0, 3177, 34598, 19643, 57597},
@@ -32,54 +32,54 @@ defmodule MdnsLite.UtilitiesTest do
          broadaddr: {192, 168, 9, 255},
          hwaddr: [140, 133, 144, 54, 173, 41]
        ]},
-      {'p2p0',
+      {~c"p2p0",
        [
          flags: [:up, :broadcast, :running, :multicast],
          hwaddr: [14, 133, 144, 54, 173, 41]
        ]},
-      {'awdl0',
+      {~c"awdl0",
        [
          flags: [:up, :broadcast, :running, :multicast],
          addr: {65152, 0, 0, 0, 50389, 24319, 65082, 34455},
          netmask: {65535, 65535, 65535, 65535, 0, 0, 0, 0},
          hwaddr: [198, 213, 94, 58, 134, 151]
        ]},
-      {'en1',
+      {~c"en1",
        [
          flags: [:up, :broadcast, :running, :multicast],
          hwaddr: [106, 0, 181, 2, 88, 1]
        ]},
-      {'en2',
+      {~c"en2",
        [
          flags: [:up, :broadcast, :running, :multicast],
          hwaddr: [106, 0, 181, 2, 88, 0]
        ]},
-      {'en3',
+      {~c"en3",
        [
          flags: [:up, :broadcast, :running, :multicast],
          hwaddr: [106, 0, 181, 2, 88, 5]
        ]},
-      {'en4',
+      {~c"en4",
        [
          flags: [:up, :broadcast, :running, :multicast],
          hwaddr: [106, 0, 181, 2, 88, 4]
        ]},
-      {'bridge0', [flags: [:broadcast, :multicast], hwaddr: [106, 0, 181, 2, 88, 1]]},
-      {'utun0',
+      {~c"bridge0", [flags: [:broadcast, :multicast], hwaddr: [106, 0, 181, 2, 88, 1]]},
+      {~c"utun0",
        [
          flags: [:up, :pointtopoint, :running, :multicast],
          addr: {65152, 0, 0, 0, 5736, 498, 36548, 10713},
          netmask: {65535, 65535, 65535, 65535, 0, 0, 0, 0},
          dstaddr: {20, 18, 22, 0}
        ]},
-      {'utun1',
+      {~c"utun1",
        [
          flags: [:up, :pointtopoint, :running, :multicast],
          addr: {65152, 0, 0, 0, 27257, 3319, 61087, 19401},
          netmask: {65535, 65535, 65535, 65535, 0, 0, 0, 0},
          dstaddr: {20, 18, 7, 0}
        ]},
-      {'en5',
+      {~c"en5",
        [
          flags: [:up, :broadcast, :running, :multicast],
          addr: {65152, 0, 0, 0, 44766, 18687, 65024, 4386},

@@ -36,16 +36,16 @@ defmodule MdnsLite.DNSTest do
           ),
         anlist: [
           dns_rr(
-            domain: '_elg._tcp.local',
+            domain: ~c"_elg._tcp.local",
             type: :ptr,
             class: :in,
             ttl: 4500,
-            data: 'Elgato Key Light 993B._elg._tcp.local'
+            data: ~c"Elgato Key Light 993B._elg._tcp.local"
           )
         ],
         arlist: [
           dns_rr(
-            domain: 'elgato-key-light-993b.local',
+            domain: ~c"elgato-key-light-993b.local",
             type: :a,
             class: :in,
             ttl: 120,
@@ -53,7 +53,7 @@ defmodule MdnsLite.DNSTest do
             func: true
           ),
           dns_rr(
-            domain: 'elgato-key-light-993b.local',
+            domain: ~c"elgato-key-light-993b.local",
             type: :aaaa,
             class: :in,
             ttl: 120,
@@ -61,29 +61,29 @@ defmodule MdnsLite.DNSTest do
             func: true
           ),
           dns_rr(
-            domain: 'Elgato Key Light 993B._elg._tcp.local',
+            domain: ~c"Elgato Key Light 993B._elg._tcp.local",
             type: :srv,
             class: :in,
             ttl: 120,
-            data: {0, 0, 9123, 'elgato-key-light-993b.local'},
+            data: {0, 0, 9123, ~c"elgato-key-light-993b.local"},
             func: true
           ),
           dns_rr(
-            domain: 'Elgato Key Light 993B._elg._tcp.local',
+            domain: ~c"Elgato Key Light 993B._elg._tcp.local",
             type: :txt,
             class: :in,
             ttl: 4500,
             data: [
-              'mf=Elgato',
-              'dt=53',
-              'id=3C:6A:9D:14:D5:69',
-              'md=Elgato Key Light 20GAK9901',
-              'pv=1.0'
+              ~c"mf=Elgato",
+              ~c"dt=53",
+              ~c"id=3C:6A:9D:14:D5:69",
+              ~c"md=Elgato Key Light 20GAK9901",
+              ~c"pv=1.0"
             ],
             func: true
           ),
           dns_rr(
-            domain: 'elgato-key-light-993b.local',
+            domain: ~c"elgato-key-light-993b.local",
             type: 47,
             class: :in,
             ttl: 120,
@@ -91,7 +91,7 @@ defmodule MdnsLite.DNSTest do
             func: true
           ),
           dns_rr(
-            domain: 'Elgato Key Light 993B._elg._tcp.local',
+            domain: ~c"Elgato Key Light 993B._elg._tcp.local",
             type: 47,
             class: :in,
             ttl: 120,
@@ -125,7 +125,7 @@ defmodule MdnsLite.DNSTest do
             rcode: 0
           ),
         qdlist: [
-          dns_query(class: :in, type: :a, domain: 'nerves-1234.local', unicast_response: false)
+          dns_query(class: :in, type: :a, domain: ~c"nerves-1234.local", unicast_response: false)
         ]
       )
 
@@ -153,7 +153,7 @@ defmodule MdnsLite.DNSTest do
             rcode: 0
           ),
         qdlist: [
-          dns_query(class: :in, type: :a, domain: 'nerves-1234.local', unicast_response: true)
+          dns_query(class: :in, type: :a, domain: ~c"nerves-1234.local", unicast_response: true)
         ]
       )
 
@@ -168,7 +168,7 @@ defmodule MdnsLite.DNSTest do
                  class: :in,
                  type: :a,
                  ttl: 120,
-                 domain: 'nerves-1234.local',
+                 domain: ~c"nerves-1234.local",
                  data: :ipv4_address
                )
              ) == "nerves-1234.local: type A, class IN, ttl 120, addr <interface_ipv4>"
@@ -178,7 +178,7 @@ defmodule MdnsLite.DNSTest do
                  class: :in,
                  type: :a,
                  ttl: 120,
-                 domain: 'nerves-1234.local',
+                 domain: ~c"nerves-1234.local",
                  data: {1, 2, 3, 4}
                )
              ) == "nerves-1234.local: type A, class IN, ttl 120, addr 1.2.3.4"
@@ -190,7 +190,7 @@ defmodule MdnsLite.DNSTest do
                  class: :in,
                  type: :aaaa,
                  ttl: 120,
-                 domain: 'nerves-1234.local',
+                 domain: ~c"nerves-1234.local",
                  data: :ipv6_address
                )
              ) == "nerves-1234.local: type AAAA, class IN, ttl 120, addr <interface_ipv6>"
@@ -200,7 +200,7 @@ defmodule MdnsLite.DNSTest do
                  class: :in,
                  type: :aaaa,
                  ttl: 120,
-                 domain: 'nerves-1234.local',
+                 domain: ~c"nerves-1234.local",
                  data: {65152, 0, 0, 0, 3297, 21943, 7498, 1443}
                )
              ) == "nerves-1234.local: type AAAA, class IN, ttl 120, addr fe80::ce1:55b7:1d4a:5a3"
@@ -213,7 +213,7 @@ defmodule MdnsLite.DNSTest do
                         type: :ptr,
                         ttl: 120,
                         domain: :ipv4_arpa_address,
-                        data: 'nerves-1234.local'
+                        data: ~c"nerves-1234.local"
                       )
              ) == "<interface_ipv4>.in-addr.arpa: type PTR, class IN, ttl 120, nerves-1234.local"
     end
@@ -221,7 +221,7 @@ defmodule MdnsLite.DNSTest do
     test "txt" do
       assert pretty(
                dns_rr(
-                 domain: 'nerves-21a5._http._tcp.local',
+                 domain: ~c"nerves-21a5._http._tcp.local",
                  type: :txt,
                  class: :in,
                  ttl: 120,
@@ -233,11 +233,11 @@ defmodule MdnsLite.DNSTest do
     test "srv" do
       assert pretty(
                dns_rr(
-                 domain: 'nerves-21a5._http._tcp.local',
+                 domain: ~c"nerves-21a5._http._tcp.local",
                  type: :srv,
                  class: :in,
                  ttl: 120,
-                 data: {0, 0, 80, 'nerves-21a5.local.'}
+                 data: {0, 0, 80, ~c"nerves-21a5.local."}
                )
              ) ==
                "nerves-21a5._http._tcp.local: type SRV, class IN, ttl 120, priority 0, weight 0, port 80, nerves-21a5.local."

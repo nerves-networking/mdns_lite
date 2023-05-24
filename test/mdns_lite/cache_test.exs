@@ -10,14 +10,14 @@ defmodule MdnsLite.CacheTest do
                    class: :in,
                    type: :a,
                    ttl: 120,
-                   domain: 'nerves-1234.local',
+                   domain: ~c"nerves-1234.local",
                    data: {192, 168, 0, 100}
                  )
   @test_aaaa_record dns_rr(
                       class: :in,
                       type: :aaaa,
                       ttl: 120,
-                      domain: 'nerves-1234.local',
+                      domain: ~c"nerves-1234.local",
                       data: {65152, 0, 0, 0, 3297, 21943, 7498, 1443}
                     )
 
@@ -27,7 +27,7 @@ defmodule MdnsLite.CacheTest do
       |> Cache.insert(0, @test_a_record)
       |> Cache.insert(0, @test_aaaa_record)
 
-    assert Cache.query(cache, dns_query(class: :in, type: :a, domain: 'nerves-1234.local')) ==
+    assert Cache.query(cache, dns_query(class: :in, type: :a, domain: ~c"nerves-1234.local")) ==
              %{answer: [@test_a_record], additional: []}
   end
 
@@ -59,7 +59,7 @@ defmodule MdnsLite.CacheTest do
           class: :in,
           type: :a,
           ttl: 1_200_000,
-          domain: 'nerves-1234.local',
+          domain: ~c"nerves-1234.local",
           data: {192, 168, 0, 100}
         )
       )
@@ -70,7 +70,7 @@ defmodule MdnsLite.CacheTest do
                  class: :in,
                  type: :a,
                  ttl: 75 * 60,
-                 domain: 'nerves-1234.local',
+                 domain: ~c"nerves-1234.local",
                  data: {192, 168, 0, 100}
                )
              ],
@@ -86,7 +86,7 @@ defmodule MdnsLite.CacheTest do
         dns_rr(
           class: :in,
           type: :mx,
-          domain: 'nerves-1234.local',
+          domain: ~c"nerves-1234.local",
           data: {192, 168, 0, 100}
         )
       )
@@ -100,7 +100,7 @@ defmodule MdnsLite.CacheTest do
         Cache.insert(
           cache,
           0,
-          dns_rr(class: :in, type: :a, domain: 'nerves-#{i}.local', data: {1, 2, 3, 4})
+          dns_rr(class: :in, type: :a, domain: ~c"nerves-#{i}.local", data: {1, 2, 3, 4})
         )
       end)
 

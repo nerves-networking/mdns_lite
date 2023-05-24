@@ -42,12 +42,12 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to an A request" do
-    query = dns_query(domain: 'nerves-21a5.local', type: :a, class: :in)
+    query = dns_query(domain: ~c"nerves-21a5.local", type: :a, class: :in)
 
     result = %{
       answer: [
         dns_rr(
-          domain: 'nerves-21a5.local',
+          domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
@@ -61,11 +61,11 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to an A request for the alias" do
-    query = dns_query(domain: 'nerves.local', type: :a, class: :in)
+    query = dns_query(domain: ~c"nerves.local", type: :a, class: :in)
 
     result = %{
       answer: [
-        dns_rr(domain: 'nerves.local', type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
+        dns_rr(domain: ~c"nerves.local", type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
       ],
       additional: []
     }
@@ -74,12 +74,12 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to a unicast A request" do
-    query = dns_query(domain: 'nerves-21a5.local', type: :a, class: :in, unicast_response: true)
+    query = dns_query(domain: ~c"nerves-21a5.local", type: :a, class: :in, unicast_response: true)
 
     result = %{
       answer: [
         dns_rr(
-          domain: 'nerves-21a5.local',
+          domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
@@ -93,22 +93,23 @@ defmodule MdnsLite.TableTest do
   end
 
   test "ignores A request for someone else" do
-    query = dns_query(domain: 'someone-else.local', type: :a, class: :in, unicast_response: true)
+    query =
+      dns_query(domain: ~c"someone-else.local", type: :a, class: :in, unicast_response: true)
 
     assert do_query(query) == %{answer: [], additional: []}
   end
 
   test "responds to a PTR request with a reverse lookup domain" do
-    query = dns_query(domain: '57.9.168.192.in-addr.arpa.', type: :ptr, class: :in)
+    query = dns_query(domain: ~c"57.9.168.192.in-addr.arpa.", type: :ptr, class: :in)
 
     result = %{
       answer: [
         dns_rr(
-          domain: '57.9.168.192.in-addr.arpa.',
+          domain: ~c"57.9.168.192.in-addr.arpa.",
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: 'nerves-21a5.local'
+          data: ~c"nerves-21a5.local"
         )
       ],
       additional: []
@@ -118,7 +119,7 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to a PTR request with a specific domain" do
-    test_domain = '_http._tcp.local'
+    test_domain = ~c"_http._tcp.local"
     query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
     result = %{
@@ -128,26 +129,26 @@ defmodule MdnsLite.TableTest do
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: 'nerves-21a5._http._tcp.local'
+          data: ~c"nerves-21a5._http._tcp.local"
         )
       ],
       additional: [
         dns_rr(
-          domain: 'nerves-21a5._http._tcp.local',
+          domain: ~c"nerves-21a5._http._tcp.local",
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, 'nerves-21a5.local.'}
+          data: {0, 0, 80, ~c"nerves-21a5.local."}
         ),
         dns_rr(
-          domain: 'nerves-21a5._http._tcp.local',
+          domain: ~c"nerves-21a5._http._tcp.local",
           type: :txt,
           class: :in,
           ttl: 120,
           data: ["key=value"]
         ),
         dns_rr(
-          domain: 'nerves-21a5.local',
+          domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
@@ -160,7 +161,7 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to a PTR request with a specific domain using host-level instance name" do
-    test_domain = '_http._tcp.local'
+    test_domain = ~c"_http._tcp.local"
     query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
     result = %{
@@ -170,26 +171,26 @@ defmodule MdnsLite.TableTest do
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: 'myidentifier._http._tcp.local'
+          data: ~c"myidentifier._http._tcp.local"
         )
       ],
       additional: [
         dns_rr(
-          domain: 'myidentifier._http._tcp.local',
+          domain: ~c"myidentifier._http._tcp.local",
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, 'nerves-21a5.local.'}
+          data: {0, 0, 80, ~c"nerves-21a5.local."}
         ),
         dns_rr(
-          domain: 'myidentifier._http._tcp.local',
+          domain: ~c"myidentifier._http._tcp.local",
           type: :txt,
           class: :in,
           ttl: 120,
           data: ["key=value"]
         ),
         dns_rr(
-          domain: 'nerves-21a5.local',
+          domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
@@ -217,7 +218,7 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to a PTR request with a specific domain using service-level instance name" do
-    test_domain = '_http._tcp.local'
+    test_domain = ~c"_http._tcp.local"
     query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
     result = %{
@@ -227,26 +228,26 @@ defmodule MdnsLite.TableTest do
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: 'myidentifier._http._tcp.local'
+          data: ~c"myidentifier._http._tcp.local"
         )
       ],
       additional: [
         dns_rr(
-          domain: 'myidentifier._http._tcp.local',
+          domain: ~c"myidentifier._http._tcp.local",
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, 'nerves-21a5.local.'}
+          data: {0, 0, 80, ~c"nerves-21a5.local."}
         ),
         dns_rr(
-          domain: 'myidentifier._http._tcp.local',
+          domain: ~c"myidentifier._http._tcp.local",
           type: :txt,
           class: :in,
           ttl: 120,
           data: ["key=value"]
         ),
         dns_rr(
-          domain: 'nerves-21a5.local',
+          domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
@@ -274,24 +275,24 @@ defmodule MdnsLite.TableTest do
   end
 
   test "responds to a PTR request with domain \'_services._dns-sd._udp.local\'" do
-    test_domain = '_services._dns-sd._udp.local'
+    test_domain = ~c"_services._dns-sd._udp.local"
     query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
     result = %{
       answer: [
         dns_rr(
-          domain: '_services._dns-sd._udp.local',
+          domain: ~c"_services._dns-sd._udp.local",
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: '_http._tcp.local'
+          data: ~c"_http._tcp.local"
         ),
         dns_rr(
-          domain: '_services._dns-sd._udp.local',
+          domain: ~c"_services._dns-sd._udp.local",
           type: :ptr,
           class: :in,
           ttl: 120,
-          data: '_ssh._tcp.local'
+          data: ~c"_ssh._tcp.local"
         )
       ],
       additional: []
@@ -307,15 +308,16 @@ defmodule MdnsLite.TableTest do
     result = %{
       answer: [
         dns_rr(
-          domain: 'nerves-21a5._http._tcp.local',
+          domain: ~c"nerves-21a5._http._tcp.local",
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, 'nerves-21a5.local.'}
+          data: {0, 0, 80, ~c"nerves-21a5.local."}
         )
       ],
       additional: [
-        {:dns_rr, 'nerves-21a5.local', :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [], false}
+        {:dns_rr, ~c"nerves-21a5.local", :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [],
+         false}
       ]
     }
 
@@ -329,15 +331,16 @@ defmodule MdnsLite.TableTest do
     result = %{
       answer: [
         dns_rr(
-          domain: 'myidentifier._http._tcp.local',
+          domain: ~c"myidentifier._http._tcp.local",
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, 'nerves-21a5.local.'}
+          data: {0, 0, 80, ~c"nerves-21a5.local."}
         )
       ],
       additional: [
-        {:dns_rr, 'nerves-21a5.local', :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [], false}
+        {:dns_rr, ~c"nerves-21a5.local", :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [],
+         false}
       ]
     }
 
@@ -366,15 +369,16 @@ defmodule MdnsLite.TableTest do
     result = %{
       answer: [
         dns_rr(
-          domain: 'myidentifier._http._tcp.local',
+          domain: ~c"myidentifier._http._tcp.local",
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, 'nerves-21a5.local.'}
+          data: {0, 0, 80, ~c"nerves-21a5.local."}
         )
       ],
       additional: [
-        {:dns_rr, 'nerves-21a5.local', :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [], false}
+        {:dns_rr, ~c"nerves-21a5.local", :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [],
+         false}
       ]
     }
 

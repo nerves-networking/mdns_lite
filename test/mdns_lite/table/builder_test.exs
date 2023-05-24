@@ -15,7 +15,7 @@ defmodule MdnsLite.Table.BuilderTest do
              class: :in,
              type: :a,
              ttl: 120,
-             domain: 'nerves-1234.local',
+             domain: ~c"nerves-1234.local",
              data: :ipv4_address
            ) in table
 
@@ -23,7 +23,7 @@ defmodule MdnsLite.Table.BuilderTest do
              class: :in,
              type: :aaaa,
              ttl: 120,
-             domain: 'nerves-1234.local',
+             domain: ~c"nerves-1234.local",
              data: :ipv6_address
            ) in table
   end
@@ -37,7 +37,7 @@ defmodule MdnsLite.Table.BuilderTest do
              type: :ptr,
              ttl: 120,
              domain: :ipv4_arpa_address,
-             data: 'nerves-1234.local'
+             data: ~c"nerves-1234.local"
            ) in table
 
     assert dns_rr(
@@ -45,7 +45,7 @@ defmodule MdnsLite.Table.BuilderTest do
              type: :ptr,
              ttl: 120,
              domain: :ipv6_arpa_address,
-             data: 'nerves-1234.local'
+             data: ~c"nerves-1234.local"
            ) in table
   end
 end
