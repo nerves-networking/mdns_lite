@@ -27,7 +27,7 @@ defmodule MdnsLite.Cache do
   @doc """
   Start an empty cache
   """
-  @spec new() :: t()
+  @spec new() :: %__MODULE__{last_gc: -2_147_483_648, records: []}
   def new() do
     %__MODULE__{}
   end
