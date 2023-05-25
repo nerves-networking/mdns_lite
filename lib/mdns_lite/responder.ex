@@ -14,11 +14,12 @@ defmodule MdnsLite.Responder do
   use GenServer, restart: :transient
 
   import MdnsLite.DNS
-  alias MdnsLite.{Cache, DNS, IfInfo, TableServer}
+  alias MdnsLite.{Cache, DNS, IfInfo, TableServer, Utilities}
   require Logger
 
   # Reserved IANA ip address and port for mDNS
   @mdns_ipv4 {224, 0, 0, 251}
+  @mdns_ipv6 {0xFF02, 0, 0, 0, 0, 0, 0, 0xFB}
   @mdns_port 5353
 
   @type state() :: %{
@@ -99,6 +100,7 @@ defmodule MdnsLite.Responder do
     state = %{
       ifname: ifname,
       ip: address,
+      family: Utilities.ip_family(address),
       cache: Cache.new(),
       udp: nil,
       select_handle: nil,
@@ -116,18 +118,25 @@ defmodule MdnsLite.Responder do
     {:noreply, state}
   end
 
-  def handle_continue(:initialization, state) do
-    with {:ok, udp} <- :socket.open(:inet, :dgram, :udp),
+  def handle_continue(:initialization, %{family: family} = state) do
+    Logger.info("mdns_lite #{state.ifname}/#{inspect(state.ip)}")
+
+    option_level =
+      case family do
+        :inet -> :ip
+        :inet6 -> :ipv6
+      end
+
+    with {:ok, udp} <- :socket.open(family, :dgram, :udp),
          :ok <- bindtodevice(udp, state.ifname),
          :ok <- :socket.setopt(udp, :socket, :reuseport, true),
          :ok <- :socket.setopt(udp, :socket, :reuseaddr, true),
-         :ok <- :socket.setopt(udp, :ip, :multicast_loop, false),
-         # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
-         :ok <- :socket.setopt(udp, :ip, :multicast_ttl, 255),
-         :ok <- :socket.setopt(udp, :ip, :multicast_if, state.ip),
-         :ok <- :socket.bind(udp, %{family: :inet, port: @mdns_port}),
-         :ok <-
-           :socket.setopt(udp, :ip, :add_membership, %{multiaddr: @mdns_ipv4, interface: state.ip}) do
+         :ok <- :socket.setopt(udp, option_level, :multicast_loop, false),
+         :ok <- set_multicast_ttl(udp, state),
+         {:ok, interface} <- get_interface_opt(state),
+         :ok <- :socket.setopt(udp, option_level, :multicast_if, interface),
+         :ok <- :socket.bind(udp, %{family: family, port: @mdns_port}),
+         :ok <- add_membership(udp, interface, family) do
       new_state = %{state | udp: udp} |> process_receives()
       {:noreply, new_state}
     else
@@ -155,7 +164,7 @@ defmodule MdnsLite.Responder do
   def handle_cast({:multicast, q}, state) do
     message = dns_rec(header: dns_header(id: 0, qr: false, aa: false), qdlist: [q])
     data = DNS.encode(message)
-    dest = %{family: :inet, port: @mdns_port, addr: @mdns_ipv4}
+    dest = %{family: state.family, port: @mdns_port, addr: multicast_ip(state.family)}
 
     if state.udp do
       case :socket.sendto(state.udp, data, dest) do
@@ -228,6 +237,9 @@ defmodule MdnsLite.Responder do
     %{state | cache: new_cache}
   end
 
+  # TODO: Responding to queries over IPv6 is not supported yet
+  defp run_query(_qd, _msg, _source, %{family: :inet6}), do: :ok
+
   defp run_query(dns_query(unicast_response: unicast) = qd, msg, source, state) do
     result = TableServer.query(qd, %IfInfo{ipv4_address: state.ip})
 
@@ -276,7 +288,10 @@ defmodule MdnsLite.Responder do
   defp mdns_destination(%{family: :inet, port: @mdns_port}),
     do: %{family: :inet, port: @mdns_port, addr: @mdns_ipv4}
 
-  defp mdns_destination(%{family: :inet} = source) do
+  defp mdns_destination(%{family: :inet6, port: @mdns_port}),
+    do: %{family: :inet6, port: @mdns_port, addr: @mdns_ipv6}
+
+  defp mdns_destination(%{family: family} = source) when family in [:inet, :inet6] do
     # Legacy Unicast Response
     # See RFC 6762 6.7
     source
@@ -296,4 +311,53 @@ defmodule MdnsLite.Responder do
         :ok
     end
   end
+
+  # No difference between Linux and macOS for IPv6
+  defp add_membership(udp, interface, :inet) do
+    :socket.setopt(udp, :ip, :add_membership, %{
+      multiaddr: multicast_ip(:inet),
+      interface: interface
+    })
+  end
+
+  @ipv6_option_join_group 12
+  defp add_membership(udp, interface, :inet6) do
+    case :os.type() do
+      {:unix, :linux} ->
+        :socket.setopt(udp, :ipv6, :add_membership, %{
+          multiaddr: multicast_ip(:inet6),
+          interface: interface
+        })
+
+      {:unix, :darwin} ->
+        addr_bin =
+          for int <- Tuple.to_list(@mdns_ipv6), into: <<>> do
+            <<int::16>>
+          end
+
+        # This is a bit of a hack. See https://stackoverflow.com/a/38386150
+        :socket.setopt_native(
+          udp,
+          {:ipv6, @ipv6_option_join_group},
+          addr_bin <> <<interface::64>>
+        )
+    end
+  end
+
+  # setopt uses the interface address for IPv4 and the interface index for IPv6
+  defp get_interface_opt(%{family: :inet, ip: ip}), do: {:ok, ip}
+
+  defp get_interface_opt(%{family: :inet6, ifname: ifname}) do
+    ifname |> String.to_charlist() |> :net.if_name2index()
+  end
+
+  # IP TTL should be 255. See https://tools.ietf.org/html/rfc6762#section-11
+  defp set_multicast_ttl(sock, %{family: :inet}),
+    do: :socket.setopt(sock, :ip, :multicast_ttl, 255)
+
+  defp set_multicast_ttl(sock, %{family: :inet6}),
+    do: :socket.setopt(sock, :ipv6, :multicast_hops, 255)
+
+  defp multicast_ip(:inet), do: @mdns_ipv4
+  defp multicast_ip(:inet6), do: @mdns_ipv6
 end
