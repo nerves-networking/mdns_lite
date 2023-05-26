@@ -2,6 +2,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.8 - 2023-05-26
+
+* New feature
+  * IPv6 queries are now supported. Responding to IPv6 isn't supported yet. To
+    use this, be sure to set `ipv4_only: false` since this isn't the default.
+    Thanks to @bjyoungblood for this feature.
+
 ## v0.8.7 - 2023-02-12
 
 * Fixed
