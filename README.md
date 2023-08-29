@@ -139,8 +139,7 @@ environment:
 config :mdns_lite,
   dns_bridge_enabled: true,
   dns_bridge_ip: {127, 0, 0, 53},
-  dns_bridge_port: 53,
-  dns_bridge_recursive: true
+  dns_bridge_port: 53
 
 config :vintage_net,
   additional_name_servers: [{127, 0, 0, 53}]
@@ -149,15 +148,11 @@ config :vintage_net,
 The choice of running the DNS bridge on 127.0.0.53:53 is mostly arbitrary. This
 is the default.
 
-There is an issue on Nerves and Linux that you may hit if the `:mdns_lite`
-application is not running. The Erlang DNS resolver calls `connect` to the IP
-address of the DNS server and then calls `connect` again to the next one. The
-second `connect` call fails when the first one is a `127.0.0.x` address. See
-[Issue 5092](https://github.com/erlang/otp/issues/5092). Setting
-`dns_bridge_recursive: true` works around this issue.
-
-Update: Issue 5092 has been fixed in Erlang/OTP 24.1 and you can safely use
-`dns_bridge_recursive: false` in that version or later.
+> #### Info {: .info}
+>
+> If you're using a version of Erlang/OTP before 24.1, you'll be affected by
+> [OTP #5092](https://github.com/erlang/otp/issues/5092). The workaround is to
+> add the `dns_bridge_recursive: true` option to the `:mdns_lite` config.
 
 ## Debugging
 
