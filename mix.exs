@@ -19,7 +19,8 @@ defmodule MdnsLite.MixProject do
         docs: :docs,
         "hex.publish": :docs,
         "hex.build": :docs,
-        credo: :test
+        credo: :lint,
+        dialyzer: :lint
       }
     ]
   end
@@ -44,8 +45,8 @@ defmodule MdnsLite.MixProject do
 
   defp deps do
     [
-      {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:credo, "~> 1.2", only: :test, runtime: false},
+      {:dialyxir, "~> 1.1", only: :lint, runtime: false},
+      {:credo, "~> 1.2", only: :lint, runtime: false},
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
       {:vintage_net, "~> 0.7", optional: true}
     ]
