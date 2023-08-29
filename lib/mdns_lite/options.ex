@@ -85,7 +85,7 @@ defmodule MdnsLite.Options do
             dns_bridge_enabled: false,
             dns_bridge_ip: @default_dns_ip,
             dns_bridge_port: @default_dns_port,
-            dns_bridge_recursive: true,
+            dns_bridge_recursive: false,
             if_monitor: nil,
             excluded_ifnames: @default_excluded_ifnames,
             ipv4_only: @default_ipv4_only
@@ -118,7 +118,7 @@ defmodule MdnsLite.Options do
     dns_bridge_enabled = Map.get(opts, :dns_bridge_enabled, false)
     dns_bridge_ip = Map.get(opts, :dns_bridge_ip, @default_dns_ip)
     dns_bridge_port = Map.get(opts, :dns_bridge_port, @default_dns_port)
-    dns_bridge_recursive = Map.get(opts, :dns_bridge_recursive, true)
+    dns_bridge_recursive = Map.get(opts, :dns_bridge_recursive, false)
     if_monitor = Map.get(opts, :if_monitor, default_if_monitor())
     ipv4_only = Map.get(opts, :ipv4_only, @default_ipv4_only)
     excluded_ifnames = Map.get(opts, :excluded_ifnames, @default_excluded_ifnames)
