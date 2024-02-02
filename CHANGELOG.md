@@ -2,6 +2,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.9 - 2024-02-02
+
+* Bug fixes
+  * Switch bridge recursive lookup to default to false. The issue that this
+    works around has been fixed since OTP 24.1.
+  * Handle crash when cleaning up responders when a network goes down.
+
 ## v0.8.8 - 2023-05-26
 
 * New feature
