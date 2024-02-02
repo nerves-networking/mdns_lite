@@ -89,6 +89,11 @@ defmodule MdnsLite.Responder do
   @spec stop_server(String.t(), :inet.ip_address()) :: :ok
   def stop_server(ifname, address) do
     GenServer.stop(via_name({ifname, address}))
+  catch
+    {:exit, {:noproc, _}} ->
+      # Ignore if the server already stopped. It already exited due to the
+      # network going down.
+      :ok
   end
 
   ##############################################################################
