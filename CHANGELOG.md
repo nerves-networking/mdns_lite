@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.10 - 2024-02-26
+
+* Bug fixes
+  * Really fix crash when cleaning up responders when a network goes down. The
+    fix in v0.8.9 had an issue that prevented it from working.
+
 ## v0.8.9 - 2024-02-02
 
 * Bug fixes
