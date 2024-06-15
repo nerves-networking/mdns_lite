@@ -62,6 +62,10 @@ defmodule MdnsLite.DNSBridge do
       result = MdnsLite.query(hd(qdlist))
 
       send_response(qdlist, result, dns_record, {src_ip, src_port}, state)
+    else
+      _ ->
+        # Silently drop any unexpected packets
+        :ok
     end
 
     {:noreply, state}
@@ -116,7 +120,9 @@ defmodule MdnsLite.DNSBridge do
       )
 
     dns_record = DNS.encode(packet)
-    :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
+    # Best effort send
+    _ = :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
+    :ok
   end
 
   defp udp_options(opts) do
