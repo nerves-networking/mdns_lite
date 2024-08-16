@@ -314,6 +314,10 @@ defmodule MdnsLite.Responder do
       {:unix, :darwin} ->
         # TODO!
         :ok
+
+      {:unix, _} ->
+        # TODO!
+        :ok
     end
   end
 
@@ -346,6 +350,10 @@ defmodule MdnsLite.Responder do
           {:ipv6, @ipv6_option_join_group},
           addr_bin <> <<interface::64>>
         )
+
+      {:unix, _} ->
+        # TODO!
+        :ok
     end
   end
 
