@@ -74,7 +74,7 @@ defmodule MdnsLite.Options do
   @default_ttl 120
   @default_dns_ip {127, 0, 0, 53}
   @default_dns_port 53
-  @default_excluded_ifnames ["lo0", "lo", "ppp0", "wwan0"]
+  @default_excluded_ifnames ["lo0", "lo", "ppp0", "wwan0", "__unknown"]
   @default_ipv4_only true
 
   defstruct services: MapSet.new(),
