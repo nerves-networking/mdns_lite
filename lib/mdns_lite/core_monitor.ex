@@ -65,6 +65,7 @@ defmodule MdnsLite.CoreMonitor do
     %{state | todo: []}
   end
 
+  @spec unset_remaining_ifnames(state(), [String.t()]) :: state()
   def unset_remaining_ifnames(state, new_ifnames) do
     Enum.reduce(known_ifnames(state), state, fn ifname, state ->
       if ifname not in new_ifnames do
