@@ -65,6 +65,20 @@ defmodule MdnsLite.CoreMonitor do
     %{state | todo: []}
   end
 
+  def unset_remaining_ifnames(state, new_ifnames) do
+    Enum.reduce(known_ifnames(state), state, fn ifname, state ->
+      if ifname not in new_ifnames do
+        set_ip_list(state, ifname, [])
+      else
+        state
+      end
+    end)
+  end
+
+  defp known_ifnames(state) do
+    Map.keys(state.ip_list)
+  end
+
   defp compute_delta(old_list, new_list) do
     {old_list -- new_list, new_list -- old_list}
   end
