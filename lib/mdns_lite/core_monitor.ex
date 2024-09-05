@@ -68,10 +68,10 @@ defmodule MdnsLite.CoreMonitor do
   @spec unset_remaining_ifnames(state(), [String.t()]) :: state()
   def unset_remaining_ifnames(state, new_ifnames) do
     Enum.reduce(known_ifnames(state), state, fn ifname, state ->
-      if ifname not in new_ifnames do
-        set_ip_list(state, ifname, [])
-      else
+      if ifname in new_ifnames do
         state
+      else
+        set_ip_list(state, ifname, [])
       end
     end)
   end
