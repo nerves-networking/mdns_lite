@@ -2,6 +2,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.11 - 2024-09-10
+
+* Bug fixes
+  * Fix `MdnsLite.InetMonitor` to properly remove interfaces that don't exist in a subsequent update. (@kevinschweikert)
+  * Exclude "__unknown" interfaces to ignore interfaces that VintageNet can't get link info on. (@ConnorRigby)
+  * Don't crash on other Unix-like OSes (@mneumann)
+
 ## v0.8.10 - 2024-02-26
 
 * Bug fixes
