@@ -36,10 +36,14 @@ defmodule MdnsLite.InetMonitor do
   end
 
   defp update(state) do
-    get_all_ip_addrs()
+    ifname_addresses = get_all_ip_addrs()
+    ifnames = only_ifnames(ifname_addresses)
+
+    ifname_addresses
     |> Enum.reduce(state, fn {ifname, ip_list}, state ->
       CoreMonitor.set_ip_list(state, ifname, ip_list)
     end)
+    |> CoreMonitor.unset_remaining_ifnames(ifnames)
     |> CoreMonitor.flush_todo_list()
   end
 
@@ -56,5 +60,9 @@ defmodule MdnsLite.InetMonitor do
   defp ifaddr_to_ip_list({ifname, info}) do
     addrs = for addr <- Keyword.get_values(info, :addr), do: addr
     {to_string(ifname), addrs}
+  end
+
+  defp only_ifnames(ifname_addresses) do
+    Enum.map(ifname_addresses, &elem(&1, 0)) |> Enum.uniq()
   end
 end
