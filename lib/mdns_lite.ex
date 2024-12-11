@@ -164,6 +164,25 @@ defmodule MdnsLite do
     end
   end
 
+  @doc """
+  Lookup a PTR hostname using mDNS
+
+  The hostname should be a .local name since the query only goes out via mDNS.
+  On success, a domain is returned.
+  """
+  @spec get_by_mdns(String.t(), non_neg_integer()) :: any()
+  def get_by_mdns(hostname, timeout \\ @default_timeout) do
+    q = MdnsLite.DNS.dns_query(class: :in, type: :ptr, domain: to_charlist(hostname))
+
+    case query(q, timeout) do
+      %{answer: [first | _]} ->
+        {:ok, dns_rr(first, :domain)}
+
+      %{answer: []} ->
+        {:error, :nxdomain}
+    end
+  end
+
   defp to_addr(addr) when is_tuple(addr), do: addr
   defp to_addr(<<a, b, c, d>>), do: {a, b, c, d}
 
