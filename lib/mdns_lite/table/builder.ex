@@ -11,6 +11,7 @@ defmodule MdnsLite.Table.Builder do
   @spec from_options(Options.t()) :: MdnsLite.Table.t()
   def from_options(%Options{} = config) do
     # TODO: This could be seriously simplified...
+    # CHRIS TODO: Announce service after they are all added
     []
     |> add_a_records(config)
     |> add_ptr_records(config)
