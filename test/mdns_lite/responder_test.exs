@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2019 Jon Carstens
+# SPDX-FileCopyrightText: 2024 Frank Hunleth
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite.ResponderTest do
   use ExUnit.Case, async: false
 

@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2021 Frank Hunleth
+# SPDX-FileCopyrightText: 2024 Kevin Schweikert
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite.CoreMonitor do
   @moduledoc """
   Core logic for network monitors

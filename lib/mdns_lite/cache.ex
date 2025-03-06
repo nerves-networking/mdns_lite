@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 Frank Hunleth
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite.Cache do
   @moduledoc """
   Cache for records received over mDNS

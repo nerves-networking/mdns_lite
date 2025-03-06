@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2021 Frank Hunleth
+# SPDX-FileCopyrightText: 2021 Mat Trudel
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite.Table.Builder do
   @moduledoc false
 

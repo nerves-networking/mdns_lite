@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 Frank Hunleth
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite.DNSBridge do
   @moduledoc """
   DNS server that responds to mDNS queries

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2019 Frank Hunleth
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite.ResponderSupervisor do
   @moduledoc false
   use DynamicSupervisor

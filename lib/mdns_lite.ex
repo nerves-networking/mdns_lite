@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2019 Peter C. Marks
+# SPDX-FileCopyrightText: 2020 Frank Hunleth
+# SPDX-FileCopyrightText: 2021 Mat Trudel
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 defmodule MdnsLite do
   @moduledoc """
   MdnsLite is a simple, limited, no frills mDNS implementation
