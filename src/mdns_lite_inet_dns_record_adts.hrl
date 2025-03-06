@@ -1,3 +1,7 @@
+%% SPDX-FileCopyrightText: Ericsson AB 1997-2021. All Rights Reserved.
+%%
+%% SPDX-License-Identifier: Apache-2.0
+%%
 
 %%
 %% Abstract Data Type functions for #dns_query{}

@@ -2,7 +2,7 @@
 
 [![Hex version](https://img.shields.io/hexpm/v/mdns_lite.svg "Hex version")](https://hex.pm/packages/mdns_lite)
 [![API docs](https://img.shields.io/hexpm/v/mdns_lite.svg?label=hexdocs "API docs")](https://hexdocs.pm/mdns_lite/MdnsLite.html)
-[![CircleCI](https://circleci.com/gh/nerves-networking/mdns_lite.svg?style=svg)](https://circleci.com/gh/nerves-networking/mdns_lite)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nerves-networking/mdns_lite/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nerves-networking/mdns_lite/tree/main)
 [![REUSE status](https://api.reuse.software/badge/github.com/nerves-networking/mdns_lite)](https://api.reuse.software/info/github.com/nerves-networking/mdns_lite)
 
 MdnsLite is a simple, limited, no frills implementation of an
