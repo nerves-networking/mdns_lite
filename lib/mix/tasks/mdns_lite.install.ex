@@ -2,11 +2,11 @@ defmodule Mix.Tasks.MdnsLite.Install.Docs do
   @moduledoc false
 
   def short_doc do
-    "A short description of your task"
+    "Installs mdns_lite in your Nerves project."
   end
 
   def example do
-    "mix mdns_lite.install --example arg"
+    "mix mdns_lite.install --hostname my-hostname"
   end
 
   def long_doc do
@@ -23,7 +23,7 @@ defmodule Mix.Tasks.MdnsLite.Install.Docs do
 
     ## Options
 
-    * `--example-option` or `-e` - Docs for your option
+    * `--hostname my-hostname` - Set the initial hostname for the device (will be advertised as "my-hostname.local", defaults to "nerves.local")
     """
   end
 end
