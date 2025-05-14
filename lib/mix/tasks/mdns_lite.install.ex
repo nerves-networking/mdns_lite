@@ -58,9 +58,9 @@ if Code.ensure_loaded?(Igniter) do
         # This ensures your option schema includes options from nested tasks
         composes: [],
         # `OptionParser` schema
-        schema: [],
+        schema: [hostname: :string],
         # Default values for the options in the `schema`
-        defaults: [],
+        defaults: [hostname: "nerves"],
         # CLI aliases
         aliases: [],
         # A list of options in the schema that are required
@@ -70,9 +70,47 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
-      # Do your work here and return an updated igniter
+      if Igniter.exists?(igniter, "config/target.exs") do
+        igniter_nerves(igniter, "target.exs")
+      else
+        Igniter.add_warning(
+          igniter,
+          "mix mdns_lite.install is not yet implemented for non-Nerves projects"
+        )
+      end
+    end
+
+    def igniter_nerves(igniter, config_file) do
       igniter
-      |> Igniter.add_warning("mix mdns_lite.install is not yet implemented")
+      |> Igniter.Project.Config.configure_new(
+        config_file,
+        :mdns_lite,
+        :host,
+        hostname: igniter.args.options[:hostname]
+      )
+      |> Igniter.Project.Config.configure_new(config_file, :mdns_lite, :ttl, 120)
+      |> Igniter.Project.Config.configure_new(
+        config_file,
+        :mdns_lite,
+        :services,
+        [
+          %{
+            protocol: "ssh",
+            transport: "tcp",
+            port: 22
+          },
+          %{
+            protocol: "sftp-ssh",
+            transport: "tcp",
+            port: 22
+          },
+          %{
+            protocol: "epmd",
+            transport: "tcp",
+            port: 4369
+          }
+        ]
+      )
     end
   end
 else
