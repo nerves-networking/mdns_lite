@@ -73,10 +73,12 @@ if Code.ensure_loaded?(Igniter) do
       if Igniter.exists?(igniter, "config/target.exs") do
         igniter_nerves(igniter, "target.exs")
       else
-        Igniter.add_warning(
-          igniter,
-          "mix mdns_lite.install is not yet implemented for non-Nerves projects"
-        )
+        igniter
+        |> igniter_nerves("config.exs")
+        |> Igniter.add_warning("""
+        The defaults for `mix mdns_lite.install` are intended for Nerves projects.  Please visit
+        its README at https://hexdocs.pm/mdns_lite/readme.html for an overview of usage.
+        """)
       end
     end
 
