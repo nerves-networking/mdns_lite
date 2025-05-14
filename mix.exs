@@ -59,7 +59,7 @@ defmodule MdnsLite.MixProject do
 
   defp deps do
     [
-      {:igniter, "~> 0.5", only: [:dev, :test]},
+      {:igniter, "~> 0.5", optional: true},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:credo, "~> 1.2", only: :test, runtime: false},
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
