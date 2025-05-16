@@ -14,15 +14,15 @@ defmodule MdnsLite.Mix.Tasks.InstallTest do
     )
     |> Igniter.compose_task("mdns_lite.install", [])
     |> assert_has_patch("config/config.exs", """
-      3 + |config :mdns_lite,
-      4 + |  host: [hostname: "nerves"],
-      5 + |  ttl: 120,
-      6 + |  services: [
-      7 + |    %{port: 22, protocol: "ssh", transport: "tcp"},
-      8 + |    %{port: 22, protocol: "sftp-ssh", transport: "tcp"},
-      9 + |    %{port: 4369, protocol: "epmd", transport: "tcp"}
-     10 + |  ]
-     11 + |
+      + |config :mdns_lite,
+      + |  host: [hostname: "nerves"],
+      + |  ttl: 120,
+      + |  services: [
+      + |    %{port: 22, protocol: "ssh", transport: "tcp"},
+      + |    %{port: 22, protocol: "sftp-ssh", transport: "tcp"},
+      + |    %{port: 4369, protocol: "epmd", transport: "tcp"}
+      + |  ]
+      + |
     """)
     |> assert_has_warning(fn warning ->
       """
@@ -44,14 +44,14 @@ defmodule MdnsLite.Mix.Tasks.InstallTest do
     )
     |> Igniter.compose_task("mdns_lite.install", [])
     |> assert_has_patch("config/target.exs", """
-      3 + |config :mdns_lite,
-      4 + |  host: [hostname: "nerves"],
-      5 + |  ttl: 120,
-      6 + |  services: [
-      7 + |    %{port: 22, protocol: "ssh", transport: "tcp"},
-      8 + |    %{port: 22, protocol: "sftp-ssh", transport: "tcp"},
-      9 + |    %{port: 4369, protocol: "epmd", transport: "tcp"}
-     10 + |  ]
+      + |config :mdns_lite,
+      + |  host: [hostname: "nerves"],
+      + |  ttl: 120,
+      + |  services: [
+      + |    %{port: 22, protocol: "ssh", transport: "tcp"},
+      + |    %{port: 22, protocol: "sftp-ssh", transport: "tcp"},
+      + |    %{port: 4369, protocol: "epmd", transport: "tcp"}
+      + |  ]
     """)
   end
 
@@ -73,9 +73,9 @@ defmodule MdnsLite.Mix.Tasks.InstallTest do
     )
     |> Igniter.compose_task("mdns_lite.install", [])
     |> assert_has_patch("config/target.exs", ~S"""
-    9    - |  ]
-       9 + |  ],
-      10 + |  ttl: 120
+      - |  ]
+      + |  ],
+      + |  ttl: 120
     """)
   end
 end
