@@ -71,7 +71,8 @@ if Code.ensure_loaded?(Igniter) do
     @impl Igniter.Mix.Task
     def igniter(igniter) do
       if Igniter.exists?(igniter, "config/target.exs") do
-        igniter_nerves(igniter, "target.exs")
+        igniter
+        |> igniter_nerves("target.exs")
       else
         igniter
         |> igniter_nerves("config.exs")
