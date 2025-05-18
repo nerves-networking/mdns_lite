@@ -1,7 +1,10 @@
+# SPDX-FileCopyrightText: 2025 Lee Nussbaum
+#
 # SPDX-License-Identifier: Apache-2.0
 #
 
 defmodule MdnsLite.Mix.Tasks.InstallTest do
+  alias ElixirSense.Core.Compiler.Fn
   use ExUnit.Case, async: true
   import Igniter.Test
 
