@@ -96,23 +96,14 @@ if Code.ensure_loaded?(Igniter) do
         config_file,
         :mdns_lite,
         :services,
-        [
-          %{
-            protocol: "ssh",
-            transport: "tcp",
-            port: 22
-          },
-          %{
-            protocol: "sftp-ssh",
-            transport: "tcp",
-            port: 22
-          },
-          %{
-            protocol: "epmd",
-            transport: "tcp",
-            port: 4369
-          }
-        ]
+        {:code,
+         Sourceror.parse_string!("""
+           [
+             %{protocol: "ssh", port: 22, transport: "tcp"},
+             %{protocol: "sftp-ssh", port: 22, transport: "tcp"},
+             %{protocol: "epmd", port: 4369, transport: "tcp"}
+           ]
+         """)}
       )
     end
   end

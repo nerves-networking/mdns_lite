@@ -18,9 +18,9 @@ defmodule MdnsLite.Mix.Tasks.InstallTest do
       + |  host: [hostname: "nerves"],
       + |  ttl: 120,
       + |  services: [
-      + |    %{port: 22, protocol: "ssh", transport: "tcp"},
-      + |    %{port: 22, protocol: "sftp-ssh", transport: "tcp"},
-      + |    %{port: 4369, protocol: "epmd", transport: "tcp"}
+      + |    %{protocol: "ssh", port: 22, transport: "tcp"},
+      + |    %{protocol: "sftp-ssh", port: 22, transport: "tcp"},
+      + |    %{protocol: "epmd", port: 4369, transport: "tcp"}
       + |  ]
       + |
     """)
@@ -48,9 +48,9 @@ defmodule MdnsLite.Mix.Tasks.InstallTest do
       + |  host: [hostname: "nerves"],
       + |  ttl: 120,
       + |  services: [
-      + |    %{port: 22, protocol: "ssh", transport: "tcp"},
-      + |    %{port: 22, protocol: "sftp-ssh", transport: "tcp"},
-      + |    %{port: 4369, protocol: "epmd", transport: "tcp"}
+      + |    %{protocol: "ssh", port: 22, transport: "tcp"},
+      + |    %{protocol: "sftp-ssh", port: 22, transport: "tcp"},
+      + |    %{protocol: "epmd", port: 4369, transport: "tcp"}
       + |  ]
     """)
   end
