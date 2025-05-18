@@ -76,7 +76,7 @@ if Code.ensure_loaded?(Igniter) do
       else
         igniter
         |> igniter_nerves("config.exs")
-        |> Igniter.add_warning("""
+        |> Igniter.add_notice("""
         The defaults for `mix mdns_lite.install` are intended for Nerves projects.  Please visit
         its README at https://hexdocs.pm/mdns_lite/readme.html for an overview of usage.
         """)
