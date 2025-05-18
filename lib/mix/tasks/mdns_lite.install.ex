@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+
 defmodule Mix.Tasks.MdnsLite.Install.Docs do
   @moduledoc false
 

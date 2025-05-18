@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+
 defmodule MdnsLite.Mix.Tasks.InstallTest do
   use ExUnit.Case, async: true
   import Igniter.Test
