@@ -8,7 +8,7 @@ defmodule MdnsLite.MixProject do
     [
       app: :mdns_lite,
       version: @version,
-      elixir: "~> 1.11",
+      elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       docs: docs(),
       description: description(),
