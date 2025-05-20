@@ -7,14 +7,17 @@
 defmodule Mix.Tasks.MdnsLite.Install.Docs do
   @moduledoc false
 
+  @spec short_doc() :: String.t()
   def short_doc do
     "Installs mdns_lite in your Nerves project."
   end
 
+  @spec example() :: String.t()
   def example do
     "mix mdns_lite.install --hostname my-hostname"
   end
 
+  @spec long_doc() :: String.t()
   def long_doc do
     """
     #{short_doc()}
@@ -89,6 +92,7 @@ if Code.ensure_loaded?(Igniter) do
       end
     end
 
+    @spec igniter_nerves(Igniter.t(), String.t()) :: Igniter.t()
     def igniter_nerves(igniter, config_file) do
       igniter
       |> Igniter.Project.Config.configure_new(
@@ -121,6 +125,7 @@ else
 
     use Mix.Task
 
+    @spec run(list()) :: no_return()
     def run(_argv) do
       Mix.shell().error("""
       The task 'mdns_lite.install' requires igniter. Please install igniter and try again.
