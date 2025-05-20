@@ -8,17 +8,17 @@ defmodule Mix.Tasks.MdnsLite.Install.Docs do
   @moduledoc false
 
   @spec short_doc() :: String.t()
-  def short_doc do
+  def short_doc() do
     "Installs mdns_lite in your Nerves project."
   end
 
   @spec example() :: String.t()
-  def example do
+  def example() do
     "mix mdns_lite.install --hostname my-hostname"
   end
 
   @spec long_doc() :: String.t()
-  def long_doc do
+  def long_doc() do
     """
     #{short_doc()}
 
@@ -44,6 +44,7 @@ if Code.ensure_loaded?(Igniter) do
     @moduledoc __MODULE__.Docs.long_doc()
 
     use Igniter.Mix.Task
+    alias Igniter.Project.Config
 
     @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
@@ -95,14 +96,14 @@ if Code.ensure_loaded?(Igniter) do
     @spec igniter_nerves(Igniter.t(), String.t()) :: Igniter.t()
     def igniter_nerves(igniter, config_file) do
       igniter
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(
         config_file,
         :mdns_lite,
         :host,
         hostname: igniter.args.options[:hostname]
       )
-      |> Igniter.Project.Config.configure_new(config_file, :mdns_lite, :ttl, 120)
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(config_file, :mdns_lite, :ttl, 120)
+      |> Config.configure_new(
         config_file,
         :mdns_lite,
         :services,

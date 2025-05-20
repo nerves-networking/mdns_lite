@@ -4,7 +4,6 @@
 #
 
 defmodule MdnsLite.Mix.Tasks.InstallTest do
-  alias ElixirSense.Core.Compiler.Fn
   use ExUnit.Case, async: true
   import Igniter.Test
 
