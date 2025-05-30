@@ -10,6 +10,7 @@ defmodule MdnsLite.MixProject do
       version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
+      consolidate_protocols: Mix.env() != :dev,
       docs: docs(),
       description: description(),
       package: package(),
@@ -58,6 +59,7 @@ defmodule MdnsLite.MixProject do
 
   defp deps do
     [
+      {:igniter, "~> 0.5", optional: true},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:credo, "~> 1.2", only: :test, runtime: false},
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
@@ -69,7 +71,7 @@ defmodule MdnsLite.MixProject do
     [
       flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling, :underspecs],
       ignore_warnings: ".dialyzer_ignore.exs",
-      plt_add_apps: [:vintage_net]
+      plt_add_apps: [:vintage_net, :igniter, :mix, :sourceror]
     ]
   end
 
