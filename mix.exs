@@ -71,7 +71,7 @@ defmodule MdnsLite.MixProject do
     [
       flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling, :underspecs],
       ignore_warnings: ".dialyzer_ignore.exs",
-      plt_add_apps: [:vintage_net]
+      plt_add_apps: [:vintage_net, :igniter, :mix, :sourceror]
     ]
   end
 

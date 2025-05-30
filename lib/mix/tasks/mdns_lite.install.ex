@@ -99,14 +99,14 @@ if Code.ensure_loaded?(Igniter) do
       |> Config.configure_new(
         config_file,
         :mdns_lite,
-        :host,
+        [:host],
         hostname: igniter.args.options[:hostname]
       )
-      |> Config.configure_new(config_file, :mdns_lite, :ttl, 120)
+      |> Config.configure_new(config_file, :mdns_lite, [:ttl], 120)
       |> Config.configure_new(
         config_file,
         :mdns_lite,
-        :services,
+        [:services],
         {:code,
          Sourceror.parse_string!("""
            [
