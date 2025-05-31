@@ -2,6 +2,17 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.9.0 - 2025-05-30
+
+This release adds experimental support for using
+[igniter](https://hex.pm/packages/igniter) for installation. This currently
+isn't needed since `mix nerves.new` adds it by default, but that may change in
+the future. Igniter is not included at runtime.
+
+* Changes
+  * Add Igniter installation support (@wln)
+  * Clarify copyright and licensing for [REUSE](https://reuse.software/) compliance
+
 ## v0.8.11 - 2024-09-10
 
 * Bug fixes
