@@ -25,7 +25,13 @@ defmodule MdnsLite.Responder do
   use GenServer, restart: :transient
 
   import MdnsLite.DNS
-  alias MdnsLite.{Cache, DNS, IfInfo, TableServer, Utilities}
+
+  alias MdnsLite.Cache
+  alias MdnsLite.DNS
+  alias MdnsLite.IfInfo
+  alias MdnsLite.TableServer
+  alias MdnsLite.Utilities
+
   require Logger
 
   # Reserved IANA ip address and port for mDNS

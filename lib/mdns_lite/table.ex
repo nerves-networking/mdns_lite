@@ -5,7 +5,9 @@
 defmodule MdnsLite.Table do
   @moduledoc false
   import MdnsLite.DNS
-  alias MdnsLite.{DNS, IfInfo}
+
+  alias MdnsLite.DNS
+  alias MdnsLite.IfInfo
 
   @type t() :: [DNS.dns_rr()]
 

@@ -21,7 +21,11 @@ defmodule MdnsLite do
   """
 
   import MdnsLite.DNS
-  alias MdnsLite.{DNS, Options, TableServer}
+
+  alias MdnsLite.DNS
+  alias MdnsLite.Options
+  alias MdnsLite.TableServer
+
   require Logger
 
   @typedoc """

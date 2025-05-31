@@ -7,7 +7,9 @@ defmodule MdnsLite.TableTest do
   use ExUnit.Case
 
   import MdnsLite.DNS
-  alias MdnsLite.{Options, Table}
+
+  alias MdnsLite.Options
+  alias MdnsLite.Table
 
   doctest MdnsLite.Table
 

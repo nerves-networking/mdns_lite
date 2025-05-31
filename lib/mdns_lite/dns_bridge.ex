@@ -26,7 +26,8 @@ defmodule MdnsLite.DNSBridge do
   use GenServer
 
   import MdnsLite.DNS
-  alias MdnsLite.{DNS, Options}
+  alias MdnsLite.DNS
+  alias MdnsLite.Options
   require Logger
 
   @doc false

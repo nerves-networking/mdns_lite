@@ -9,7 +9,8 @@ defmodule MdnsLite.Info do
   Functions in this module are intended for debugging mDNS issues.
   """
 
-  alias MdnsLite.{Responder, TableServer}
+  alias MdnsLite.Responder
+  alias MdnsLite.TableServer
 
   @doc """
   Dump the records that mDNSLite advertises
