@@ -44,6 +44,7 @@ defmodule MdnsLite.MixProject do
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url,
+        "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md",
         "REUSE Compliance" =>
           "https://api.reuse.software/info/github.com/elixir-circuits/circuits_gpio"
       }
