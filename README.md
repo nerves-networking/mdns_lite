@@ -70,7 +70,7 @@ If you need something custom, specify `:type` directly. Optional fields include
 `:id`, `:weight`, `:priority`, `:instance_name` and `:txt_payload`. An `:id` is
 needed to remove the service advertisement at runtime. If not specified,
 `:instance_name` is inherited from the top-level config.  A `:txt_payload` is a
-list of `"<key>=<value>"` string that will be advertised in a TXT DNS record
+list of `"<key>=<value>"` strings that will be advertised in a TXT DNS record
 corresponding to the service.
 
 See [`MdnsLite.Options`](https://hexdocs.pm/mdns_lite/MdnsLite.Options.html) for
