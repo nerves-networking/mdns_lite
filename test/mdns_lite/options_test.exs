@@ -149,6 +149,11 @@ defmodule MdnsLite.OptionsTest do
                {:error, "Specify a port"}
     end
 
+    test "port must be greater than zero" do
+      assert Options.normalize_service(%{id: :id, type: "_ssh._tcp", port: 0}) ==
+               {:error, "Specify a port"}
+    end
+
     test "converts protocol and transport to a type" do
       {:ok, normalized} =
         Options.normalize_service(%{id: :id, port: 22, protocol: "ssh", transport: "tcp"})
