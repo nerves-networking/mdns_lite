@@ -251,8 +251,8 @@ defmodule MdnsLite.Options do
     {:error, "Specify either 1. :protocol and :transport or 2. :type"}
   end
 
-  defp normalize_port(%{port: port}) when port >= 1 and port <= 65535, do: {:ok, port}
-  defp normalize_port(_), do: {:error, "Specify a port"}
+  defp normalize_port(%{port: port}) when port >= 0 and port <= 65535, do: {:ok, port}
+  defp normalize_port(_), do: {:error, "Specify a port between 1 and 65535 or 0 for no port"}
 
   @doc false
   @spec get_services(t()) :: [MdnsLite.service()]
