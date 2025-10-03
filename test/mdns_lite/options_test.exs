@@ -167,5 +167,54 @@ defmodule MdnsLite.OptionsTest do
       assert Options.normalize_service(%{id: :id, port: 22}) ==
                {:error, "Specify either 1. :protocol and :transport or 2. :type"}
     end
+
+    test "txt_payload accepts a map" do
+      {:ok, normalized} =
+        Options.normalize_service(%{
+          port: 0,
+          protocol: "device-info",
+          transport: "tcp",
+          txt_payload: %{d: "4", c: "3", b: "2", a: "1"}
+        })
+
+      # Subtle - keys should be in the txt_payload in sorted order. The map
+      # above should be unsorted when kv pairs are processed. This was manually verified.
+      assert normalized.txt_payload == ["a=1", "b=2", "c=3", "d=4"]
+    end
+
+    test "txt_payload accepts lists of strings" do
+      {:ok, normalized} =
+        Options.normalize_service(%{
+          port: 0,
+          protocol: "device-info",
+          transport: "tcp",
+          txt_payload: ["a=1", "b=2"]
+        })
+
+      assert normalized.txt_payload == ["a=1", "b=2"]
+    end
+
+    test "txt_payload wraps a string" do
+      # Forcing lists of strings is hard. Save the user by checking that it's auto-wrapped.
+      {:ok, normalized} =
+        Options.normalize_service(%{
+          port: 0,
+          protocol: "device-info",
+          transport: "tcp",
+          txt_payload: "hello=world"
+        })
+
+      assert normalized.txt_payload == ["hello=world"]
+    end
+
+    test "txt_payload errors on invalid settings" do
+      assert Options.normalize_service(%{
+               protocol: "ssh",
+               transport: "tcp",
+               port: 22,
+               txt_payload: 5
+             }) ==
+               {:error, "txt_payload should be a string, a list of strings, or a map"}
+    end
   end
 end

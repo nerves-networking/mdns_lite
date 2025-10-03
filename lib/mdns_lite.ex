@@ -56,7 +56,9 @@ defmodule MdnsLite do
     needed if `:protocol` and `:transport` aren't specified)
   * `:weight` - the service weight. Defaults to `0`. (optional)
   * `:priority` - the service priority. Defaults to `0`. (optional)
-  * `:txt_payload` - a list of strings to advertise
+  * `:txt_payload` - a map of key/value pairs that will be converted to a
+    list "key=value" strings or the raw list of strings to advertise. As
+    a convenience, if a bare string is passed, it's wrapped in a list.
 
   Example:
 
@@ -68,7 +70,7 @@ defmodule MdnsLite do
           :id => service_id(),
           :instance_name => instance_name(),
           :port => 1..65535,
-          optional(:txt_payload) => [String.t()],
+          optional(:txt_payload) => %{atom() => String.t()} | [String.t()] | String.t(),
           optional(:priority) => 0..255,
           optional(:protocol) => String.t(),
           optional(:transport) => String.t(),

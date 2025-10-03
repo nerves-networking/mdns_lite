@@ -213,14 +213,15 @@ defmodule MdnsLite.Options do
     with {:ok, id} <- normalize_id(service),
          {:ok, instance_name} <- normalize_instance_name(service),
          {:ok, port} <- normalize_port(service),
-         {:ok, type} <- normalize_type(service) do
+         {:ok, type} <- normalize_type(service),
+         {:ok, txt_payload} <- normalize_txt_payload(service) do
       {:ok,
        %{
          id: id,
          instance_name: instance_name,
          port: port,
          type: type,
-         txt_payload: Map.get(service, :txt_payload, []),
+         txt_payload: txt_payload,
          priority: Map.get(service, :priority, 0),
          weight: Map.get(service, :weight, 0)
        }}
@@ -254,6 +255,20 @@ defmodule MdnsLite.Options do
 
   defp normalize_port(%{port: port}) when port >= 0 and port <= 65535, do: {:ok, port}
   defp normalize_port(_), do: {:error, "Specify a port between 1 and 65535 or 0 for no port"}
+
+  defp normalize_txt_payload(%{txt_payload: txt_payload}) when is_map(txt_payload),
+    do: {:ok, txt_payload |> Enum.sort() |> Enum.map(fn {k, v} -> "#{k}=#{v}" end)}
+
+  defp normalize_txt_payload(%{txt_payload: txt_payload}) when is_list(txt_payload),
+    do: {:ok, txt_payload}
+
+  defp normalize_txt_payload(%{txt_payload: txt_payload}) when is_binary(txt_payload),
+    do: {:ok, [txt_payload]}
+
+  defp normalize_txt_payload(%{txt_payload: _other}),
+    do: {:error, "txt_payload should be a string, a list of strings, or a map"}
+
+  defp normalize_txt_payload(_unspecified), do: {:ok, []}
 
   @doc false
   @spec get_services(t()) :: [MdnsLite.service()]
