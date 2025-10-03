@@ -8,12 +8,12 @@ defmodule MdnsLite.DNS do
   """
   import Record, only: [defrecord: 2]
 
-  @inet_dns "src/mdns_lite_inet_dns.hrl"
+  @inet_dns "kernel/src/inet_dns.hrl"
 
-  defrecord :dns_rec, Record.extract(:dns_rec, from: @inet_dns)
-  defrecord :dns_header, Record.extract(:dns_header, from: @inet_dns)
-  defrecord :dns_query, Record.extract(:dns_query, from: @inet_dns)
-  defrecord :dns_rr, Record.extract(:dns_rr, from: @inet_dns)
+  defrecord :dns_rec, Record.extract(:dns_rec, from_lib: @inet_dns)
+  defrecord :dns_header, Record.extract(:dns_header, from_lib: @inet_dns)
+  defrecord :dns_query, Record.extract(:dns_query, from_lib: @inet_dns)
+  defrecord :dns_rr, Record.extract(:dns_rr, from_lib: @inet_dns)
 
   @type dns_query :: record(:dns_query, [])
   @type dns_rr :: record(:dns_rr, [])
@@ -25,7 +25,7 @@ defmodule MdnsLite.DNS do
   @spec encode(dns_rec()) :: binary()
   def encode(rec) do
     # Use the new version of :inet_dns that supports RFC 6762
-    :mdns_lite_inet_dns.encode(rec)
+    :inet_dns.encode(rec)
   end
 
   @doc """
@@ -33,7 +33,7 @@ defmodule MdnsLite.DNS do
   """
   @spec decode(binary()) :: {:ok, dns_rec()} | {:error, any()}
   def decode(packet) do
-    :mdns_lite_inet_dns.decode(packet)
+    :inet_dns.decode(packet)
   end
 
   @doc """
