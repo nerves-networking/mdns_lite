@@ -96,9 +96,10 @@ defmodule MdnsLite.Options do
             excluded_ifnames: @default_excluded_ifnames,
             ipv4_only: @default_ipv4_only
 
+  # Providing a type for :services is harder than it looks on OTP 28.1 due to an opaqueness check
   @typedoc false
   @type t :: %__MODULE__{
-          services: MapSet.t(map()),
+          services: any(),
           dot_local_names: [String.t()],
           hosts: [String.t()],
           ttl: pos_integer(),

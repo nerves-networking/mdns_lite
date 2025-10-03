@@ -4,6 +4,15 @@ defmodule MdnsLite.MixProject do
   @version "0.9.0"
   @source_url "https://github.com/nerves-networking/mdns_lite"
 
+  # Check that OTP has an mDNS-supporting DNS record parser
+  #
+  # This was originally added in OTP 24.1.2, and if OTP 24 support is ever
+  # needed, this check could be loosened.
+  @otp_release :erlang.system_info(:otp_release) |> List.to_integer()
+  if @otp_release < 25 do
+    raise "mdns_lite requires OTP 25 or later. Current OTP version: #{@otp_release}"
+  end
+
   def project do
     [
       app: :mdns_lite,
@@ -36,8 +45,7 @@ defmodule MdnsLite.MixProject do
         "mix.exs",
         "NOTICE",
         "README.md",
-        "REUSE.toml",
-        "src"
+        "REUSE.toml"
       ],
       licenses: ["Apache-2.0"],
       links: %{
