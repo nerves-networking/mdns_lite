@@ -1,4 +1,4 @@
-%% SPDX-FileCopyrightText: Ericsson AB 1997-2021. All Rights Reserved.
+%% SPDX-FileCopyrightText: Ericsson AB 1997-2025. All Rights Reserved.
 %%
 %% SPDX-License-Identifier: Apache-2.0
 %%
@@ -17,6 +17,7 @@
 -define(INET_AF_LOOPBACK,     4). % Fake for LOOPBACK in any address family
 -define(INET_AF_LOCAL,        5). % For Unix Domain address family
 -define(INET_AF_UNDEFINED,    6). % For any unknown address family
+-define(INET_AF_LIST,         7). % List of addresses for sctp connectx
 
 %% type codes to open and gettype - INET_REQ_GETTYPE
 -define(INET_TYPE_STREAM,     1).
@@ -119,6 +120,9 @@
 -define(UDP_OPT_ADD_MEMBERSHIP,  14).
 -define(UDP_OPT_DROP_MEMBERSHIP, 15).
 -define(INET_OPT_IPV6_V6ONLY,    16).
+-define(INET_OPT_REUSEPORT,      17).
+-define(INET_OPT_REUSEPORT_LB,   18).
+-define(INET_OPT_EXCLUSIVEADDRUSE, 19).
 % "Local" options: codes start from 20:
 -define(INET_LOPT_BUFFER,        20).
 -define(INET_LOPT_HEADER,        21).
@@ -148,6 +152,9 @@
 -define(INET_OPT_TTL,             46).
 -define(INET_OPT_RECVTTL,         47).
 -define(TCP_OPT_NOPUSH,           48).
+-define(INET_LOPT_TCP_READ_AHEAD, 49).
+-define(INET_OPT_NON_BLOCK_SEND,  50).
+-define(INET_OPT_DEBUG,           99).
 % Specific SCTP options: separate range:
 -define(SCTP_OPT_RTOINFO,	 	100).
 -define(SCTP_OPT_ASSOCINFO,	 	101).
@@ -355,21 +362,26 @@
 	(?u8(X0) -
 	 (if (X0) > 127 -> 16#100; true -> 0 end))).
 
-%% macro for use in guard for checking ip address {A,B,C,D}
+%% macro for guards only that checks IP address {A,B,C,D}
+%% that returns true for an IP address, but returns false
+%% or crashes for other terms
 -define(ip(A,B,C,D),
 	(((A) bor (B) bor (C) bor (D)) band (bnot 16#ff)) =:= 0).
+%% d:o for IP address as one term
 -define(ip(Addr),
+        (tuple_size(Addr) =:= 4 andalso
         ?ip(element(1, (Addr)), element(2, (Addr)),
-            element(3, (Addr)), element(4, (Addr)))).
-
+             element(3, (Addr)), element(4, (Addr))))).
+%% d:o IPv6 address
 -define(ip6(A,B,C,D,E,F,G,H), 
 	(((A) bor (B) bor (C) bor (D) bor (E) bor (F) bor (G) bor (H)) 
 	 band (bnot 16#ffff)) =:= 0).
 -define(ip6(Addr),
-        ?ip6(element(1, (Addr)), element(2, (Addr)),
-             element(3, (Addr)), element(4, (Addr)),
-             element(5, (Addr)), element(6, (Addr)),
-             element(7, (Addr)), element(8, (Addr)))).
+        (tuple_size(Addr) =:= 8 andalso
+         ?ip6(element(1, (Addr)), element(2, (Addr)),
+              element(3, (Addr)), element(4, (Addr)),
+              element(5, (Addr)), element(6, (Addr)),
+              element(7, (Addr)), element(8, (Addr))))).
 
 -define(ether(A,B,C,D,E,F), 
 	(((A) bor (B) bor (C) bor (D) bor (E) bor (F)) 
@@ -421,8 +433,8 @@
 	  type   = seqpacket,
 	  opts   = [{mode,	  binary},
 		    {buffer,	  ?SCTP_DEF_BUFSZ},
-		    {sndbuf,	  ?SCTP_DEF_BUFSZ},
-		    {recbuf,	  1024},
+		    %% {sndbuf,	  ?SCTP_DEF_BUFSZ},
+		    %% {recbuf,	  1024},
 		    {sctp_events, undefined}%,
 		    %%{active,      true}
 		   ]

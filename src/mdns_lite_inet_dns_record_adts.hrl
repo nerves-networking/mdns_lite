@@ -11,8 +11,8 @@
 
 %% Split #dns_query{} into property list
 %%
-dns_query(#dns_query{domain=V1,type=V2,class=V3}) ->
-    [{domain,V1},{type,V2},{class,V3}].
+dns_query(#dns_query{domain=V1,type=V2,class=V3,unicast_response=V4}) ->
+    [{domain,V1},{type,V2},{class,V3},{unicast_response,V4}].
 
 %% Get one field value from #dns_query{}
 %%
@@ -22,6 +22,8 @@ dns_query(#dns_query{type=V2}, type) ->
     V2;
 dns_query(#dns_query{class=V3}, class) ->
     V3;
+dns_query(#dns_query{unicast_response=V4}, unicast_response) ->
+    V4;
 %% Map field name list to value list from #dns_query{}
 %%
 dns_query(#dns_query{}, []) ->
@@ -31,7 +33,9 @@ dns_query(#dns_query{domain=V1}=R, [domain|L]) ->
 dns_query(#dns_query{type=V2}=R, [type|L]) ->
     [V2|dns_query(R, L)];
 dns_query(#dns_query{class=V3}=R, [class|L]) ->
-    [V3|dns_query(R, L)].
+    [V3|dns_query(R, L)];
+dns_query(#dns_query{unicast_response=V4}=R, [unicast_response|L]) ->
+    [V4|dns_query(R, L)].
 
 %% Generate default #dns_query{}
 %%
@@ -51,19 +55,23 @@ make_dns_query(type, V2) ->
     #dns_query{type=V2};
 make_dns_query(class, V3) ->
     #dns_query{class=V3};
+make_dns_query(unicast_response, V4) ->
+    #dns_query{unicast_response=V4};
 %%
 %% Update #dns_query{} from property list
 %%
-make_dns_query(#dns_query{domain=V1,type=V2,class=V3}, L) when is_list(L) ->
-    do_make_dns_query(L, V1,V2,V3).
-do_make_dns_query([], V1,V2,V3) ->
-    #dns_query{domain=V1,type=V2,class=V3};
-do_make_dns_query([{domain,V1}|L], _,V2,V3) ->
-    do_make_dns_query(L, V1,V2,V3);
-do_make_dns_query([{type,V2}|L], V1,_,V3) ->
-    do_make_dns_query(L, V1,V2,V3);
-do_make_dns_query([{class,V3}|L], V1,V2,_) ->
-    do_make_dns_query(L, V1,V2,V3).
+make_dns_query(#dns_query{domain=V1,type=V2,class=V3,unicast_response=V4}, L) when is_list(L) ->
+    do_make_dns_query(L, V1,V2,V3,V4).
+do_make_dns_query([], V1,V2,V3,V4) ->
+    #dns_query{domain=V1,type=V2,class=V3,unicast_response=V4};
+do_make_dns_query([{domain,V1}|L], _,V2,V3,V4) ->
+    do_make_dns_query(L, V1,V2,V3,V4);
+do_make_dns_query([{type,V2}|L], V1,_,V3,V4) ->
+    do_make_dns_query(L, V1,V2,V3,V4);
+do_make_dns_query([{class,V3}|L], V1,V2,_,V4) ->
+    do_make_dns_query(L, V1,V2,V3,V4);
+do_make_dns_query([{unicast_response,V4}|L], V1,V2,V3,_) ->
+    do_make_dns_query(L, V1,V2,V3,V4).
 
 %% Update one field of #dns_query{}
 %%
@@ -72,7 +80,9 @@ make_dns_query(#dns_query{}=R, domain, V1) ->
 make_dns_query(#dns_query{}=R, type, V2) ->
     R#dns_query{type=V2};
 make_dns_query(#dns_query{}=R, class, V3) ->
-    R#dns_query{class=V3}.
+    R#dns_query{class=V3};
+make_dns_query(#dns_query{}=R, unicast_response, V4) ->
+    R#dns_query{unicast_response=V4}.
 
 
 %%
@@ -83,8 +93,8 @@ make_dns_query(#dns_query{}=R, class, V3) ->
 
 %% Split #dns_rr{} into property list
 %%
-dns_rr(#dns_rr{domain=V1,type=V2,class=V3,ttl=V4,data=V5}) ->
-    [{domain,V1},{type,V2},{class,V3},{ttl,V4},{data,V5}].
+dns_rr(#dns_rr{domain=V1,type=V2,class=V3,ttl=V4,data=V5,func=V6}) ->
+    [{domain,V1},{type,V2},{class,V3},{ttl,V4},{data,V5},{func,V6}].
 
 %% Get one field value from #dns_rr{}
 %%
@@ -98,6 +108,8 @@ dns_rr(#dns_rr{ttl=V4}, ttl) ->
     V4;
 dns_rr(#dns_rr{data=V5}, data) ->
     V5;
+dns_rr(#dns_rr{func=V6}, func) ->
+    V6;
 %% Map field name list to value list from #dns_rr{}
 %%
 dns_rr(#dns_rr{}, []) ->
@@ -111,7 +123,9 @@ dns_rr(#dns_rr{class=V3}=R, [class|L]) ->
 dns_rr(#dns_rr{ttl=V4}=R, [ttl|L]) ->
     [V4|dns_rr(R, L)];
 dns_rr(#dns_rr{data=V5}=R, [data|L]) ->
-    [V5|dns_rr(R, L)].
+    [V5|dns_rr(R, L)];
+dns_rr(#dns_rr{func=V6}=R, [func|L]) ->
+    [V6|dns_rr(R, L)].
 
 %% Generate default #dns_rr{}
 %%
@@ -135,23 +149,27 @@ make_dns_rr(ttl, V4) ->
     #dns_rr{ttl=V4};
 make_dns_rr(data, V5) ->
     #dns_rr{data=V5};
+make_dns_rr(func, V6) ->
+    #dns_rr{func=V6};
 %%
 %% Update #dns_rr{} from property list
 %%
-make_dns_rr(#dns_rr{domain=V1,type=V2,class=V3,ttl=V4,data=V5}, L) when is_list(L) ->
-    do_make_dns_rr(L, V1,V2,V3,V4,V5).
-do_make_dns_rr([], V1,V2,V3,V4,V5) ->
-    #dns_rr{domain=V1,type=V2,class=V3,ttl=V4,data=V5};
-do_make_dns_rr([{domain,V1}|L], _,V2,V3,V4,V5) ->
-    do_make_dns_rr(L, V1,V2,V3,V4,V5);
-do_make_dns_rr([{type,V2}|L], V1,_,V3,V4,V5) ->
-    do_make_dns_rr(L, V1,V2,V3,V4,V5);
-do_make_dns_rr([{class,V3}|L], V1,V2,_,V4,V5) ->
-    do_make_dns_rr(L, V1,V2,V3,V4,V5);
-do_make_dns_rr([{ttl,V4}|L], V1,V2,V3,_,V5) ->
-    do_make_dns_rr(L, V1,V2,V3,V4,V5);
-do_make_dns_rr([{data,V5}|L], V1,V2,V3,V4,_) ->
-    do_make_dns_rr(L, V1,V2,V3,V4,V5).
+make_dns_rr(#dns_rr{domain=V1,type=V2,class=V3,ttl=V4,data=V5,func=V6}, L) when is_list(L) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6).
+do_make_dns_rr([], V1,V2,V3,V4,V5,V6) ->
+    #dns_rr{domain=V1,type=V2,class=V3,ttl=V4,data=V5,func=V6};
+do_make_dns_rr([{domain,V1}|L], _,V2,V3,V4,V5,V6) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6);
+do_make_dns_rr([{type,V2}|L], V1,_,V3,V4,V5,V6) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6);
+do_make_dns_rr([{class,V3}|L], V1,V2,_,V4,V5,V6) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6);
+do_make_dns_rr([{ttl,V4}|L], V1,V2,V3,_,V5,V6) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6);
+do_make_dns_rr([{data,V5}|L], V1,V2,V3,V4,_,V6) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6);
+do_make_dns_rr([{func,V6}|L], V1,V2,V3,V4,V5,_) ->
+    do_make_dns_rr(L, V1,V2,V3,V4,V5,V6).
 
 %% Update one field of #dns_rr{}
 %%
@@ -164,7 +182,9 @@ make_dns_rr(#dns_rr{}=R, class, V3) ->
 make_dns_rr(#dns_rr{}=R, ttl, V4) ->
     R#dns_rr{ttl=V4};
 make_dns_rr(#dns_rr{}=R, data, V5) ->
-    R#dns_rr{data=V5}.
+    R#dns_rr{data=V5};
+make_dns_rr(#dns_rr{}=R, func, V6) ->
+    R#dns_rr{func=V6}.
 
 
 %%
@@ -175,8 +195,8 @@ make_dns_rr(#dns_rr{}=R, data, V5) ->
 
 %% Split #dns_rr_opt{} into property list
 %%
-dns_rr_opt(#dns_rr_opt{domain=V1,type=V2,udp_payload_size=V3,ext_rcode=V4,version=V5,z=V6,data=V7}) ->
-    [{domain,V1},{type,V2},{udp_payload_size,V3},{ext_rcode,V4},{version,V5},{z,V6},{data,V7}].
+dns_rr_opt(#dns_rr_opt{domain=V1,type=V2,udp_payload_size=V3,ext_rcode=V4,version=V5,z=V6,data=V7,do=V8}) ->
+    [{domain,V1},{type,V2},{udp_payload_size,V3},{ext_rcode,V4},{version,V5},{z,V6},{data,V7},{do,V8}].
 
 %% Get one field value from #dns_rr_opt{}
 %%
@@ -194,6 +214,8 @@ dns_rr_opt(#dns_rr_opt{z=V6}, z) ->
     V6;
 dns_rr_opt(#dns_rr_opt{data=V7}, data) ->
     V7;
+dns_rr_opt(#dns_rr_opt{do=V8}, do) ->
+    V8;
 %% Map field name list to value list from #dns_rr_opt{}
 %%
 dns_rr_opt(#dns_rr_opt{}, []) ->
@@ -211,7 +233,9 @@ dns_rr_opt(#dns_rr_opt{version=V5}=R, [version|L]) ->
 dns_rr_opt(#dns_rr_opt{z=V6}=R, [z|L]) ->
     [V6|dns_rr_opt(R, L)];
 dns_rr_opt(#dns_rr_opt{data=V7}=R, [data|L]) ->
-    [V7|dns_rr_opt(R, L)].
+    [V7|dns_rr_opt(R, L)];
+dns_rr_opt(#dns_rr_opt{do=V8}=R, [do|L]) ->
+    [V8|dns_rr_opt(R, L)].
 
 %% Generate default #dns_rr_opt{}
 %%
@@ -226,24 +250,26 @@ make_dns_rr_opt(L) when is_list(L) ->
 %%
 %% Update #dns_rr_opt{} from property list
 %%
-make_dns_rr_opt(#dns_rr_opt{domain=V1,type=V2,udp_payload_size=V3,ext_rcode=V4,version=V5,z=V6,data=V7}, L) when is_list(L) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7).
-do_make_dns_rr_opt([], V1,V2,V3,V4,V5,V6,V7) ->
-    #dns_rr_opt{domain=V1,type=V2,udp_payload_size=V3,ext_rcode=V4,version=V5,z=V6,data=V7};
-do_make_dns_rr_opt([{domain,V1}|L], _,V2,V3,V4,V5,V6,V7) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7);
-do_make_dns_rr_opt([{type,V2}|L], V1,_,V3,V4,V5,V6,V7) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7);
-do_make_dns_rr_opt([{udp_payload_size,V3}|L], V1,V2,_,V4,V5,V6,V7) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7);
-do_make_dns_rr_opt([{ext_rcode,V4}|L], V1,V2,V3,_,V5,V6,V7) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7);
-do_make_dns_rr_opt([{version,V5}|L], V1,V2,V3,V4,_,V6,V7) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7);
-do_make_dns_rr_opt([{z,V6}|L], V1,V2,V3,V4,V5,_,V7) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7);
-do_make_dns_rr_opt([{data,V7}|L], V1,V2,V3,V4,V5,V6,_) ->
-    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7).
+make_dns_rr_opt(#dns_rr_opt{domain=V1,type=V2,udp_payload_size=V3,ext_rcode=V4,version=V5,z=V6,data=V7,do=V8}, L) when is_list(L) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8).
+do_make_dns_rr_opt([], V1,V2,V3,V4,V5,V6,V7,V8) ->
+    #dns_rr_opt{domain=V1,type=V2,udp_payload_size=V3,ext_rcode=V4,version=V5,z=V6,data=V7,do=V8};
+do_make_dns_rr_opt([{domain,V1}|L], _,V2,V3,V4,V5,V6,V7,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{type,V2}|L], V1,_,V3,V4,V5,V6,V7,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{udp_payload_size,V3}|L], V1,V2,_,V4,V5,V6,V7,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{ext_rcode,V4}|L], V1,V2,V3,_,V5,V6,V7,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{version,V5}|L], V1,V2,V3,V4,_,V6,V7,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{z,V6}|L], V1,V2,V3,V4,V5,_,V7,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{data,V7}|L], V1,V2,V3,V4,V5,V6,_,V8) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8);
+do_make_dns_rr_opt([{do,V8}|L], V1,V2,V3,V4,V5,V6,V7,_) ->
+    do_make_dns_rr_opt(L, V1,V2,V3,V4,V5,V6,V7,V8).
 
 %% Update one field of #dns_rr_opt{}
 %%
@@ -260,7 +286,9 @@ make_dns_rr_opt(#dns_rr_opt{}=R, version, V5) ->
 make_dns_rr_opt(#dns_rr_opt{}=R, z, V6) ->
     R#dns_rr_opt{z=V6};
 make_dns_rr_opt(#dns_rr_opt{}=R, data, V7) ->
-    R#dns_rr_opt{data=V7}.
+    R#dns_rr_opt{data=V7};
+make_dns_rr_opt(#dns_rr_opt{}=R, do, V8) ->
+    R#dns_rr_opt{do=V8}.
 
 
 %%
