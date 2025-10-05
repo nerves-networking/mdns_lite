@@ -2,6 +2,17 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.9.1 - 2025-10-05
+
+This release removes the vendored version of OTP's DNS parser. As such, OTP 24
+and earlier are no longer supported. Please upgrade or force your dependency to
+v0.9.0 if you can't upgrade.
+
+* Changes
+  * Support passing maps for mDNS service txt payloads. These expand to the
+    `"key=value"` lists as you'd expect and can be more convenient. Overall, the
+    `txt_payload` option is better checked so errors get raised earlier.
+
 ## v0.9.0 - 2025-05-30
 
 This release adds experimental support for using
