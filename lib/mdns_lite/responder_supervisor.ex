@@ -26,5 +26,6 @@ defmodule MdnsLite.ResponderSupervisor do
   @impl DynamicSupervisor
   def init(_init_arg) do
     DynamicSupervisor.init(strategy: :one_for_one)
+    # TODO: See Section 8.1 of standard
   end
 end
