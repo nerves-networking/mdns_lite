@@ -48,6 +48,9 @@ defmodule MdnsLite.Responder do
           skip_udp: boolean()
         }
 
+  def announce_services(iface_name, iface_address) do
+    Process.send(via_name({iface_name, iface_address}), :announce_services, [])
+  end
   ##############################################################################
   #   Public interface
   ##############################################################################
@@ -160,7 +163,7 @@ defmodule MdnsLite.Responder do
          :ok <- :socket.bind(udp, %{family: family, port: @mdns_port}),
          :ok <- add_membership(udp, interface, family) do
       new_state = %{state | udp: udp} |> process_receives()
-      {:noreply, new_state}
+      {:noreply, new_state, {:continue, :announce_services}}
     else
       {:error, reason} ->
         Logger.error("mdns_lite #{state.ifname}/#{inspect(state.ip)} failed: #{inspect(reason)}")
@@ -169,6 +172,13 @@ defmodule MdnsLite.Responder do
         # interface went away or its IP address changed.
         {:stop, :normal, state}
     end
+  end
+
+  def handle_continue(:announce_services, state) do
+    # TODO: The wait here is not necessary and needs to be removed
+    Process.send_after(self(), {:announce_services, 0}, 15000)
+
+    {:noreply, state}
   end
 
   @impl GenServer
@@ -207,6 +217,29 @@ defmodule MdnsLite.Responder do
         %{udp: udp, select_handle: select_handle} = state
       ) do
     {:noreply, process_receives(state)}
+  end
+
+  def handle_info({:announce_services, 3}, state) do
+    Logger.info("Services have been announced")
+    {:noreply, state}
+  end
+
+  def handle_info({:announce_services, count}, state) do
+
+    # For all services defined run a query to force sending unsolicidted announcement
+    TableServer.options()
+    |> Map.get(:services)
+    |> Enum.map(fn service ->
+      run_query(
+        dns_query(class: :in, domain: ~c"#{service.type}.local", type: :ptr),
+        dns_rec(header: dns_header()),
+        %{port: @mdns_port, addr: state.ip, family: :inet},
+        state
+      )
+    end)
+
+    Process.send_after(self(), {:announce_services, count + 1}, 1000)
+    {:noreply, state}
   end
 
   def handle_info(msg, state) do
