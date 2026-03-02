@@ -29,6 +29,9 @@ defmodule MdnsLite.Responder do
   alias MdnsLite.Cache
   alias MdnsLite.DNS
   alias MdnsLite.IfInfo
+  alias MdnsLite.KnownAnswer
+  alias MdnsLite.Options
+  alias MdnsLite.Probe
   alias MdnsLite.TableServer
   alias MdnsLite.Utilities
 
@@ -45,7 +48,9 @@ defmodule MdnsLite.Responder do
           cache: Cache.t(),
           udp: :socket.socket(),
           select_handle: :socket.select_handle(),
-          skip_udp: boolean()
+          skip_udp: boolean(),
+          probe: Probe.t() | nil,
+          probe_timer: reference() | nil
         }
 
   ##############################################################################
@@ -126,7 +131,11 @@ defmodule MdnsLite.Responder do
       cache: Cache.new(),
       udp: nil,
       select_handle: nil,
-      skip_udp: Application.get_env(:mdns_lite, :skip_udp)
+      skip_udp: Application.get_env(:mdns_lite, :skip_udp),
+      probe: nil,
+      probe_timer: nil,
+      pending_responses: %{},
+      tc_pending: %{}
     }
 
     {:ok, _} = Registry.register(MdnsLite.Responders, __MODULE__, {ifname, address})
@@ -159,7 +168,7 @@ defmodule MdnsLite.Responder do
          :ok <- :socket.setopt(udp, option_level, :multicast_if, interface),
          :ok <- :socket.bind(udp, %{family: family, port: @mdns_port}),
          :ok <- add_membership(udp, interface, family) do
-      new_state = %{state | udp: udp} |> process_receives()
+      new_state = %{state | udp: udp} |> start_probing() |> process_receives()
       {:noreply, new_state}
     else
       {:error, reason} ->
@@ -209,6 +218,48 @@ defmodule MdnsLite.Responder do
     {:noreply, process_receives(state)}
   end
 
+  def handle_info(:probe_timer, state) do
+    if state.probe do
+      {new_probe, actions} = Probe.timer_fired(state.probe)
+      new_state = %{state | probe: new_probe, probe_timer: nil}
+      {:noreply, dispatch_actions(new_state, actions)}
+    else
+      {:noreply, state}
+    end
+  end
+
+  def handle_info({:delayed_response, dest_key}, state) do
+    case Map.pop(state.pending_responses, dest_key) do
+      {nil, _} ->
+        {:noreply, state}
+
+      {{result, msg}, new_pending} ->
+        new_state = %{state | pending_responses: new_pending}
+        send_response(result, msg, dest_key, new_state)
+        {:noreply, new_state}
+    end
+  end
+
+  def handle_info({:tc_timeout, source_key, msg}, state) do
+    case Map.pop(state.tc_pending, source_key) do
+      {nil, _} ->
+        {:noreply, state}
+
+      {{accumulated_answers, _timer}, new_tc_pending} ->
+        # Process with accumulated known-answers
+        new_state = %{state | tc_pending: new_tc_pending}
+        msg_with_answers = dns_rec(msg, anlist: accumulated_answers)
+        source = source_key
+        new_state = process_dns_query(new_state, source, msg_with_answers)
+        {:noreply, new_state}
+    end
+  end
+
+  def handle_info({:records_removed, records}, state) do
+    send_goodbye(records, state)
+    {:noreply, state}
+  end
+
   def handle_info(msg, state) do
     Logger.error("mdns_lite responder ignoring #{inspect(msg)}, #{inspect(state)}")
     {:noreply, state}
@@ -217,6 +268,98 @@ defmodule MdnsLite.Responder do
   ##############################################################################
   #   Private functions
   ##############################################################################
+
+  # Probing and announcing
+
+  defp start_probing(state) do
+    options = TableServer.options()
+    hostname = hd(options.hosts)
+    records = TableServer.get_records()
+    if_info = if_info_from_state(state)
+
+    # Resolve interface-specific placeholders in records
+    resolved_records =
+      records
+      |> Enum.flat_map(&resolve_record(&1, if_info))
+      # Only probe unique (non-shared) records - skip PTR records
+      |> Enum.filter(fn dns_rr(type: t) -> t != :ptr end)
+
+    {probe, actions} = Probe.new(hostname, resolved_records)
+    new_state = %{state | probe: probe}
+    dispatch_actions(new_state, actions)
+  end
+
+  defp resolve_record(dns_rr(class: :in, type: :a, data: :ipv4_address), %{ipv4_address: nil}) do
+    []
+  end
+
+  defp resolve_record(dns_rr(class: :in, type: :a, data: :ipv4_address) = rr, if_info) do
+    [dns_rr(rr, data: if_info.ipv4_address)]
+  end
+
+  defp resolve_record(dns_rr(class: :in, type: :aaaa, data: :ipv6_address) = rr, if_info) do
+    for address <- if_info.ipv6_addresses do
+      dns_rr(rr, data: address)
+    end
+  end
+
+  defp resolve_record(dns_rr(domain: :ipv4_arpa_address), _if_info), do: []
+  defp resolve_record(dns_rr(domain: :ipv6_arpa_address), _if_info), do: []
+  defp resolve_record(rr, _if_info), do: [rr]
+
+  defp if_info_from_state(%{family: :inet, ip: ip}), do: %IfInfo{ipv4_address: ip}
+  defp if_info_from_state(%{family: :inet6, ip: ip}), do: %IfInfo{ipv6_addresses: [ip]}
+
+  defp dispatch_actions(state, actions) do
+    Enum.reduce(actions, state, &dispatch_action/2)
+  end
+
+  defp dispatch_action({:send_probe, packet}, state) do
+    send_packet(packet, state)
+    state
+  end
+
+  defp dispatch_action({:send_announcement, packet}, state) do
+    send_packet(packet, state)
+    state
+  end
+
+  defp dispatch_action({:schedule_timer, ms}, state) do
+    _ = state.probe_timer && Process.cancel_timer(state.probe_timer)
+    timer = Process.send_after(self(), :probe_timer, ms)
+    %{state | probe_timer: timer}
+  end
+
+  defp dispatch_action({:rename, new_hostname}, state) do
+    Logger.info("mdns_lite: conflict detected, renaming to #{new_hostname}")
+    TableServer.update_options(&Options.set_hosts(&1, [new_hostname | tl(&1.hosts)]))
+    # Get fresh records after rename and update probe
+    new_state = %{state | probe: nil, probe_timer: nil}
+    start_probing(new_state)
+  end
+
+  defp dispatch_action(:complete, state) do
+    Logger.debug("mdns_lite: probing complete for #{state.probe.hostname}")
+    state
+  end
+
+  defp send_packet(packet, state) do
+    if state.udp do
+      data = DNS.encode(packet)
+      dest = %{family: state.family, port: @mdns_port, addr: multicast_ip(state.family)}
+
+      case :socket.sendto(state.udp, data, dest) do
+        {:error, reason} ->
+          Logger.warning("mdns_lite probe/announce send failed: #{inspect(reason)}")
+
+        :ok ->
+          :ok
+      end
+    end
+  end
+
+  # Packet processing
+
   defp process_receives(state) do
     case :socket.recvfrom(state.udp, [], :nowait) do
       {:ok, {source, data}} ->
@@ -239,19 +382,155 @@ defmodule MdnsLite.Responder do
   defp process_dns(
          state,
          source,
-         dns_rec(header: dns_header(qr: false), qdlist: qdlist) = msg
+         dns_rec(header: dns_header(qr: false, tc: true), anlist: anlist) = msg
        ) do
-    # mDNS request message
-    Enum.each(qdlist, &run_query(&1, msg, source, state))
+    # TC (truncated) bit set - accumulate known-answers and wait for follow-up
+    source_key = source_key(source)
 
-    # If the request had any entries, cache them
+    {existing_answers, _timer} =
+      Map.get(state.tc_pending, source_key, {[], nil})
+
+    accumulated = existing_answers ++ anlist
+    timer = Process.send_after(self(), {:tc_timeout, source_key, msg}, 500)
+    %{state | tc_pending: Map.put(state.tc_pending, source_key, {accumulated, timer})}
+  end
+
+  defp process_dns(
+         state,
+         source,
+         dns_rec(header: dns_header(qr: false), anlist: anlist) = msg
+       ) do
+    # Check for accumulated TC known-answers from previous truncated queries
+    source_key = source_key(source)
+
+    {msg, state} =
+      case Map.pop(state.tc_pending, source_key) do
+        {nil, _} ->
+          {msg, state}
+
+        {{accumulated_answers, timer}, new_tc_pending} ->
+          _ = timer && Process.cancel_timer(timer)
+          combined = accumulated_answers ++ anlist
+          {dns_rec(msg, anlist: combined), %{state | tc_pending: new_tc_pending}}
+      end
+
+    process_dns_query(state, source, msg)
+  end
+
+  defp process_dns(state, _source, dns_rec(header: dns_header(qr: true), anlist: anlist) = msg) do
+    # A response message - check for conflicts with our probed names
+    state = maybe_handle_conflict(state, anlist)
+
+    # Cache whatever it contains
     update_cache(msg, state)
   end
 
-  defp process_dns(state, _source, dns_rec(header: dns_header(qr: true)) = msg) do
-    # A response message or update so cache whatever it contains
+  # TODO: Responding to queries over IPv6 is not supported yet
+  defp process_dns_query(%{family: :inet6} = state, _source, msg) do
     update_cache(msg, state)
   end
+
+  defp process_dns_query(state, source, dns_rec(qdlist: qdlist, nslist: nslist) = msg) do
+    state = maybe_handle_simultaneous_probe(state, nslist)
+
+    # Aggregate results for all questions into a single response
+    empty = %{answer: [], additional: []}
+
+    {unicast_result, multicast_result, has_shared} =
+      Enum.reduce(qdlist, {empty, empty, false}, &aggregate_query(&1, &2, state))
+
+    # Apply known-answer suppression (RFC 6762 §7.1) to multicast results
+    known_answers = dns_rec(msg, :anlist)
+
+    multicast_result = %{
+      multicast_result
+      | answer: KnownAnswer.suppress(multicast_result.answer, known_answers)
+    }
+
+    # Send unicast response immediately (with cache-flush stripped)
+    if unicast_result.answer != [] do
+      send_response(strip_cache_flush(unicast_result), msg, source, state)
+    end
+
+    # Send multicast response (with delay for shared records)
+    state =
+      if multicast_result.answer != [] do
+        dest = mdns_destination(source)
+
+        if has_shared do
+          schedule_delayed_response(multicast_result, msg, dest, state)
+        else
+          send_response(multicast_result, msg, dest, state)
+          state
+        end
+      else
+        state
+      end
+
+    update_cache(msg, state)
+  end
+
+  defp aggregate_query(qd, {uni_acc, multi_acc, shared}, state) do
+    domain = dns_query(qd, :domain)
+
+    if state.probe && Probe.probing_name?(state.probe, domain) do
+      {uni_acc, multi_acc, shared}
+    else
+      result = TableServer.query(qd, if_info_from_state(state))
+
+      if dns_query(qd, :unicast_response) do
+        {MdnsLite.Table.merge_results(uni_acc, result), multi_acc, shared}
+      else
+        is_shared = dns_query(qd, :type) == :ptr
+        {uni_acc, MdnsLite.Table.merge_results(multi_acc, result), shared or is_shared}
+      end
+    end
+  end
+
+  defp source_key(source), do: source
+
+  defp maybe_handle_simultaneous_probe(state, nslist) when is_list(nslist) and nslist != [] do
+    if state.probe && state.probe.phase == :probing do
+      # Check if any authority records conflict with our probed names
+      conflicting =
+        Enum.any?(nslist, fn rr ->
+          Probe.probing_name?(state.probe, dns_rr(rr, :domain))
+        end)
+
+      if conflicting do
+        {new_probe, actions} = Probe.simultaneous_probe_received(state.probe, nslist)
+        new_state = %{state | probe: new_probe}
+        dispatch_actions(new_state, actions)
+      else
+        state
+      end
+    else
+      state
+    end
+  end
+
+  defp maybe_handle_simultaneous_probe(state, _nslist), do: state
+
+  defp maybe_handle_conflict(state, anlist) when is_list(anlist) and anlist != [] do
+    if state.probe && state.probe.phase in [:probing, :announcing] do
+      conflicting =
+        Enum.any?(anlist, fn rr ->
+          Probe.probing_name?(state.probe, dns_rr(rr, :domain))
+        end)
+
+      if conflicting do
+        {new_probe, actions} = Probe.conflict_detected(state.probe)
+        new_state = %{state | probe: new_probe}
+        dispatch_actions(new_state, actions)
+      else
+        state
+      end
+    else
+      state
+    end
+  end
+
+  defp maybe_handle_conflict(state, _anlist), do: state
 
   defp update_cache(dns_rec(anlist: anlist, arlist: arlist), state) do
     now = System.monotonic_time(:second)
@@ -259,16 +538,27 @@ defmodule MdnsLite.Responder do
     %{state | cache: new_cache}
   end
 
-  # TODO: Responding to queries over IPv6 is not supported yet
-  defp run_query(_qd, _msg, _source, %{family: :inet6}), do: :ok
+  defp strip_cache_flush(%{answer: answer, additional: additional}) do
+    %{
+      answer: Enum.map(answer, &dns_rr(&1, func: false)),
+      additional: Enum.map(additional, &dns_rr(&1, func: false))
+    }
+  end
 
-  defp run_query(dns_query(unicast_response: unicast) = qd, msg, source, state) do
-    result = TableServer.query(qd, %IfInfo{ipv4_address: state.ip})
+  defp schedule_delayed_response(result, dns_rec() = msg, dest, state) do
+    case Map.get(state.pending_responses, dest) do
+      nil ->
+        # No pending response for this dest - schedule a new one
+        delay = 20 + :rand.uniform(105)
+        Process.send_after(self(), {:delayed_response, dest}, delay)
+        new_pending = Map.put(state.pending_responses, dest, {result, msg})
+        %{state | pending_responses: new_pending}
 
-    if unicast do
-      send_response(result, msg, source, state)
-    else
-      send_response(result, msg, mdns_destination(source), state)
+      {existing_result, existing_msg} ->
+        # Merge with existing pending response (aggregation per II.15)
+        merged = MdnsLite.Table.merge_results(existing_result, result)
+        new_pending = Map.put(state.pending_responses, dest, {merged, existing_msg})
+        %{state | pending_responses: new_pending}
     end
   end
 
@@ -282,9 +572,6 @@ defmodule MdnsLite.Responder do
        ) do
     # Construct an mDNS response from the query plus answers (resource records)
     packet = response_packet(id, result)
-
-    # Logger.debug("Sending DNS response to #{inspect(dest_address)}/#{inspect(dest_port)}")
-    # Logger.debug("#{inspect(packet)}")
 
     data = DNS.encode(packet)
     _ = :socket.sendto(state.udp, data, dest)
@@ -306,6 +593,19 @@ defmodule MdnsLite.Responder do
         # arlist A list of resource entries. Can be empty.
         arlist: result.additional
       )
+
+  # Goodbye packets - send records with TTL=0 when they're removed
+  defp send_goodbye(records, state) do
+    goodbye_records = Enum.map(records, &dns_rr(&1, ttl: 0))
+
+    packet =
+      dns_rec(
+        header: dns_header(id: 0, qr: true, aa: true),
+        anlist: goodbye_records
+      )
+
+    send_packet(packet, state)
+  end
 
   defp mdns_destination(%{family: :inet, port: @mdns_port}),
     do: %{family: :inet, port: @mdns_port, addr: @mdns_ipv4}

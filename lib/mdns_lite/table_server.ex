@@ -54,8 +54,16 @@ defmodule MdnsLite.TableServer do
 
   def handle_call({:update_options, fun}, _from, state) do
     new_options = fun.(state.options)
+    new_table = Table.Builder.from_options(new_options)
 
-    {:reply, :ok, %{options: new_options, table: Table.Builder.from_options(new_options)}}
+    # Notify responders of removed records so they can send goodbye packets
+    removed = state.table -- new_table
+
+    if removed != [] do
+      notify_responders({:records_removed, removed})
+    end
+
+    {:reply, :ok, %{options: new_options, table: new_table}}
   end
 
   def handle_call(:get_records, _from, state) do
@@ -67,5 +75,10 @@ defmodule MdnsLite.TableServer do
     additional = Table.additional_records(state.table, rr_list, if_info)
 
     {:reply, %{answer: rr_list, additional: additional}, state}
+  end
+
+  defp notify_responders(message) do
+    Registry.lookup(MdnsLite.Responders, MdnsLite.Responder)
+    |> Enum.each(fn {pid, _} -> send(pid, message) end)
   end
 end
