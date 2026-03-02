@@ -413,4 +413,30 @@ defmodule MdnsLite.TableTest do
 
     assert do_query(query) == %{answer: [], additional: []}
   end
+
+  test "responds to an ANY type query with all record types for a domain" do
+    query = dns_query(domain: ~c"nerves-21a5.local", type: :any, class: :in)
+    result = do_query(query)
+
+    # Should return A record (AAAA is filtered since test IfInfo has no ipv6_addresses)
+    types = Enum.map(result.answer, &dns_rr(&1, :type))
+    assert :a in types
+    assert result.answer != []
+  end
+
+  test "responds to an ANY type query for a service domain" do
+    query = dns_query(domain: ~c"_http._tcp.local", type: :any, class: :in)
+    result = do_query(query)
+
+    types = Enum.map(result.answer, &dns_rr(&1, :type))
+    assert :ptr in types
+  end
+
+  test "case-insensitive domain matching" do
+    query = dns_query(domain: ~c"NERVES-21A5.LOCAL", type: :a, class: :in)
+    result = do_query(query)
+
+    assert result.answer != []
+    assert dns_rr(hd(result.answer), :type) == :a
+  end
 end

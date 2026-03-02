@@ -102,9 +102,25 @@ defmodule MdnsLite.Table do
 
   defp run_query(dns_query(class: class, type: type, domain: domain), table) do
     Enum.filter(table, fn dns_rr(class: c, type: t, domain: d) ->
-      c == class and t == type and d == domain
+      match_class(class, c) and match_type(type, t) and match_domain(domain, d)
     end)
   end
+
+  defp match_class(:any, _), do: true
+  defp match_class(c, c), do: true
+  defp match_class(_, _), do: false
+
+  # Erlang's :inet_dns may decode type 255 as integer 255 rather than :any
+  defp match_type(:any, _), do: true
+  defp match_type(255, _), do: true
+  defp match_type(t, t), do: true
+  defp match_type(_, _), do: false
+
+  defp match_domain(a, b) when is_list(a) and is_list(b), do: lowercase(a) == lowercase(b)
+  defp match_domain(a, a), do: true
+  defp match_domain(_, _), do: false
+
+  defp lowercase(charlist), do: :string.lowercase(charlist)
 
   defp normalize_query(dns_query(class: :in, type: :ptr, domain: domain) = q, if_info) do
     case test_known_in_addr_arpa(domain, if_info) do
