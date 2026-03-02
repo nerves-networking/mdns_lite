@@ -110,9 +110,15 @@ defmodule MdnsLite.Table.Builder do
       class: class,
       type: type,
       ttl: ttl,
-      data: data
+      data: data,
+      func: cache_flush_for_type(type)
     )
   end
+
+  # PTR records are shared - don't set cache-flush bit
+  defp cache_flush_for_type(:ptr), do: false
+  # All other record types (A, AAAA, SRV, TXT) are unique - set cache-flush bit
+  defp cache_flush_for_type(_), do: true
 
   defp normalize_domain(d) when is_atom(d), do: d
   defp normalize_domain(d), do: to_charlist(d)

@@ -11,7 +11,7 @@ defmodule MdnsLite.Table.BuilderTest do
 
   doctest MdnsLite.Table.Builder
 
-  test "Adds A and AAAA records" do
+  test "Adds A and AAAA records with cache-flush bit" do
     config = %Options{} |> Options.add_hosts(["nerves-1234"])
     table = Builder.from_options(config)
 
@@ -20,7 +20,8 @@ defmodule MdnsLite.Table.BuilderTest do
              type: :a,
              ttl: 120,
              domain: ~c"nerves-1234.local",
-             data: :ipv4_address
+             data: :ipv4_address,
+             func: true
            ) in table
 
     assert dns_rr(
@@ -28,7 +29,8 @@ defmodule MdnsLite.Table.BuilderTest do
              type: :aaaa,
              ttl: 120,
              domain: ~c"nerves-1234.local",
-             data: :ipv6_address
+             data: :ipv6_address,
+             func: true
            ) in table
   end
 

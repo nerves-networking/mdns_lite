@@ -58,7 +58,8 @@ defmodule MdnsLite.TableTest do
           type: :a,
           class: :in,
           ttl: 120,
-          data: {192, 168, 9, 57}
+          data: {192, 168, 9, 57},
+          func: true
         )
       ],
       additional: []
@@ -72,7 +73,14 @@ defmodule MdnsLite.TableTest do
 
     result = %{
       answer: [
-        dns_rr(domain: ~c"nerves.local", type: :a, class: :in, ttl: 120, data: {192, 168, 9, 57})
+        dns_rr(
+          domain: ~c"nerves.local",
+          type: :a,
+          class: :in,
+          ttl: 120,
+          data: {192, 168, 9, 57},
+          func: true
+        )
       ],
       additional: []
     }
@@ -90,7 +98,8 @@ defmodule MdnsLite.TableTest do
           type: :a,
           class: :in,
           ttl: 120,
-          data: {192, 168, 9, 57}
+          data: {192, 168, 9, 57},
+          func: true
         )
       ],
       additional: []
@@ -145,21 +154,24 @@ defmodule MdnsLite.TableTest do
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, ~c"nerves-21a5.local."}
+          data: {0, 0, 80, ~c"nerves-21a5.local."},
+          func: true
         ),
         dns_rr(
           domain: ~c"nerves-21a5._http._tcp.local",
           type: :txt,
           class: :in,
           ttl: 120,
-          data: ["key=value"]
+          data: ["key=value"],
+          func: true
         ),
         dns_rr(
           domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
-          data: {192, 168, 9, 57}
+          data: {192, 168, 9, 57},
+          func: true
         )
       ]
     }
@@ -187,21 +199,24 @@ defmodule MdnsLite.TableTest do
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, ~c"nerves-21a5.local."}
+          data: {0, 0, 80, ~c"nerves-21a5.local."},
+          func: true
         ),
         dns_rr(
           domain: ~c"myidentifier._http._tcp.local",
           type: :txt,
           class: :in,
           ttl: 120,
-          data: ["key=value"]
+          data: ["key=value"],
+          func: true
         ),
         dns_rr(
           domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
-          data: {192, 168, 9, 57}
+          data: {192, 168, 9, 57},
+          func: true
         )
       ]
     }
@@ -244,21 +259,24 @@ defmodule MdnsLite.TableTest do
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, ~c"nerves-21a5.local."}
+          data: {0, 0, 80, ~c"nerves-21a5.local."},
+          func: true
         ),
         dns_rr(
           domain: ~c"myidentifier._http._tcp.local",
           type: :txt,
           class: :in,
           ttl: 120,
-          data: ["key=value"]
+          data: ["key=value"],
+          func: true
         ),
         dns_rr(
           domain: ~c"nerves-21a5.local",
           type: :a,
           class: :in,
           ttl: 120,
-          data: {192, 168, 9, 57}
+          data: {192, 168, 9, 57},
+          func: true
         )
       ]
     }
@@ -281,7 +299,7 @@ defmodule MdnsLite.TableTest do
     assert do_query(query, config) == result
   end
 
-  test "responds to a PTR request with domain \'_services._dns-sd._udp.local\'" do
+  test "responds to a PTR request with domain '_services._dns-sd._udp.local'" do
     test_domain = ~c"_services._dns-sd._udp.local"
     query = dns_query(domain: test_domain, type: :ptr, class: :in)
 
@@ -319,12 +337,19 @@ defmodule MdnsLite.TableTest do
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, ~c"nerves-21a5.local."}
+          data: {0, 0, 80, ~c"nerves-21a5.local."},
+          func: true
         )
       ],
       additional: [
-        {:dns_rr, ~c"nerves-21a5.local", :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [],
-         false}
+        dns_rr(
+          domain: ~c"nerves-21a5.local",
+          type: :a,
+          class: :in,
+          ttl: 120,
+          data: {192, 168, 9, 57},
+          func: true
+        )
       ]
     }
 
@@ -342,12 +367,19 @@ defmodule MdnsLite.TableTest do
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, ~c"nerves-21a5.local."}
+          data: {0, 0, 80, ~c"nerves-21a5.local."},
+          func: true
         )
       ],
       additional: [
-        {:dns_rr, ~c"nerves-21a5.local", :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [],
-         false}
+        dns_rr(
+          domain: ~c"nerves-21a5.local",
+          type: :a,
+          class: :in,
+          ttl: 120,
+          data: {192, 168, 9, 57},
+          func: true
+        )
       ]
     }
 
@@ -380,12 +412,19 @@ defmodule MdnsLite.TableTest do
           type: :srv,
           class: :in,
           ttl: 120,
-          data: {0, 0, 80, ~c"nerves-21a5.local."}
+          data: {0, 0, 80, ~c"nerves-21a5.local."},
+          func: true
         )
       ],
       additional: [
-        {:dns_rr, ~c"nerves-21a5.local", :a, :in, 0, 120, {192, 168, 9, 57}, :undefined, [],
-         false}
+        dns_rr(
+          domain: ~c"nerves-21a5.local",
+          type: :a,
+          class: :in,
+          ttl: 120,
+          data: {192, 168, 9, 57},
+          func: true
+        )
       ]
     }
 
