@@ -313,6 +313,15 @@ defmodule MdnsLite.Options do
     Enum.reduce(hosts, options, &add_host(&2, &1))
   end
 
+  @doc false
+  @spec conflict_rename(String.t()) :: String.t()
+  def conflict_rename(hostname) do
+    case Regex.run(~r/^(.+)-(\d+)$/, hostname) do
+      [_, base, n] -> "#{base}-#{String.to_integer(n) + 1}"
+      nil -> "#{hostname}-2"
+    end
+  end
+
   defp resolve_mdns_name(:hostname) do
     {:ok, hostname} = :inet.gethostname()
     to_string(hostname)
