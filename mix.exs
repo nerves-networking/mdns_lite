@@ -54,7 +54,7 @@ defmodule MdnsLite.MixProject do
         "GitHub" => @source_url,
         "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md",
         "REUSE Compliance" =>
-          "https://api.reuse.software/info/github.com/elixir-circuits/circuits_gpio"
+          "https://api.reuse.software/info/github.com/nerves-networking/mdns_lite"
       }
     }
   end
