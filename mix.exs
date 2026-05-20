@@ -3,7 +3,7 @@
 defmodule MdnsLite.MixProject do
   use Mix.Project
 
-  @version "0.9.1"
+  @version "0.9.2"
   @source_url "https://github.com/nerves-networking/mdns_lite"
 
   # Check that OTP has an mDNS-supporting DNS record parser

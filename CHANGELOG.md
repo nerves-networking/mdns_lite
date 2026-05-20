@@ -7,6 +7,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.9.2 - 2026-05-20
+
+Drop support for Elixir 1.15.
+
+* Changes
+  * Add service announcement on responder startup to improve discovery time
+
 ## v0.9.1 - 2025-10-05
 
 This release removes the vendored version of OTP's DNS parser. As such, OTP 24
