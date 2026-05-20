@@ -48,11 +48,6 @@ defmodule MdnsLite.Responder do
           skip_udp: boolean()
         }
 
-  @spec announce_services(String.t(), :inet.ip_address()) :: :ok
-  def announce_services(iface_name, iface_address) do
-    Process.send(via_name({iface_name, iface_address}), :announce_services, [])
-  end
-
   ##############################################################################
   #   Public interface
   ##############################################################################
