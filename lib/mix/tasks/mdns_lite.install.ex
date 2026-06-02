@@ -88,7 +88,7 @@ if Code.ensure_loaded?(Igniter) do
         |> igniter_nerves("config.exs")
         |> Igniter.add_notice("""
         The defaults for `mix mdns_lite.install` are intended for Nerves projects.  Please visit
-        its README at https://hexdocs.pm/mdns_lite/readme.html for an overview of usage.
+        its README at https://mdns-lite.hexdocs.pm/readme.html for an overview of usage.
         """)
       end
     end
@@ -131,7 +131,7 @@ else
       Mix.shell().error("""
       The task 'mdns_lite.install' requires igniter. Please install igniter and try again.
 
-      For more information, see: https://hexdocs.pm/igniter/readme.html#installation
+      For more information, see: https://igniter.hexdocs.pm/readme.html#installation
       """)
 
       exit({:shutdown, 1})
