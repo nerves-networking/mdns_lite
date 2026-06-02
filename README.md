@@ -6,7 +6,7 @@
 # MdnsLite
 
 [![Hex version](https://img.shields.io/hexpm/v/mdns_lite.svg "Hex version")](https://hex.pm/packages/mdns_lite)
-[![API docs](https://img.shields.io/hexpm/v/mdns_lite.svg?label=hexdocs "API docs")](https://hexdocs.pm/mdns_lite/MdnsLite.html)
+[![API docs](https://img.shields.io/hexpm/v/mdns_lite.svg?label=hexdocs "API docs")](https://mdns-lite.hexdocs.pm/MdnsLite.html)
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/nerves-networking/mdns_lite/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nerves-networking/mdns_lite/tree/main)
 [![REUSE status](https://api.reuse.software/badge/github.com/nerves-networking/mdns_lite)](https://api.reuse.software/info/github.com/nerves-networking/mdns_lite)
 
@@ -78,7 +78,7 @@ needed to remove the service advertisement at runtime. If not specified,
 list of `"<key>=<value>"` strings that will be advertised in a TXT DNS record
 corresponding to the service.
 
-See [`MdnsLite.Options`](https://hexdocs.pm/mdns_lite/MdnsLite.Options.html) for
+See [`MdnsLite.Options`](https://mdns-lite.hexdocs.pm/MdnsLite.Options.html) for
 information about all application environment options.
 
 It's possible to change the advertised hostnames, instance names and services at
