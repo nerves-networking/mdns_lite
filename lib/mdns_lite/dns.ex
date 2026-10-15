@@ -34,6 +34,8 @@ defmodule MdnsLite.DNS do
   @spec decode(binary()) :: {:ok, dns_rec()} | {:error, any()}
   def decode(packet) do
     :inet_dns.decode(packet)
+  rescue
+    _ -> {:error, :formerr}
   end
 
   @doc """
