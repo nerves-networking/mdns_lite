@@ -35,6 +35,8 @@ defmodule MdnsLite.DNS do
   def decode(packet) do
     :inet_dns.decode(packet)
   rescue
+    # OTP 28 raises instead of returning :formerr for many inputs. See
+    # dns_test.exs for examples. This is fixed in OTP 29.
     _ -> {:error, :formerr}
   end
 
