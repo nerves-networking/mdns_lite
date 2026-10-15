@@ -18,7 +18,13 @@ defmodule MdnsLite.ResponderTest do
     Responder.stop_server("no_exist", {1, 2, 3, 4})
   end
 
-  for family <- [:inet, :inet6], response <- [true, false] do
+  @inet6_loopback_available case :net.getifaddrs(:inet6) do
+    {:ok, ifaces} -> Enum.any?(ifaces, &match?(%{addr: %{addr: {0, 0, 0, 0, 0, 0, 0, 1}}}, &1))
+    _ -> false
+  end
+
+  for family <- [:inet | if(@inet6_loopback_available, do: [:inet6], else: [])],
+      response <- [true, false] do
     test "#{family} caches local #{if response, do: "response", else: "query"} records" do
       {state, sender, destination} = receive_state(unquote(family))
       message = records_message(unquote(response))
