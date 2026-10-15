@@ -29,6 +29,7 @@ defmodule MdnsLite.Responder do
   alias MdnsLite.Cache
   alias MdnsLite.DNS
   alias MdnsLite.IfInfo
+  alias MdnsLite.PacketOrigin
   alias MdnsLite.TableServer
   alias MdnsLite.Utilities
 
@@ -42,9 +43,11 @@ defmodule MdnsLite.Responder do
   @type state() :: %{
           ifname: String.t(),
           ip: :inet.ip_address(),
+          family: :inet | :inet6,
+          ifindex: pos_integer() | nil,
           cache: Cache.t(),
-          udp: :socket.socket(),
-          select_handle: :socket.select_handle(),
+          udp: :socket.socket() | nil,
+          select_handle: :socket.select_handle() | nil,
           skip_udp: boolean()
         }
 
@@ -123,6 +126,7 @@ defmodule MdnsLite.Responder do
       ifname: ifname,
       ip: address,
       family: Utilities.ip_family(address),
+      ifindex: nil,
       cache: Cache.new(),
       udp: nil,
       select_handle: nil,
@@ -150,16 +154,18 @@ defmodule MdnsLite.Responder do
       end
 
     with {:ok, udp} <- :socket.open(family, :dgram, :udp),
+         {:ok, ifindex} <- :net.if_name2index(String.to_charlist(state.ifname)),
          :ok <- bindtodevice(udp, state.ifname),
          :ok <- :socket.setopt(udp, :socket, :reuseport, true),
          :ok <- :socket.setopt(udp, :socket, :reuseaddr, true),
+         :ok <- PacketOrigin.enable(udp, family),
          :ok <- :socket.setopt(udp, option_level, :multicast_loop, false),
          :ok <- set_multicast_ttl(udp, state),
          {:ok, interface} <- get_interface_opt(state),
          :ok <- :socket.setopt(udp, option_level, :multicast_if, interface),
          :ok <- :socket.bind(udp, %{family: family, port: @mdns_port}),
          :ok <- add_membership(udp, interface, family) do
-      new_state = %{state | udp: udp} |> process_receives()
+      new_state = %{state | udp: udp, ifindex: ifindex} |> process_receives()
       {:noreply, new_state, {:continue, :announce_services}}
     else
       {:error, reason} ->
@@ -247,22 +253,45 @@ defmodule MdnsLite.Responder do
   #   Private functions
   ##############################################################################
   defp process_receives(state) do
-    case :socket.recvfrom(state.udp, [], :nowait) do
-      {:ok, {source, data}} ->
+    case :socket.recvmsg(state.udp, 65535, 1024, [], :nowait) do
+      {:ok, message} ->
         state
-        |> process_packet(source, data)
+        |> process_packet(message)
         |> process_receives()
 
       {:select, {:select_info, _tag, select_handle}} ->
         %{state | select_handle: select_handle}
+
+      {:error, reason} ->
+        raise "mdns_lite #{state.ifname} receive failed: #{inspect(reason)}"
     end
   end
 
-  defp process_packet(state, source, data) do
-    case DNS.decode(data) do
-      {:ok, msg} -> process_dns(state, source, msg)
-      _ -> state
+  defp process_packet(state, message) do
+    addresses = interface_addresses(state)
+
+    if PacketOrigin.local?(message, state.family, state.ifindex, addresses) do
+      case DNS.decode(IO.iodata_to_binary(message.iov)) do
+        {:ok, msg} -> process_dns(state, message.addr, msg)
+        _ -> state
+      end
+    else
+      state
     end
+  end
+
+  defp interface_addresses(state) do
+    {:ok, interfaces} = :net.getifaddrs(state.family)
+    ifname = String.to_charlist(state.ifname)
+
+    for %{
+          name: ^ifname,
+          flags: flags,
+          addr: %{addr: address},
+          netmask: %{addr: mask}
+        } <- interfaces,
+        :up in flags,
+        do: {address, mask}
   end
 
   defp process_dns(
