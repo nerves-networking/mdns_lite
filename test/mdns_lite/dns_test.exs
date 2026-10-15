@@ -165,6 +165,12 @@ defmodule MdnsLite.DNSTest do
     assert encoded == DNS.encode(decoded)
   end
 
+  test "decoding a malformed packet returns an error instead of raising" do
+    assert {:error, :formerr} = DNS.decode(<<10, 186, 16, 0>>)
+    assert {:error, :formerr} = DNS.decode(<<1, 2, 3>>)
+    assert {:error, :formerr} = DNS.decode(<<>>)
+  end
+
   describe "pretty/1 for rr" do
     test "a" do
       assert pretty(
