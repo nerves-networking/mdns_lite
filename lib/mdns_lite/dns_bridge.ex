@@ -116,17 +116,22 @@ defmodule MdnsLite.DNSBridge do
         # Query list. Must be empty according to RFC 6762 Section 6.
         qdlist: qdlist,
         # A list of answer entries. Can be empty.
-        anlist: result.answer,
+        anlist: strip_mdns_cache_flush(result.answer),
         # nslist Can be empty.
         nslist: [],
         # arlist A list of resource entries. Can be empty.
-        arlist: result.additional
+        arlist: strip_mdns_cache_flush(result.additional)
       )
 
     dns_record = DNS.encode(packet)
     # Best effort send
     _ = :gen_udp.send(state.udp, dest_address, dest_port, dns_record)
     :ok
+  end
+
+  defp strip_mdns_cache_flush(records) do
+    # OTP silently drops records with this set
+    Enum.map(records, &dns_rr(&1, func: false))
   end
 
   defp udp_options(opts) do
