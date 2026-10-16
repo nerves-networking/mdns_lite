@@ -1,5 +1,9 @@
 <!--
   SPDX-FileCopyrightText: 2019 Frank Hunleth
+  SPDX-FileCopyrightText: 2019 Jon Carstens
+  SPDX-FileCopyrightText: 2019 Peter C. Marks
+  SPDX-FileCopyrightText: 2021 Mat Trudel
+  SPDX-FileCopyrightText: 2022 Jason Axelson
   SPDX-License-Identifier: CC-BY-4.0
 -->
 

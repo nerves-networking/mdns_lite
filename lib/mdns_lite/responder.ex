@@ -3,9 +3,11 @@
 # SPDX-FileCopyrightText: 2019 Peter C. Marks
 # SPDX-FileCopyrightText: 2020 Eduardo Cunha
 # SPDX-FileCopyrightText: 2021 Connor Rigby
+# SPDX-FileCopyrightText: 2021 Peter Madsen
 # SPDX-FileCopyrightText: 2021 Peter Madsen-mygdal
 # SPDX-FileCopyrightText: 2023 Ben Youngblood
 # SPDX-FileCopyrightText: 2024 Michael Neumann
+# SPDX-FileCopyrightText: 2025 Chris Dutton
 #
 # SPDX-License-Identifier: Apache-2.0
 #

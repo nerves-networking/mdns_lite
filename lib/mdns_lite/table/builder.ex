@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2021 Frank Hunleth
 # SPDX-FileCopyrightText: 2021 Mat Trudel
+# SPDX-FileCopyrightText: 2025 Chris Dutton
 #
 # SPDX-License-Identifier: Apache-2.0
 #

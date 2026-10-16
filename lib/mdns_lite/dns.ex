@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2021 Frank Hunleth
+# SPDX-FileCopyrightText: 2026 Vini Arcanjo
 #
 # SPDX-License-Identifier: Apache-2.0
 #
