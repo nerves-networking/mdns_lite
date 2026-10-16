@@ -51,14 +51,16 @@ defmodule MdnsLite.DNSBridgeTest do
   end
 
   test "Erlang resolves cached addresses with mDNS cache-flush flags", context do
-    assert {:ok, {:hostent, _, _, :inet, 4, [{192, 0, 2, 123}]}} =
-             :inet_res.gethostbyname(
+    assert {:ok, response} =
+             :inet_res.resolve(
                ~c"bridge-cache-test.local",
-               :inet,
+               :in,
+               :a,
                context.resolver_options,
                1000
              )
 
+    assert [dns_rr(type: :a, class: :in, data: {192, 0, 2, 123})] = dns_rec(response, :anlist)
     assert Enum.all?(Responder.get_cache(context.responder).records, &dns_rr(&1, :func))
   end
 
