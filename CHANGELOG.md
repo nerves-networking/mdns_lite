@@ -7,6 +7,18 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.9.3 - 2026-10-16
+
+* Fixes
+  * Drop off-link unicast mDNS packets. These were previously cached and
+    responded to.
+  * Fix the DNS bridge returning records that would be silently dropped by the
+    OTP resolver due to the mDNS-only flush cache bit being set. This broke
+    the use of .local addresses with `gen_tcp`, `gen_udp` and similar.
+  * Fix handling on malformed mDNS packets on OTP 28. Previously it would crash
+    rather than return `:formerr` as expected. This doesn't affect OTP 29.
+    (@viniarck)
+
 ## v0.9.2 - 2026-05-20
 
 Drop support for Elixir 1.15.
