@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Authors of https://github.com/ash-project/igniter
 # SPDX-FileCopyrightText: 2025 Lee Nussbaum
 # SPDX-FileCopyrightText: 2026 Frank Hunleth
+# SPDX-FileCopyrightText: 2026 Lars Wikman
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -15,7 +16,7 @@ defmodule Mix.Tasks.MdnsLite.Install.Docs do
 
   @spec example() :: String.t()
   def example() do
-    "mix mdns_lite.install --hostname my-hostname"
+    "mix igniter.install mdns_lite --hostname my-hostname"
   end
 
   @spec long_doc() :: String.t()
@@ -23,7 +24,14 @@ defmodule Mix.Tasks.MdnsLite.Install.Docs do
     """
     #{short_doc()}
 
-    Longer explanation of your task
+    This adds the same `:mdns_lite` configuration that `mix nerves.new` generates:
+    the device advertises `<hostname>.local` plus a fixed alias (`nerves.local`
+    by default), and the `ssh`, `sftp-ssh` and `epmd` services.
+
+    The configuration is written to `config/target.exs` when that file exists
+    (a Nerves project) and to `config/config.exs` otherwise. Keys that are
+    already set in `config/config.exs`, `config/target.exs` or
+    `config/runtime.exs` are left alone, so it is safe to run more than once.
 
     ## Example
 
@@ -33,7 +41,11 @@ defmodule Mix.Tasks.MdnsLite.Install.Docs do
 
     ## Options
 
-    * `--hostname my-hostname` - Set the initial hostname for the device (will be advertised as "my-hostname.local", defaults to "nerves.local")
+    * `--hostname my-hostname` - An additional hostname to advertise next to
+      the device's own hostname. `my-hostname` is advertised as
+      "my-hostname.local". Defaults to "nerves" ("nerves.local"). If more than
+      one device is on the network, give each a different name or delete the
+      alias from the generated `:hosts` list.
     """
   end
 end
@@ -45,7 +57,10 @@ if Code.ensure_loaded?(Igniter) do
     @moduledoc __MODULE__.Docs.long_doc()
 
     use Igniter.Mix.Task
+    alias Igniter.Code.Common
+    alias Igniter.Code.List, as: CodeList
     alias Igniter.Project.Config
+    alias Igniter.Project.Deps
 
     @impl Igniter.Mix.Task
     def info(_argv, _composing_task) do
@@ -81,6 +96,8 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
+      igniter = igniter |> restrict_dep_to_targets() |> start_early()
+
       if Igniter.exists?(igniter, "config/target.exs") do
         igniter
         |> igniter_nerves("target.exs")
@@ -97,17 +114,11 @@ if Code.ensure_loaded?(Igniter) do
     @spec igniter_nerves(Igniter.t(), String.t()) :: Igniter.t()
     def igniter_nerves(igniter, config_file) do
       igniter
-      |> Config.configure_new(
+      |> configure_hosts(config_file)
+      |> configure_unless_set(config_file, :ttl, 120)
+      |> configure_unless_set(
         config_file,
-        :mdns_lite,
-        [:host],
-        hostname: igniter.args.options[:hostname]
-      )
-      |> Config.configure_new(config_file, :mdns_lite, [:ttl], 120)
-      |> Config.configure_new(
-        config_file,
-        :mdns_lite,
-        [:services],
+        :services,
         {:code,
          Sourceror.parse_string!("""
            [
@@ -117,6 +128,149 @@ if Code.ensure_loaded?(Igniter) do
            ]
          """)}
       )
+    end
+
+    # `:hostname` advertises the device's own hostname (nerves-<serial> on the
+    # official Nerves systems). The string is a fixed alias for convenience.
+    defp configure_hosts(igniter, config_file) do
+      if configured?(igniter, config_file, :host) do
+        # `:host` is the deprecated name for `:hosts` and takes precedence over
+        # it, so adding `:hosts` would have no effect.
+        Igniter.add_notice(igniter, """
+        mdns_lite: your config sets the deprecated `:host` option, so `:hosts` was not added.
+        Rename `host:` to `hosts:` in your `config :mdns_lite` to remove the deprecation warning.
+        """)
+      else
+        configure_unless_set(igniter, config_file, :hosts, [
+          :hostname,
+          igniter.args.options[:hostname]
+        ])
+      end
+    end
+
+    defp configure_unless_set(igniter, config_file, key, value) do
+      if configured?(igniter, config_file, key) do
+        igniter
+      else
+        Config.configure_new(igniter, config_file, :mdns_lite, [key], value)
+      end
+    end
+
+    # target.exs is imported by config.exs, and runtime.exs overrides both, so a
+    # value in any of them counts as the user's choice.
+    defp configured?(igniter, config_file, key) do
+      [config_file, "config.exs", "target.exs", "runtime.exs"]
+      |> Enum.uniq()
+      |> Enum.any?(&Config.configures_key?(igniter, &1, :mdns_lite, key))
+    end
+
+    # Nerves projects have a list of applications that are started before the
+    # project's own application. Having mDNS in it keeps a device findable
+    # when that application fails to start. This only extends a list that the
+    # project already has. `:nerves_pack` in it covers `:mdns_lite`.
+    defp start_early(igniter) do
+      for {config_app, key_path} <- [{:nerves, [:application_sort, :init]}, {:shoehorn, [:init]}],
+          file = init_list_file(igniter, config_app, key_path),
+          reduce: igniter do
+        igniter ->
+          Config.configure(igniter, file, config_app, key_path, [:mdns_lite],
+            updater: &append_to_init_list/1
+          )
+      end
+    end
+
+    defp init_list_file(igniter, config_app, key_path) do
+      Enum.find(["target.exs", "config.exs"], fn file ->
+        Igniter.exists?(igniter, Path.join("config", file)) and
+          Config.configures_key?(igniter, file, config_app, key_path)
+      end)
+    end
+
+    defp append_to_init_list(zipper) do
+      case Common.within(zipper, &append_mdns_lite/1) do
+        {:ok, zipper} -> {:ok, zipper}
+        :error -> {:ok, zipper}
+      end
+    end
+
+    defp append_mdns_lite(list) do
+      cond do
+        not CodeList.list?(list) -> :error
+        in_list?(list, :nerves_pack) or in_list?(list, :mdns_lite) -> :error
+        true -> CodeList.append_to_list(list, :mdns_lite)
+      end
+    end
+
+    defp in_list?(list, app) do
+      CodeList.find_list_item_index(list, &Common.nodes_equal?(&1, app)) !=
+        nil
+    end
+
+    # mix.exs --------------------------------------------------------------
+
+    # mdns_lite answers mDNS queries on the network that it runs on.
+    # Nerves projects keep such dependencies off the host with a `:targets`
+    # option that refers to a module attribute. E.g.,
+    # `{:nerves_pack, "~> 0.7", targets: @all_targets}`. When the project has
+    # one and :mdns_lite is listed in mix.exs without `:targets`, it gets
+    # the first such attribute too. Nothing is changed otherwise, like when
+    # :mdns_lite is brought in by :nerves_pack.
+    defp restrict_dep_to_targets(igniter) do
+      with {:ok, declaration} when is_binary(declaration) <-
+             Deps.get_dep(igniter, :mdns_lite),
+           {:ok, dep} <- Code.string_to_quoted(declaration),
+           false <- has_targets_option?(dep),
+           {:ok, quoted} <- Code.string_to_quoted(mix_exs(igniter)),
+           attribute when is_atom(attribute) and not is_nil(attribute) <-
+             first_targets_attribute(quoted) do
+        Deps.set_dep_option(
+          igniter,
+          :mdns_lite,
+          :targets,
+          {:@, [], [{attribute, [], nil}]}
+        )
+      else
+        _ -> igniter
+      end
+    end
+
+    defp mix_exs(igniter) do
+      igniter = Igniter.include_existing_file(igniter, "mix.exs")
+
+      case Rewrite.source(igniter.rewrite, "mix.exs") do
+        {:ok, source} -> Rewrite.Source.get(source, :content)
+        _ -> ""
+      end
+    end
+
+    defp has_targets_option?(quoted) do
+      {_quoted, found?} =
+        Macro.prewalk(quoted, false, fn
+          {:targets, _value} = node, _found? -> {node, true}
+          node, found? -> {node, found?}
+        end)
+
+      found?
+    end
+
+    # The name of the module attribute in the first `targets: @attribute`. If
+    # no dependency has one, `@all_targets` is used when mix.exs defines it.
+    # That's the attribute that Nerves projects list their targets in.
+    defp first_targets_attribute(quoted) do
+      {_quoted, {used, all_targets?}} =
+        Macro.prewalk(quoted, {nil, false}, fn
+          {:targets, {:@, _, [{name, _, context}]}} = node, {nil, all_targets?}
+          when is_atom(name) and is_atom(context) ->
+            {node, {name, all_targets?}}
+
+          {:@, _, [{:all_targets, _, [_value]}]} = node, {used, _all_targets?} ->
+            {node, {used, true}}
+
+          node, acc ->
+            {node, acc}
+        end)
+
+      used || if(all_targets?, do: :all_targets)
     end
   end
 else

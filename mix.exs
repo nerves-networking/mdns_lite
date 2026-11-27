@@ -69,7 +69,7 @@ defmodule MdnsLite.MixProject do
 
   defp deps do
     [
-      {:igniter, "~> 0.5", optional: true},
+      {:igniter, "~> 0.6", optional: true, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
       {:credo, "~> 1.2", only: :test, runtime: false},
       {:ex_doc, "~> 0.22", only: :docs, runtime: false},
@@ -81,7 +81,7 @@ defmodule MdnsLite.MixProject do
     [
       flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling, :underspecs],
       ignore_warnings: ".dialyzer_ignore.exs",
-      plt_add_apps: [:vintage_net, :igniter, :mix, :sourceror]
+      plt_add_apps: [:vintage_net, :igniter, :mix, :sourceror, :rewrite, :glob_ex]
     ]
   end
 

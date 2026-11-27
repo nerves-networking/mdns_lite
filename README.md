@@ -43,6 +43,60 @@ Features of MdnsLite:
 MdnsLite is included in [NervesPack](https://hex.pm/packages/nerves_pack) so you
 might already have it!
 
+## Installation
+
+Add `mdns_lite` to the dependencies in your `mix.exs`:
+
+```elixir
+{:mdns_lite, "~> 0.9"}
+```
+
+### Igniter
+
+If your project uses [Igniter](https://hex.pm/packages/igniter), this adds the
+dependency and the same configuration that `mix nerves.new` generates:
+
+```sh
+mix igniter.install mdns_lite
+```
+
+The configuration goes in `config/target.exs` for Nerves projects and
+`config/config.exs` otherwise. Options that are already set are not changed.
+
+If other dependencies in your `mix.exs` are restricted to devices with a module
+attribute like `targets: @all_targets`, the `:mdns_lite` dependency gets the
+same option so that it isn't started on your computer.
+
+Options:
+
+* `--hostname NAME` - advertise `NAME.local` in addition to the device's own
+  hostname (default: `nerves`)
+
+#### Adding a service
+
+`mix mdns_lite.add_service` appends one service to the `:services` list in your
+config. For example, to advertise a web server on port 80 as `_http._tcp`:
+
+```sh
+mix mdns_lite.add_service --mdns-protocol http --mdns-port 80
+```
+
+It looks for the list in `config/target.exs` and then `config/config.exs`.
+Existing services aren't changed, and nothing is added if the list already has a
+service with the same protocol, transport and port, or the same `:id`. If there
+isn't a `:services` list, one is created with only the new service.
+
+Options:
+
+* `--mdns-protocol PROTOCOL` - the protocol without the underscore, like `http`
+  (required)
+* `--mdns-port PORT` - the port that the service listens on (required)
+* `--mdns-transport TRANSPORT` - `tcp` or `udp` (default: `tcp`)
+* `--mdns-id ID` - an `:id` for referring to the service at runtime, like
+  `web_server`
+
+Edit the config by hand for other service options like `:txt_payload`.
+
 ## Configuration
 
 A typical configuration in the `config.exs` file looks like:
